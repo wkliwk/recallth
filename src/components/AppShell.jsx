@@ -33,6 +33,46 @@ const NAV = [
     ),
   },
   {
+    to: '/schedule',
+    label: 'Schedule',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/stack-builder',
+    label: 'Stack Builder',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/doctor-prep',
+    label: 'Doctor Prep',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 12 19.79 19.79 0 0 1 1.07 3.37a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/history',
+    label: 'History',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <polyline points="12 7 12 12 15 15"/>
+      </svg>
+    ),
+  },
+  {
     to: '/profile',
     label: 'Profile',
     icon: (
@@ -45,9 +85,9 @@ const NAV = [
 ]
 
 const SAMPLE_MESSAGES = [
-  { type: 'ai', text: "Hey Ricky! I know your full stack — 5 supplements, 0 conflicts, 14-day streak. What would you like to know?" },
+  { type: 'ai', text: "Hey! I know your full stack — 5 supplements, 0 conflicts, 14-day streak. What would you like to know?" },
   { type: 'user', text: 'Should I take D3 with food?' },
-  { type: 'ai', text: 'Yes — Vitamin D3 is fat-soluble, so taking it with a meal that contains healthy fats (avocado, eggs, olive oil) improves absorption by up to 32%.' },
+  { type: 'ai', text: 'Yes — Vitamin D3 is fat-soluble, so taking it with a meal containing healthy fats improves absorption by up to 32%.' },
 ]
 
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
@@ -79,15 +119,13 @@ function ChatPanel({ onClose }) {
   }
 
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex justify-end"
       style={{ background: 'rgba(42,34,26,0.25)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Panel */}
       <div
-        className="w-[420px] h-full bg-white flex flex-col shadow-2xl"
+        className="w-full md:w-[420px] h-full bg-white flex flex-col shadow-2xl"
         style={{ animation: 'slideIn 0.22s ease-out' }}
       >
         {/* Header */}
@@ -182,8 +220,8 @@ export default function AppShell({ children, title = 'Dashboard' }) {
 
   return (
     <div className="flex h-screen bg-page overflow-hidden">
-      {/* ── Sidebar ── */}
-      <aside className="w-[240px] shrink-0 flex flex-col border-r border-border bg-white">
+      {/* ── Sidebar (desktop only) ── */}
+      <aside className="hidden md:flex w-[240px] shrink-0 flex-col border-r border-border bg-white overflow-y-auto">
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
           <div className="w-8 h-8 rounded-[10px] bg-orange flex items-center justify-center shrink-0">
@@ -231,21 +269,21 @@ export default function AppShell({ children, title = 'Dashboard' }) {
       {/* ── Main area ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-[60px] shrink-0 flex items-center justify-between px-8 border-b border-border bg-white">
+        <header className="h-[60px] shrink-0 flex items-center justify-between px-5 md:px-8 border-b border-border bg-white">
           <span className="font-display text-ink1 text-[20px]">{title}</span>
 
           <div className="flex items-center gap-3">
-            <form onSubmit={handleSearch} className="relative">
+            <form onSubmit={handleSearch} className="relative hidden md:block">
               <input
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
                 placeholder="Search or ask anything…"
-                className="w-[320px] bg-page border border-border rounded-[10px] px-4 py-[8px] text-[13px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors"
+                className="w-[280px] bg-page border border-border rounded-[10px] px-4 py-[8px] text-[13px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors"
               />
             </form>
 
             {/* Bell */}
-            <button className="relative w-9 h-9 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-sand transition-colors">
+            <button className="w-9 h-9 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-sand transition-colors">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -260,16 +298,46 @@ export default function AppShell({ children, title = 'Dashboard' }) {
         </header>
 
         {/* Scrollable content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-[72px] md:pb-0">
           {children}
         </main>
       </div>
 
-      {/* ── Floating chat button ── */}
+      {/* ── Mobile bottom nav ── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)] z-40">
+        {[
+          { to: '/home', label: 'Home' },
+          { to: '/chat', label: 'Chat' },
+          { to: '/cabinet', label: 'Cabinet' },
+          { to: '/profile', label: 'Profile' },
+        ].map(({ to, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 no-underline ${isActive ? 'text-ink1' : 'text-ink3'}`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <span className={`w-5 h-5 flex items-center justify-center`}>
+                  {isActive
+                    ? <span className="w-5 h-5 rounded-full bg-orange-lt flex items-center justify-center"><span className="w-[6px] h-[6px] rounded-full bg-orange" /></span>
+                    : <span className="w-[6px] h-[6px] rounded-full bg-ink3" />
+                  }
+                </span>
+                <span className={`text-[10px] ${isActive ? 'font-medium text-ink1' : 'text-ink3'}`}>{label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* ── Floating chat FAB (above bottom nav on mobile) ── */}
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 w-[56px] h-[56px] rounded-full bg-orange shadow-[0_8px_24px_rgba(224,123,74,0.45)] flex items-center justify-center cursor-pointer hover:bg-orange-dk hover:scale-105 transition-all"
+          className="fixed bottom-20 right-5 md:bottom-6 md:right-6 z-40 w-[56px] h-[56px] rounded-full bg-orange shadow-[0_8px_24px_rgba(224,123,74,0.45)] flex items-center justify-center cursor-pointer hover:bg-orange-dk hover:scale-105 transition-all"
         >
           <SparkleIcon size={22} color="white" />
         </button>

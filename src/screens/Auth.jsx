@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Wave from '../components/Wave'
+import { api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`
 
@@ -22,18 +24,33 @@ function InputField({ label, type = 'text', placeholder, value, onChange }) {
 export default function Auth() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { setAuth } = useAuth()
+
   const initialMode = searchParams.get('mode') === 'login' ? 'login' : 'signup'
   const [mode, setMode] = useState(initialMode)
-
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const isLogin = mode === 'login'
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigate('/home')
+    setError('')
+    setLoading(true)
+    try {
+      const res = isLogin
+        ? await api.auth.login(email, password)
+        : await api.auth.register(email, password)
+      setAuth(res.data.token, res.data.email)
+      navigate(isLogin ? '/home' : '/onboarding')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -48,7 +65,6 @@ export default function Auth() {
           style={{ backgroundImage: GRAIN_SVG, backgroundRepeat: 'repeat', backgroundSize: '256px 256px' }}
         />
 
-        {/* Back link */}
         <a
           href="/"
           className="relative z-10 flex items-center gap-2 text-white/70 text-[13px] mb-8 hover:text-white transition-colors no-underline w-fit"
@@ -60,9 +76,7 @@ export default function Auth() {
         </a>
 
         <div className="relative z-10 text-center pb-12">
-          <span className="text-white/80 text-[13px] font-medium tracking-[0.1em] uppercase block mb-3">
-            recallth
-          </span>
+          <span className="text-white/80 text-[13px] font-medium tracking-[0.1em] uppercase block mb-3">recallth</span>
           <h1 className="font-display text-white text-[32px] leading-tight">
             {isLogin ? 'Welcome back' : 'Get started'}
           </h1>
@@ -76,24 +90,20 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Form card */}
+      {/* Form */}
       <div className="flex-1 flex flex-col items-center px-5 pt-6 pb-10">
         <div className="w-full max-w-[440px]">
           {/* Mode tabs */}
           <div className="flex rounded-[16px] bg-sand p-1 mb-6">
             <button
-              onClick={() => setMode('signup')}
-              className={`flex-1 rounded-[12px] py-[10px] text-[14px] font-medium transition-all ${
-                !isLogin ? 'bg-white text-ink1 shadow-sm' : 'text-ink3'
-              }`}
+              onClick={() => { setMode('signup'); setError('') }}
+              className={`flex-1 rounded-[12px] py-[10px] text-[14px] font-medium transition-all ${!isLogin ? 'bg-white text-ink1 shadow-sm' : 'text-ink3'}`}
             >
               Sign up
             </button>
             <button
-              onClick={() => setMode('login')}
-              className={`flex-1 rounded-[12px] py-[10px] text-[14px] font-medium transition-all ${
-                isLogin ? 'bg-white text-ink1 shadow-sm' : 'text-ink3'
-              }`}
+              onClick={() => { setMode('login'); setError('') }}
+              className={`flex-1 rounded-[12px] py-[10px] text-[14px] font-medium transition-all ${isLogin ? 'bg-white text-ink1 shadow-sm' : 'text-ink3'}`}
             >
               Log in
             </button>
@@ -102,8 +112,9 @@ export default function Auth() {
           {/* Google SSO */}
           <button
             type="button"
-            onClick={() => navigate('/home')}
-            className="w-full flex items-center justify-center gap-3 border border-border rounded-[14px] py-[13px] bg-white text-[15px] font-medium text-ink1 hover:bg-sand transition-colors cursor-pointer mb-5"
+            disabled
+            className="w-full flex items-center justify-center gap-3 border border-border rounded-[14px] py-[13px] bg-white text-[15px] font-medium text-ink1 hover:bg-sand transition-colors cursor-pointer mb-5 disabled:opacity-60"
+            title="Coming soon"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
@@ -121,44 +132,39 @@ export default function Auth() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* Form */}
+          {/* Form fields */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {!isLogin && (
-              <InputField
-                label="Name"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <InputField label="Name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
             )}
-            <InputField
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <InputField label="Email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
             <InputField
               label="Password"
               type="password"
-              placeholder={isLogin ? 'Your password' : 'Create a password'}
+              placeholder={isLogin ? 'Your password' : 'Min. 8 characters'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
 
+            {error && (
+              <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-[10px] px-4 py-3">
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="mt-2 rounded-pill bg-orange text-white text-[15px] font-medium py-[15px] hover:bg-orange-dk transition-colors cursor-pointer"
+              disabled={loading}
+              className="mt-2 rounded-pill bg-orange text-white text-[15px] font-medium py-[15px] hover:bg-orange-dk transition-colors cursor-pointer disabled:opacity-60"
             >
-              {isLogin ? 'Log in' : 'Create account'}
+              {loading ? 'Please wait…' : isLogin ? 'Log in' : 'Create account'}
             </button>
           </form>
 
-          {/* Footer link */}
           <p className="text-center text-[13px] text-ink3 mt-6">
             {isLogin ? "Don't have an account? " : 'Already have an account? '}
             <button
-              onClick={() => setMode(isLogin ? 'signup' : 'login')}
+              onClick={() => { setMode(isLogin ? 'signup' : 'login'); setError('') }}
               className="text-orange font-medium cursor-pointer"
             >
               {isLogin ? 'Sign up' : 'Log in'}
