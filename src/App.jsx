@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
+import WebShell from './components/WebShell'
 import Landing from './screens/Landing'
 import Auth from './screens/Auth'
 import Home from './screens/Home'
@@ -28,7 +29,7 @@ function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth()
   if (isLoading) return null
   if (!isAuthenticated) return <Navigate to="/auth?mode=login" replace />
-  return children
+  return <WebShell>{children}</WebShell>
 }
 
 function PublicRoute({ children }) {
