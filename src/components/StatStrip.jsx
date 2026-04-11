@@ -4,7 +4,7 @@ export default function StatStrip({ stats = [] }) {
       {stats.map((stat, i) => (
         <div
           key={i}
-          className="flex-1 flex flex-col items-center rounded-[16px] py-[14px] px-[20px] min-w-[90px]"
+          className="flex-1 flex flex-col items-center rounded-[16px] py-[14px] px-2"
           style={{ background: 'rgba(255,255,255,0.14)' }}
         >
           <span className="text-[24px] font-medium text-white leading-none">{stat.value}</span>
