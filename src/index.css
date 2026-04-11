@@ -21,20 +21,16 @@
   --font-sans: 'DM Sans', sans-serif;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  font-family: var(--font-sans);
-  background: var(--color-page);
-  color: var(--color-ink1);
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-page);
+    color: var(--color-ink1);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
 }
