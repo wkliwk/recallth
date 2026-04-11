@@ -28,4 +28,16 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }),
   },
+  cabinet: {
+    list: () => request('/cabinet'),
+    schedule: () => request('/cabinet/schedule'),
+    interactions: () => request('/cabinet/interactions'),
+  },
+  chat: {
+    history: () => request('/chat/history'),
+  },
+  profile: {
+    get: () => request('/profile'),
+    update: (data) => request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  },
 }

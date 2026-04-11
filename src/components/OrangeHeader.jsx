@@ -12,10 +12,12 @@ export default function OrangeHeader({ title, subtitle, pill, hasStats, avatar, 
               className="w-[52px] h-[52px] rounded-full flex items-center justify-center shrink-0"
               style={{ background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.3)' }}
             >
-              {typeof avatar === 'string' ? (
+              {typeof avatar === 'string' && avatar.startsWith('http') ? (
                 <img src={avatar} alt="" className="w-full h-full object-cover rounded-full" />
               ) : (
-                <span className="text-white text-[18px] font-medium">R</span>
+                <span className="text-white text-[18px] font-medium">
+                  {typeof avatar === 'string' ? avatar : 'U'}
+                </span>
               )}
             </div>
           )}
