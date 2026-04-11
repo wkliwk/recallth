@@ -345,15 +345,26 @@ export default function Landing() {
 
         <div className="relative z-10 text-center max-w-[600px] mx-auto">
           <h2
-            className="font-display text-white mb-4"
+            className="font-display text-white mb-4 whitespace-pre-line"
             style={{ fontSize: 'clamp(32px, 5vw, 52px)' }}
           >
-            Ready to know{'\n'}your stack?
+            {'Ready to know\nyour stack?'}
           </h2>
           <p className="text-white/65 text-[16px] font-light mb-8 max-w-[440px] mx-auto">
             Join athletes who never guess about their supplements again.
           </p>
-          <HeroButtons />
+          <div className="flex gap-3 justify-center flex-wrap">
+            <a href="#" className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] hover:opacity-90 transition-all cursor-pointer">
+              Get started — it's free
+            </a>
+            <a
+              href="#"
+              className="rounded-pill text-white text-[15px] px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] transition-all cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
+            >
+              Log in
+            </a>
+          </div>
         </div>
       </section>
 
