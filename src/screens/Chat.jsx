@@ -86,7 +86,7 @@ export default function Chat() {
       )}
 
       {/* Wave separator — sits on top of page bg, overlapping the orange */}
-      <div className="-mt-[22px]">
+      <div className="-mt-[40px]">
         <Wave />
       </div>
 

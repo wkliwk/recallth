@@ -92,16 +92,17 @@ function NavBar() {
 /* ------------------------------------------------------------------ */
 function HeroButtons() {
   return (
-    <div className="flex gap-3 justify-center">
-      <button className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] hover:bg-white/90 transition-colors cursor-pointer">
-        Start free
-      </button>
-      <button
-        className="rounded-pill text-white text-[15px] font-medium px-8 py-[14px] cursor-pointer transition-colors hover:bg-white/25"
+    <div className="flex gap-3 justify-center flex-wrap">
+      <a href="#cta" className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] hover:opacity-90 transition-all cursor-pointer">
+        Get started
+      </a>
+      <a
+        href="#features"
+        className="rounded-pill text-white text-[15px] px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] transition-all cursor-pointer"
         style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
       >
         Learn more
-      </button>
+      </a>
     </div>
   )
 }
@@ -132,7 +133,7 @@ export default function Landing() {
       {/* ============================================================ */}
       {/*  HERO                                                         */}
       {/* ============================================================ */}
-      <section className="relative min-h-screen bg-orange flex flex-col items-center justify-center px-6 overflow-hidden">
+      <section className="relative min-h-screen bg-orange flex flex-col items-center justify-center px-6 overflow-hidden" style={{ padding: '80px 24px 120px' }}>
         {/* Grain overlay */}
         <div
           className="absolute inset-0 z-0 pointer-events-none"
@@ -196,7 +197,7 @@ export default function Landing() {
         </div>
 
         {/* Wave at the bottom */}
-        <div className="absolute bottom-0 left-0 right-0 z-10">
+        <div className="absolute -bottom-[2px] left-0 right-0 z-10">
           <Wave />
         </div>
       </section>
@@ -206,7 +207,7 @@ export default function Landing() {
       {/* ============================================================ */}
       <section id="features" className="bg-page py-[100px] px-6">
         <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-14 reveal">
+          <div className="mb-14 reveal">
             <Badge>Why recallth</Badge>
             <h2
               className="font-display text-ink1 mb-3"
@@ -214,8 +215,8 @@ export default function Landing() {
             >
               Everything your stack needs
             </h2>
-            <p className="text-[16px] text-ink2 max-w-[480px] mx-auto">
-              Built for athletes and biohackers who want clarity, not clutter.
+            <p className="text-[16px] text-ink2 font-light leading-[1.7] max-w-[480px]">
+              From tracking to timing to conflict-checking — all in one place, always ready to answer.
             </p>
           </div>
 
@@ -258,8 +259,8 @@ export default function Landing() {
             >
               {'Ask anything\nabout your stack'}
             </h2>
-            <p className="text-[16px] text-ink2 mb-6 max-w-[400px]">
-              From timing to interactions, get instant answers powered by your personal supplement data.
+            <p className="text-[16px] text-ink2 font-light leading-[1.7] mb-8 max-w-[480px]">
+              Your personal supplement expert, available any time. No more guessing — just ask.
             </p>
             <button className="rounded-pill bg-orange text-white text-[15px] font-medium px-7 py-[14px] cursor-pointer hover:bg-orange-dk transition-colors">
               Try it free
@@ -309,7 +310,7 @@ export default function Landing() {
       {/* ============================================================ */}
       <section id="cabinet" className="bg-page py-[100px] px-6">
         <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-10 reveal">
+          <div className="mb-10 reveal" style={{ maxWidth: 560 }}>
             <Badge>Cabinet</Badge>
             <h2
               className="font-display text-ink1 mb-3 whitespace-pre-line"
@@ -317,12 +318,12 @@ export default function Landing() {
             >
               {'Your full stack,\nin one place'}
             </h2>
-            <p className="text-[16px] text-ink2 max-w-[440px] mx-auto">
-              Every supplement tracked, timed, and checked for conflicts automatically.
+            <p className="text-[16px] text-ink2 font-light leading-[1.7] max-w-[480px]">
+              Every supplement tracked with dose and timing. No spreadsheets, no guesswork.
             </p>
           </div>
 
-          <div className="reveal max-w-[480px] mx-auto flex flex-col gap-3">
+          <div className="reveal flex flex-col gap-[10px] mt-12">
             <SuppCard letter="C" name="Purple K Creatine" meta="Pre-workout" dose="3 g" />
             <SuppCard letter="H" name="Ballistic HMB 3.0" meta="Post-workout" dose="1.5 g" />
             <SuppCard letter="E" name="EPA Concentrate" meta="With meals" dose="2 g" />
@@ -347,10 +348,10 @@ export default function Landing() {
             className="font-display text-white mb-4"
             style={{ fontSize: 'clamp(32px, 5vw, 52px)' }}
           >
-            Ready to take control of your stack?
+            Ready to know{'\n'}your stack?
           </h2>
           <p className="text-white/65 text-[16px] font-light mb-8 max-w-[440px] mx-auto">
-            Join athletes who track smarter, not harder. AI-powered supplement intelligence, free to start.
+            Join athletes who never guess about their supplements again.
           </p>
           <HeroButtons />
         </div>

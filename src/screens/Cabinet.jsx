@@ -31,7 +31,7 @@ export default function Cabinet() {
       />
 
       {/* Wave separator */}
-      <div className="-mt-[22px]">
+      <div className="-mt-[40px]">
         <Wave />
       </div>
 

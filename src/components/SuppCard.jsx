@@ -10,10 +10,10 @@ export default function SuppCard({ letter, name, meta, dose }) {
   const colors = palette[letter] || palette.C
 
   return (
-    <div className="bg-white rounded-card border border-border px-5 py-[14px] flex items-center gap-3">
+    <div className="bg-white rounded-card border border-border px-5 py-[14px] flex items-center gap-[14px] transition-transform hover:translate-x-1">
       {/* Letter avatar */}
       <div
-        className="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[13px] font-semibold shrink-0"
+        className="w-[40px] h-[40px] rounded-full flex items-center justify-center text-[14px] font-medium shrink-0"
         style={{ background: colors.bg, color: colors.text }}
       >
         {letter}
@@ -21,14 +21,14 @@ export default function SuppCard({ letter, name, meta, dose }) {
 
       {/* Name + meta */}
       <div className="flex-1 min-w-0">
-        <p className="text-[9px] font-medium text-ink1 truncate">{name}</p>
-        {meta && <p className="text-[8px] text-ink3">{meta}</p>}
+        <p className="text-[14px] font-medium text-ink1 truncate">{name}</p>
+        {meta && <p className="text-[12px] text-ink3 mt-[2px]">{meta}</p>}
       </div>
 
       {/* Dose badge */}
       {dose && (
         <span
-          className="rounded-pill px-[10px] py-[3px] text-[10px] font-medium shrink-0"
+          className="rounded-pill px-[10px] py-1 text-[12px] font-medium shrink-0"
           style={{ background: colors.bg, color: colors.text }}
         >
           {dose}

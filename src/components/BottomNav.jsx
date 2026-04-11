@@ -20,7 +20,6 @@ export default function BottomNav() {
             to={tab.path}
             className="flex flex-col items-center gap-1 no-underline"
           >
-            {/* Dot / active indicator */}
             {active ? (
               <span className="w-5 h-5 rounded-full bg-orange-lt flex items-center justify-center">
                 <span className="w-[6px] h-[6px] rounded-full bg-orange" />
@@ -31,9 +30,8 @@ export default function BottomNav() {
               </span>
             )}
 
-            {/* Label */}
             <span
-              className={`text-[8px] ${active ? 'text-ink1' : 'text-ink3'}`}
+              className={`text-[10px] ${active ? 'text-ink1 font-medium' : 'text-ink3'}`}
             >
               {tab.label}
             </span>
