@@ -534,7 +534,9 @@ export default function Profile() {
         stats={stats}
       />
 
-      <Wave />
+      <div className="-mt-[40px]">
+        <Wave />
+      </div>
 
       {/* Quick action pills */}
       <div className="flex gap-3 px-5 py-4">
