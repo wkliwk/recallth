@@ -1,7 +1,7 @@
 import { useLanguage } from '../context/LanguageContext'
 
 export default function LanguageSelector() {
-  const { language, setLanguage } = useLanguage()
+  const { language, setLanguage, t } = useLanguage()
 
   const languages = [
     { code: 'en', label: 'English' },
@@ -11,7 +11,7 @@ export default function LanguageSelector() {
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="text-[13px] font-medium text-ink2">Language</label>
+      <label className="text-[13px] font-medium text-ink2">{t('language')}</label>
       <div className="flex gap-2">
         {languages.map(({ code, label }) => (
           <button

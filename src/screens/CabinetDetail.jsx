@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import AppShell from '../components/AppShell'
+import OrangeHeader from '../components/OrangeHeader'
+import Wave from '../components/Wave'
+import BottomNav from '../components/BottomNav'
 import { api } from '../services/api'
 
 /* ------------------------------------------------------------------ */
@@ -126,7 +128,6 @@ export default function CabinetDetail() {
     fetchData()
   }, [id])
 
-  // Interactions that involve this supplement
   const myInteractions = interactions.filter((ix) =>
     supp && ix.supplements && ix.supplements.some(
       (name) => name.toLowerCase() === supp.name.toLowerCase()
@@ -193,18 +194,28 @@ export default function CabinetDetail() {
   const evidenceColors = EVIDENCE_COLORS[evidenceLevel] || null
 
   return (
-    <AppShell title={supp?.name || 'Supplement'} backPath="/cabinet">
+    <div className="min-h-screen bg-page">
+      <OrangeHeader
+        title={supp?.name || 'Supplement'}
+        subtitle={supp?.type || ''}
+        onBack={() => navigate('/cabinet')}
+      />
+
+      <div className="-mt-[40px]">
+        <Wave />
+      </div>
+
       {loading ? (
-        <Skeleton />
+        <div className="px-5 pt-2">
+          <Skeleton />
+        </div>
       ) : error ? (
         <div className="px-5 pt-8 text-center">
           <p className="text-ink3 text-[14px]">{error}</p>
         </div>
       ) : editing ? (
-        /* ---------------------------------------------------------------- */
-        /*  Edit mode                                                        */
-        /* ---------------------------------------------------------------- */
-        <div className="px-5 pt-2 pb-6">
+        /* Edit mode */
+        <div className="px-5 pt-2 pb-[100px]">
           <div className="bg-white rounded-card border border-border p-5 flex flex-col gap-4">
 
             <EditField label="Name" required error={formErrors.name}>
@@ -317,11 +328,8 @@ export default function CabinetDetail() {
           </div>
         </div>
       ) : (
-        /* ---------------------------------------------------------------- */
-        /*  Read mode                                                        */
-        /* ---------------------------------------------------------------- */
-        <div className="px-5 pt-2 pb-6 flex flex-col gap-4">
-          {/* Main info card */}
+        /* Read mode */
+        <div className="px-5 pt-2 pb-[100px] flex flex-col gap-4">
           <div className="bg-white rounded-card border border-border p-5">
             <InfoRow label="Type" value={supp.type} />
             <InfoRow label="Dosage" value={supp.dosage} />
@@ -331,7 +339,6 @@ export default function CabinetDetail() {
             <InfoRow label="Notes" value={supp.notes} />
           </div>
 
-          {/* Evidence score card */}
           {evidenceLevel && (
             <div
               className="rounded-card p-5"
@@ -356,7 +363,6 @@ export default function CabinetDetail() {
             </div>
           )}
 
-          {/* Interactions specific to this supplement */}
           {myInteractions.length > 0 && (
             <div className="flex flex-col gap-2">
               <p className="text-[12px] font-semibold text-ink2 uppercase tracking-wide">Interactions</p>
@@ -386,7 +392,6 @@ export default function CabinetDetail() {
             </div>
           )}
 
-          {/* Action buttons */}
           <button
             onClick={() => setEditing(true)}
             className="w-full rounded-pill bg-orange text-white text-[15px] font-medium py-[14px] cursor-pointer hover:bg-orange-dk transition-colors"
@@ -424,6 +429,8 @@ export default function CabinetDetail() {
           )}
         </div>
       )}
-    </AppShell>
+
+      <BottomNav />
+    </div>
   )
 }

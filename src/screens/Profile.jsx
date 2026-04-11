@@ -8,6 +8,7 @@ import LanguageSelector from '../components/LanguageSelector'
 import Chip from '../components/Chip'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 function PencilIcon() {
@@ -452,6 +453,7 @@ const EMPTY_LIFESTYLE  = { stressLevel: '', smokingStatus: '', alcoholConsumptio
 export default function Profile() {
   const navigate = useNavigate()
   const { email, clearAuth } = useAuth()
+  const { t } = useLanguage()
 
   const [profileData, setProfileData] = useState(null)
   const [suppCount, setSuppCount]     = useState('—')
@@ -573,7 +575,7 @@ export default function Profile() {
           onClick={handleLogout}
           className="w-full border-[1.5px] border-orange text-orange rounded-pill py-[11px] text-[13px] font-medium cursor-pointer"
         >
-          Log out
+          {t('logOut')}
         </button>
       </div>
 

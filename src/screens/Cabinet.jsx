@@ -6,6 +6,7 @@ import BottomNav from '../components/BottomNav'
 import SuppCard from '../components/SuppCard'
 import FAB from '../components/FAB'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 /* ------------------------------------------------------------------ */
 /*  Evidence badge                                                     */
@@ -68,6 +69,7 @@ function getLetterColors(name) {
 /* ------------------------------------------------------------------ */
 export default function Cabinet() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [supplements, setSupplements] = useState([])
   const [interactions, setInteractions] = useState([])
   const [evidenceMap, setEvidenceMap] = useState({})
@@ -127,7 +129,7 @@ export default function Cabinet() {
     <div className="min-h-screen bg-page">
       {/* Header */}
       <OrangeHeader
-        title="Cabinet"
+        title={t('cabinetTitle')}
         subtitle={`${supplements.length} supplement${supplements.length !== 1 ? 's' : ''}`}
         hasStats={!loading}
         stats={stats}
@@ -158,7 +160,7 @@ export default function Cabinet() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <p className="text-[13px] font-medium" style={{ color: '#92400E' }}>
-            {interactions.length} interaction{interactions.length !== 1 ? 's' : ''} detected in your cabinet
+            {t('interactionWarning', interactions.length)}
           </p>
         </div>
       )}
@@ -216,8 +218,8 @@ export default function Cabinet() {
                     <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                   </svg>
                 </div>
-                <p className="text-ink2 text-[14px] font-medium">Your cabinet is empty.</p>
-                <p className="text-ink3 text-[13px] mt-1">Add your first supplement.</p>
+                <p className="text-ink2 text-[14px] font-medium">{t('cabinetEmpty')}</p>
+                <p className="text-ink3 text-[13px] mt-1">{t('cabinetEmptySub')}</p>
               </>
             ) : (
               <p className="text-ink3 text-[14px]">No supplements match your search.</p>

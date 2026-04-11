@@ -1,8 +1,22 @@
 import StatStrip from './StatStrip'
 
-export default function OrangeHeader({ title, subtitle, pill, hasStats, avatar, stats = [] }) {
+export default function OrangeHeader({ title, subtitle, pill, onPillClick, hasStats, avatar, stats = [], onBack }) {
   return (
     <div className="bg-orange px-5 pt-12 pb-4">
+      {/* Back button row (only when onBack is provided) */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-white/70 text-[13px] mb-3 hover:text-white transition-colors cursor-pointer"
+          aria-label="Go back"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </button>
+      )}
+
       {/* Top row */}
       <div className="flex items-start justify-between">
         {/* Left side: avatar + text */}
@@ -32,6 +46,7 @@ export default function OrangeHeader({ title, subtitle, pill, hasStats, avatar, 
         {/* Pill */}
         {pill && (
           <span
+            onClick={onPillClick}
             className="rounded-pill border border-white/30 text-white text-[12px] font-medium px-4 py-[6px] cursor-pointer"
             style={{ background: 'rgba(255,255,255,0.18)' }}
           >

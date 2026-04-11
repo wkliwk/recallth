@@ -1,14 +1,16 @@
 import { Link, useLocation } from 'react-router-dom'
-
-const tabs = [
-  { label: 'Home', path: '/home' },
-  { label: 'Chat', path: '/chat' },
-  { label: 'Cabinet', path: '/cabinet' },
-  { label: 'Profile', path: '/profile' },
-]
+import { useLanguage } from '../context/LanguageContext'
 
 export default function BottomNav() {
   const { pathname } = useLocation()
+  const { t } = useLanguage()
+
+  const tabs = [
+    { labelKey: 'home', path: '/home' },
+    { labelKey: 'chat', path: '/chat' },
+    { labelKey: 'cabinet', path: '/cabinet' },
+    { labelKey: 'profile', path: '/profile' },
+  ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-page border-t border-border flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)] md:hidden z-50">
@@ -31,10 +33,8 @@ export default function BottomNav() {
               </span>
             )}
 
-            <span
-              className={`text-[10px] ${active ? 'text-ink1 font-medium' : 'text-ink3'}`}
-            >
-              {tab.label}
+            <span className={`text-[10px] ${active ? 'text-ink1 font-medium' : 'text-ink3'}`}>
+              {t(tab.labelKey)}
             </span>
           </Link>
         )

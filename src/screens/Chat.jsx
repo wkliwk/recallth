@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import FloatingChat from '../components/FloatingChat'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
@@ -45,6 +46,7 @@ function TypingIndicator() {
 export default function Chat() {
   const [searchParams] = useSearchParams()
   const { email } = useAuth()
+  const { t } = useLanguage()
   const displayName = email ? email.split('@')[0] : 'there'
   const [messages, setMessages] = useState([])
   const [conversationId, setConversationId] = useState(null)
@@ -126,16 +128,16 @@ export default function Chat() {
       {/* Header */}
       {active ? (
         <OrangeHeader
-          subtitle="Stack review"
-          title="Today's plan"
-          pill="New chat"
+          subtitle={t('stackReview')}
+          title={t('todayPlan')}
+          pill={t('newChat')}
           onPillClick={handleNewChat}
         />
       ) : (
         <OrangeHeader
-          title={`${displayName} 👋`}
-          subtitle="Good morning"
-          pill="New chat"
+          title={t('chatGreeting', displayName)}
+          subtitle={t('goodMorningGreet')}
+          pill={t('newChat')}
           onPillClick={handleNewChat}
         />
       )}
@@ -181,7 +183,7 @@ export default function Chat() {
               ))}
             </div>
             <p className="text-ink3 text-[13px] text-center mt-4">
-              Tap a suggestion or ask anything...
+              {t('tapSuggestion')}
             </p>
           </div>
         </div>

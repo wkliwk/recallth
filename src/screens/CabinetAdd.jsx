@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import AppShell from '../components/AppShell'
+import OrangeHeader from '../components/OrangeHeader'
+import Wave from '../components/Wave'
+import BottomNav from '../components/BottomNav'
 import { api } from '../services/api'
 
 const TYPE_OPTIONS = ['Supplement', 'Medication', 'Vitamin', 'Herb', 'Other']
@@ -84,9 +86,18 @@ export default function CabinetAdd() {
   }
 
   return (
-    <AppShell title="Add Supplement" backPath="/cabinet">
-      <form onSubmit={handleSubmit} className="px-5 pt-2 pb-6">
-        {/* Form card */}
+    <div className="min-h-screen bg-page">
+      <OrangeHeader
+        title="Add Supplement"
+        subtitle="Track a new item"
+        onBack={() => navigate('/cabinet')}
+      />
+
+      <div className="-mt-[40px]">
+        <Wave />
+      </div>
+
+      <form onSubmit={handleSubmit} className="px-5 pt-2 pb-[100px]">
         <div className="bg-white rounded-card border border-border p-5 flex flex-col gap-4">
 
           <Field label="Name" required error={errors.name}>
@@ -182,12 +193,10 @@ export default function CabinetAdd() {
           </Field>
         </div>
 
-        {/* Submit error */}
         {errors.submit && (
           <p className="text-[13px] text-red-500 text-center mt-4">{errors.submit}</p>
         )}
 
-        {/* Submit button */}
         <button
           type="submit"
           disabled={submitting}
@@ -196,6 +205,8 @@ export default function CabinetAdd() {
           {submitting ? 'Adding...' : 'Add to cabinet'}
         </button>
       </form>
-    </AppShell>
+
+      <BottomNav />
+    </div>
   )
 }
