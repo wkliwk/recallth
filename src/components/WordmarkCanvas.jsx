@@ -25,6 +25,8 @@ export default function WordmarkCanvas({ onComplete }) {
     W_recallth: 0, W_recall: 0, W_th: 0, W_health: 0,
   })
   const completeFiredRef = useRef(false)
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current
@@ -158,7 +160,7 @@ export default function WordmarkCanvas({ onComplete }) {
             s.raf = null
             if (!completeFiredRef.current) {
               completeFiredRef.current = true
-              onComplete?.()
+              onCompleteRef.current?.()
             }
           }
         }
@@ -185,7 +187,7 @@ export default function WordmarkCanvas({ onComplete }) {
       draw(TOTAL)
       if (!completeFiredRef.current) {
         completeFiredRef.current = true
-        onComplete?.()
+        onCompleteRef.current?.()
       }
     }
 
@@ -200,7 +202,7 @@ export default function WordmarkCanvas({ onComplete }) {
       }
       window.removeEventListener('resize', handleResize)
     }
-  }, [setup, draw, onComplete])
+  }, [setup, draw])
 
   return (
     <canvas
