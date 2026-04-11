@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
-import BottomNav from '../components/BottomNav'
 import { api } from '../services/api'
 
 const TYPE_OPTIONS = ['Supplement', 'Medication', 'Vitamin', 'Herb', 'Other']
@@ -206,7 +205,6 @@ export default function CabinetAdd() {
         </button>
       </form>
 
-      <BottomNav />
     </div>
   )
 }

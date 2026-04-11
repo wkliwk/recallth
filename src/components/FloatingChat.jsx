@@ -60,7 +60,7 @@ function ChatPanel({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end"
+      className="fixed inset-0 z-[60] flex justify-end"
       style={{ background: 'rgba(42,34,26,0.25)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >

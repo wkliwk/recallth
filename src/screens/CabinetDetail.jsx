@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
-import BottomNav from '../components/BottomNav'
 import { api } from '../services/api'
 
 /* ------------------------------------------------------------------ */
@@ -430,7 +429,6 @@ export default function CabinetDetail() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   )
 }

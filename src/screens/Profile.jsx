@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
-import BottomNav from '../components/BottomNav'
 import LanguageSelector from '../components/LanguageSelector'
 import Chip from '../components/Chip'
 import { api } from '../services/api'
@@ -580,7 +579,6 @@ export default function Profile() {
         </button>
       </div>
 
-      <BottomNav />
     </div>
   )
 }

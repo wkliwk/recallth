@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
+import BottomNav from './BottomNav'
 import FloatingChat from './FloatingChat'
 
 const NAV = [
@@ -142,6 +143,9 @@ export default function WebShell({ children }) {
       <div className="flex-1 min-w-0 overflow-y-auto">
         {children}
       </div>
+
+      {/* Mobile bottom nav — hidden on md+ where sidebar takes over */}
+      <BottomNav />
 
       {/* FloatingChat available on all authenticated screens */}
       <FloatingChat />

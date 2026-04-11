@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
-import BottomNav from '../components/BottomNav'
 import Chip from '../components/Chip'
 import ChatBubble from '../components/ChatBubble'
 import InputPill from '../components/InputPill'
@@ -193,8 +192,6 @@ export default function Chat() {
         <InputPill onSend={sendMessage} />
       </div>
 
-      {/* Bottom navigation */}
-      <BottomNav />
     </div>
   )
 }

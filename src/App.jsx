@@ -29,6 +29,13 @@ function ProtectedRoute({ children }) {
   return <WebShell>{children}</WebShell>
 }
 
+function OnboardingRoute({ children }) {
+  const { isAuthenticated, isLoading } = useAuth()
+  if (isLoading) return null
+  if (!isAuthenticated) return <Navigate to="/auth?mode=login" replace />
+  return children
+}
+
 function PublicRoute({ children }) {
   const { isAuthenticated, isLoading } = useAuth()
   if (isLoading) return null
@@ -48,7 +55,7 @@ function AppRoutes() {
       <Route path="/chat"          element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/cabinet"       element={<ProtectedRoute><Cabinet /></ProtectedRoute>} />
       <Route path="/profile"       element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/onboarding"    element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+      <Route path="/onboarding"    element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
       <Route path="/cabinet/add"   element={<ProtectedRoute><CabinetAdd /></ProtectedRoute>} />
       <Route path="/cabinet/:id"   element={<ProtectedRoute><CabinetDetail /></ProtectedRoute>} />
       <Route path="/schedule"      element={<ProtectedRoute><Placeholder title="Schedule" /></ProtectedRoute>} />

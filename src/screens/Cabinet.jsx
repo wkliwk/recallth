@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
-import BottomNav from '../components/BottomNav'
 import SuppCard from '../components/SuppCard'
 import FAB from '../components/FAB'
 import { api } from '../services/api'
@@ -258,9 +257,6 @@ export default function Cabinet() {
 
       {/* FAB — navigates to add */}
       <FAB onClick={() => navigate('/cabinet/add')} />
-
-      {/* Bottom navigation */}
-      <BottomNav />
     </div>
   )
 }
