@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recallth — Web Dashboard Wireframe</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --orange:   #E07B4A;
+    --ink1:     #2A221A;
+    --ink2:     #7A6A5A;
+    --ink3:     #B0A898;
+    --sand:     #F2EDE4;
+    --page-bg:  #FBF9F5;
+    --border:   #EDE8E0;
+    --white:    #FFFFFF;
+    --amber:    #D97706;
+    --amber-bg: #FFFBEB;
+    --amber-bd: #FEF3C7;
+    --green:    #059669;
+    --green-bg: #ECFDF5;
+    --purple:   #7C3AED;
+    --purple-bg:#F5F3FF;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #E8E3DB;
+    padding: 48px;
+    color: var(--ink1);
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--orange);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .meta {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  /* ─── LAYOUT SHELL ───────────────────────────────────────────────── */
+  .dashboard {
+    display: flex;
+    width: 1320px;
+    height: 900px;
+    margin: 0 auto;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+
+  /* ─── SIDEBAR ────────────────────────────────────────────────────── */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wordmark {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--orange);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--orange);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'DM Serif Display', serif;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .nav-item.active {
+    background: rgba(224, 123, 74, 0.1);
+    color: var(--orange);
+    font-weight: 600;
+  }
+
+  .nav-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .sidebar-bottom {
+    padding: 16px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--orange);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 600; color: var(--ink1); }
+  .user-plan { font-size: 11px; color: var(--ink3); }
+
+  /* ─── MAIN AREA ──────────────────────────────────────────────────── */
+  .main {
+    flex: 1;
+    background: var(--page-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    height: 60px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    gap: 24px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--ink1);
+    min-width: 120px;
+  }
+
+  .topbar-search {
+    flex: 1;
+    max-width: 420px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--page-bg);
+    padding: 0 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+  }
+
+  .bell-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink2);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .bell-dot {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--amber);
+    border: 2px solid white;
+  }
+
+  .topbar-avatar {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--orange);
+    color: white; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Scrollable content */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+  }
+
+  /* ─── GREETING ───────────────────────────────────────────────────── */
+  .greeting-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .greeting-label {
+    font-size: 14px;
+    color: var(--ink2);
+    margin-bottom: 4px;
+  }
+
+  .greeting-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--ink1);
+    line-height: 1;
+  }
+
+  .date-badge {
+    font-size: 13px;
+    color: var(--ink2);
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+  }
+
+  /* ─── STATS STRIP ────────────────────────────────────────────────── */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-card.green  .stat-value { color: var(--green); }
+  .stat-card.orange .stat-value { color: var(--orange); }
+  .stat-card.purple .stat-value { color: var(--purple); }
+  .stat-card.ink    .stat-value { color: var(--ink1); }
+
+  /* ─── TWO-COLUMN GRID ────────────────────────────────────────────── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ─── SCHEDULE PANEL ─────────────────────────────────────────────── */
+  .section-heading {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-link {
+    font-size: 12px;
+    color: var(--orange);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+  }
+
+  .schedule-block {
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .schedule-block-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .block-morning  { background: #FFFBEB; }
+  .block-prework  { background: #EFF6FF; }
+  .block-evening  { background: #F5F3FF; }
+  .block-morning  .schedule-block-header { color: var(--amber); border-color: var(--amber-bd); }
+  .block-prework  .schedule-block-header { color: #2563EB;       border-color: #BFDBFE; }
+  .block-evening  .schedule-block-header { color: var(--purple); border-color: #DDD6FE; }
+
+  .time-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink3);
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+
+  .pill-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .pill-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink1);
+    font-weight: 500;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .pill-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .pill-dose {
+    font-size: 11px;
+    color: var(--ink3);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  .pill-name { display: flex; flex-direction: column; }
+
+  /* ─── RIGHT COLUMN ───────────────────────────────────────────────── */
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Quick Ask */
+  .ask-card {
+    background: var(--purple-bg);
+    border: 1px solid #DDD6FE;
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .ask-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .ai-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--purple);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+
+  .ask-title { font-size: 15px; font-weight: 600; color: var(--ink1); }
+  .ask-sub   { font-size: 12px; color: var(--ink2); }
+
+  .ask-input {
+    width: 100%;
+    border: 1px solid #DDD6FE;
+    border-radius: 10px;
+    background: var(--white);
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink3);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .send-btn {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--purple);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+
+  .quick-prompts { display: flex; flex-direction: column; gap: 6px; }
+
+  .prompt-chip {
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: var(--white);
+    border: 1px solid #DDD6FE;
+    font-size: 12px;
+    color: var(--ink2);
+    cursor: pointer;
+  }
+
+  /* Conflict alert */
+  .conflict-card {
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-bd);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .conflict-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .alert-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: #FEF3C7;
+    border: 1px solid var(--amber-bd);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+
+  .conflict-title  { font-size: 14px; font-weight: 600; color: var(--ink1); }
+  .conflict-body   { font-size: 12px; color: var(--amber); margin-bottom: 10px; }
+  .conflict-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600; color: var(--orange);
+    cursor: pointer;
+  }
+
+  /* Recent conversations */
+  .recent-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .recent-header {
+    padding: 14px 16px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .chat-row:last-child { border-bottom: none; }
+
+  .chat-row-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--purple-bg);
+    border: 1px solid #DDD6FE;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--purple); font-size: 13px; flex-shrink: 0;
+  }
+
+  .chat-row-title { font-size: 13px; font-weight: 500; color: var(--ink1); }
+  .chat-row-meta  { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .chat-row-arrow { margin-left: auto; color: var(--ink3); font-size: 14px; }
+
+  /* ─── ANNOTATION OVERLAY ─────────────────────────────────────────── */
+  .annotations {
+    width: 1320px;
+    margin: 48px auto 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .anno-section { }
+  .anno-title { font-size: 11px; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+  .anno-item  { font-size: 13px; color: var(--ink2); line-height: 1.7; padding-left: 14px; border-left: 2px solid var(--border); margin-bottom: 8px; }
+  .anno-item strong { color: var(--ink1); }
+
+  .disclaimer { text-align:center; font-size:11px; color:var(--ink3); margin-top:48px; }
+</style>
+</head>
+<body>
+
+<h1>Recallth — Web Dashboard</h1>
+<div class="meta">Wireframe / Mockup &bull; Desktop 1440px &bull; Design v1.0 &bull; React + TailwindCSS v4</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DASHBOARD SHELL
+═══════════════════════════════════════════════════════════════════ -->
+<div class="dashboard">
+
+  <!-- ── SIDEBAR ───────────────────────────────────────────────────── -->
+  <nav class="sidebar">
+
+    <div class="sidebar-logo">
+      <div class="wordmark">
+        <div class="logo-icon">R</div>
+        Recallth
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V13h6v8"/></svg>
+        Home
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Chat
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 12h18"/><path d="M12 3v18"/><circle cx="8" cy="7.5" r="0.8" fill="currentColor" stroke="none"/><circle cx="16" cy="7.5" r="0.8" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r="0.8" fill="currentColor" stroke="none"/><circle cx="16" cy="16.5" r="0.8" fill="currentColor" stroke="none"/></svg>
+        Cabinet
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+        Profile
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="avatar">R</div>
+      <div class="user-info">
+        <div class="user-name">Ricky</div>
+        <div class="user-plan">Free plan</div>
+      </div>
+    </div>
+
+  </nav>
+
+  <!-- ── MAIN AREA ─────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search or ask anything…
+      </div>
+      <div class="topbar-actions">
+        <div class="bell-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="bell-dot"></div>
+        </div>
+        <div class="topbar-avatar">R</div>
+      </div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="content">
+
+      <!-- Greeting -->
+      <div class="greeting-row">
+        <div>
+          <div class="greeting-label">Good morning</div>
+          <div class="greeting-name">Good morning, Ricky</div>
+        </div>
+        <div class="date-badge">Friday, April 11</div>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="stats-strip">
+        <div class="stat-card ink">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Supplements</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Conflicts</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-value">14d</div>
+          <div class="stat-label">Streak</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-value">AI</div>
+          <div class="stat-label">Powered</div>
+        </div>
+      </div>
+
+      <!-- Two-column layout -->
+      <div class="two-col">
+
+        <!-- LEFT: Schedule -->
+        <div>
+          <div class="section-heading">
+            Today's Schedule
+            <span class="section-link">View all →</span>
+          </div>
+
+          <!-- Morning block -->
+          <div class="schedule-block block-morning">
+            <div class="schedule-block-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              Morning
+              <span class="time-badge">7:00 AM</span>
+            </div>
+            <div class="pill-grid">
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#F59E0B;"></div>
+                <div class="pill-name">
+                  Vitamin D3
+                  <span class="pill-dose">5,000 IU · Daily</span>
+                </div>
+              </div>
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#3B82F6;"></div>
+                <div class="pill-name">
+                  Omega-3
+                  <span class="pill-dose">2g · Daily</span>
+                </div>
+              </div>
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#8B5CF6;"></div>
+                <div class="pill-name">
+                  Vitamin B12
+                  <span class="pill-dose">1,000 mcg · Daily</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pre-workout block -->
+          <div class="schedule-block block-prework">
+            <div class="schedule-block-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Pre-Workout
+              <span class="time-badge">5:30 PM</span>
+            </div>
+            <div class="pill-grid">
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#2563EB;"></div>
+                <div class="pill-name">
+                  Creatine
+                  <span class="pill-dose">5g · Daily</span>
+                </div>
+              </div>
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#059669;"></div>
+                <div class="pill-name">
+                  Magnesium
+                  <span class="pill-dose">500mg · Daily</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evening block -->
+          <div class="schedule-block block-evening">
+            <div class="schedule-block-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              Evening
+              <span class="time-badge">9:00 PM</span>
+            </div>
+            <div class="pill-grid">
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#7C3AED;"></div>
+                <div class="pill-name">
+                  Zinc
+                  <span class="pill-dose">15mg · Daily</span>
+                </div>
+              </div>
+              <div class="pill-card">
+                <div class="pill-dot" style="background:#7C3AED;"></div>
+                <div class="pill-name">
+                  Magnesium Glycinate
+                  <span class="pill-dose">400mg · Daily</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Ask + Alerts + Recent -->
+        <div class="right-col">
+
+          <!-- Quick Ask -->
+          <div class="ask-card">
+            <div class="ask-header">
+              <div class="ai-icon">✦</div>
+              <div>
+                <div class="ask-title">Ask Recallth AI</div>
+                <div class="ask-sub">I remember your full health profile</div>
+              </div>
+            </div>
+            <div class="ask-input">
+              <span>Ask about interactions, dosing, timing…</span>
+              <div class="send-btn">↑</div>
+            </div>
+            <div class="quick-prompts">
+              <div class="prompt-chip">Should I take D3 with food?</div>
+              <div class="prompt-chip">Check my interactions</div>
+              <div class="prompt-chip">Best time for magnesium?</div>
+            </div>
+          </div>
+
+          <!-- Conflict alert -->
+          <div class="conflict-card">
+            <div class="conflict-header">
+              <div class="alert-icon">⚠</div>
+              <div class="conflict-title">1 Conflict Detected</div>
+            </div>
+            <div class="conflict-body">Magnesium + Metformin — moderate interaction. May reduce Metformin absorption.</div>
+            <div class="conflict-action">View full report →</div>
+          </div>
+
+          <!-- Recent conversations -->
+          <div class="recent-card">
+            <div class="recent-header">Recent Conversations</div>
+            <div class="chat-row">
+              <div class="chat-row-icon">✦</div>
+              <div>
+                <div class="chat-row-title">B12 timing and absorption</div>
+                <div class="chat-row-meta">2 hours ago · 4 messages</div>
+              </div>
+              <div class="chat-row-arrow">›</div>
+            </div>
+            <div class="chat-row">
+              <div class="chat-row-icon">✦</div>
+              <div>
+                <div class="chat-row-title">Creatine + exercise timing</div>
+                <div class="chat-row-meta">Yesterday · 6 messages</div>
+              </div>
+              <div class="chat-row-arrow">›</div>
+            </div>
+            <div class="chat-row">
+              <div class="chat-row-icon" style="background:var(--green-bg);border-color:#A7F3D0;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.8"><path d="M10.5 1.5l-8 8a5.66 5.66 0 0 0 8 8l8-8a5.66 5.66 0 0 0-8-8z"/><line x1="6" y1="14" x2="14" y2="6"/></svg>
+              </div>
+              <div>
+                <div class="chat-row-title">Added Omega-3 Fish Oil</div>
+                <div class="chat-row-meta">2 days ago · Cabinet update</div>
+              </div>
+              <div class="chat-row-arrow">›</div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /two-col -->
+
+    </div><!-- /content -->
+  </main><!-- /main -->
+</div><!-- /dashboard -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DESIGN ANNOTATIONS
+═══════════════════════════════════════════════════════════════════ -->
+<div class="annotations">
+
+  <div class="anno-section">
+    <div class="anno-title">Layout Structure</div>
+    <div class="anno-item"><strong>Shell:</strong> 100vw × 100vh, flex row. Fixed sidebar + flex-1 main area.</div>
+    <div class="anno-item"><strong>Sidebar:</strong> 240px fixed width, white bg, no scroll. Flex column with logo top, nav middle, user bottom.</div>
+    <div class="anno-item"><strong>Top bar:</strong> 60px fixed height, white bg, border-bottom. Contains page title + search + actions.</div>
+    <div class="anno-item"><strong>Content area:</strong> flex-1, overflow-y: auto, 32px padding all sides. Max practical content width ~880px inside the main panel.</div>
+    <div class="anno-item"><strong>Two-column grid:</strong> <code>grid-template-columns: 1fr 400px</code>, 24px gap. Left for schedule, right for AI/alerts/recent.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Sidebar Detail</div>
+    <div class="anno-item"><strong>Logo area:</strong> 28px top padding, logo icon (32×32, 10px radius, #E07B4A bg) + wordmark "Recallth" in DM Serif Display 22px.</div>
+    <div class="anno-item"><strong>Nav items:</strong> 40px tall, 10px border-radius, 10px vertical padding, 14px font. Active = orange tint bg + orange text. Icons are 20×20 stroke SVGs.</div>
+    <div class="anno-item"><strong>Active indicator:</strong> background rgba(224,123,74,0.1), no left border stripe — relies on bg color only.</div>
+    <div class="anno-item"><strong>User section:</strong> border-top, flex row, 36×36 avatar (orange, 10px radius), name in 600 weight, plan in ink3.</div>
+    <div class="anno-item"><strong>No collapse on 1280px</strong> — sidebar stays fixed. Below 1024px (tablet) it becomes a hamburger menu (out of scope for this wireframe).</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Greeting &amp; Stats Strip</div>
+    <div class="anno-item"><strong>Greeting:</strong> Sub-label "Good morning" in ink2 14px, name in DM Serif Display 32px ink1. Date badge right-aligned, white card style.</div>
+    <div class="anno-item"><strong>Stats strip:</strong> 4-column equal grid, white cards, 1px border. Value in DM Serif Display 28px (colored per type). Label in ink3 12px uppercase.</div>
+    <div class="anno-item"><strong>Stats content:</strong> 5 = supplement count (ink), 0 = conflicts (green), 14d = streak (orange), AI = powered badge (purple).</div>
+    <div class="anno-item"><strong>Zero conflicts:</strong> Stat card stays green — not amber. Only shows amber if &gt;0 conflicts detected.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Today's Schedule Panel</div>
+    <div class="anno-item"><strong>Three time blocks:</strong> Morning (amber tint), Pre-Workout (blue tint), Evening (purple tint). Each block is a rounded card 14px radius.</div>
+    <div class="anno-item"><strong>Block header:</strong> Icon + label + time-badge pill. Time badge is white/border, floated right via margin-left: auto.</div>
+    <div class="anno-item"><strong>Pill cards:</strong> White, 1px border, 10px radius. Color dot (8px circle) + name (500 weight, 13px) + dose line (ink3, 11px). Flex-wrap so they reflow.</div>
+    <div class="anno-item"><strong>Empty state:</strong> If no supplements in a time slot, show dashed-border "Add supplement" card instead of pill-grid.</div>
+    <div class="anno-item"><strong>Interaction:</strong> Clicking a supplement card opens a details drawer or modal. Not part of this dashboard wireframe.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Right Column: AI Ask Card</div>
+    <div class="anno-item"><strong>Card bg:</strong> #F5F3FF (purple-bg), border #DDD6FE. 20px padding, 14px radius.</div>
+    <div class="anno-item"><strong>AI icon:</strong> 36×36, 10px radius, solid purple #7C3AED, white sparkle glyph. Matches mobile Chat FAB style.</div>
+    <div class="anno-item"><strong>Input row:</strong> White bg, border #DDD6FE, 12px radius. Placeholder text + send button (purple square, 28×28) on the right edge.</div>
+    <div class="anno-item"><strong>Quick prompts:</strong> 3 pre-set chips. White bg, #DDD6FE border, 8px radius. Full-width stacked. Clicking a chip pre-fills the input and focuses it.</div>
+    <div class="anno-item"><strong>Routing:</strong> Submitting the input navigates to /chat with the message pre-loaded. Does NOT open a modal on the dashboard.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Right Column: Conflict Alert</div>
+    <div class="anno-item"><strong>Visibility:</strong> Only shown if &gt;0 conflicts exist. If 0 conflicts, this entire card is hidden (not replaced with empty state).</div>
+    <div class="anno-item"><strong>Card bg:</strong> #FFFBEB (amber-bg), border #FEF3C7. Icon is 28×28 amber-tinted square with ⚠ glyph.</div>
+    <div class="anno-item"><strong>Copy pattern:</strong> "[Drug A] + [Drug B] — [severity] interaction. [One-line consequence]." Max 2 conflicts shown in this card; "View all N conflicts →" if more.</div>
+    <div class="anno-item"><strong>CTA:</strong> "View full report →" in orange, links to /cabinet with conflict filter active.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Right Column: Recent Conversations</div>
+    <div class="anno-item"><strong>Card:</strong> White bg, border, 14px radius, no padding (rows go edge-to-edge with their own padding).</div>
+    <div class="anno-item"><strong>Row icon:</strong> 32×32, 9px radius. Purple-tinted for AI chats, green-tinted for cabinet events (pill was added/removed).</div>
+    <div class="anno-item"><strong>Row content:</strong> Title 13px 500 + meta line 11px ink3. Arrow › right-aligned. Entire row is clickable, navigates to /chat/:id.</div>
+    <div class="anno-item"><strong>Limit:</strong> Show 3 most recent. "View all conversations →" link below the card.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Top Bar Detail</div>
+    <div class="anno-item"><strong>Search bar:</strong> Max-width 420px, centered between title and actions. On focus, border turns orange. On submit, navigates to /chat with query.</div>
+    <div class="anno-item"><strong>Notification bell:</strong> 36×36 white card button. Amber dot indicator when unread. Clicking opens a dropdown (not in this wireframe).</div>
+    <div class="anno-item"><strong>Avatar:</strong> 36×36, same orange+initial style as sidebar. Clicking opens a small dropdown with Settings / Sign Out.</div>
+  </div>
+
+  <div class="anno-section">
+    <div class="anno-title">Tokens Used</div>
+    <div class="anno-item"><strong>Colors:</strong> orange #E07B4A · ink1 #2A221A · ink2 #7A6A5A · ink3 #B0A898 · sand #F2EDE4 · page-bg #FBF9F5 · border #EDE8E0</div>
+    <div class="anno-item"><strong>Supporting:</strong> amber #D97706 · green #059669 · purple #7C3AED (from mobile palette — add to design system)</div>
+    <div class="anno-item"><strong>Fonts:</strong> DM Serif Display (headings, stats, wordmark) · DM Sans 400/500/600/700 (all UI text)</div>
+    <div class="anno-item"><strong>Radii:</strong> 10px (inputs, small cards) · 12px (stat cards) · 14px (main cards) · 16px (shell)</div>
+    <div class="anno-item"><strong>Spacing base:</strong> 4px grid. Primary gutters: 24px content gap, 32px content padding, 12px card padding.</div>
+  </div>
+
+</div>
+
+<div class="disclaimer">Not medical advice. Always consult your doctor. &bull; Recallth Design System v1.0 &bull; Web Dashboard Wireframe</div>
+
+</body>
+</html>

@@ -33,8 +33,7 @@ export default function Auth() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    // Navigate to chat as placeholder for real auth
-    navigate('/chat')
+    navigate('/home')
   }
 
   return (
@@ -103,7 +102,7 @@ export default function Auth() {
           {/* Google SSO */}
           <button
             type="button"
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate('/home')}
             className="w-full flex items-center justify-center gap-3 border border-border rounded-[14px] py-[13px] bg-white text-[15px] font-medium text-ink1 hover:bg-sand transition-colors cursor-pointer mb-5"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
