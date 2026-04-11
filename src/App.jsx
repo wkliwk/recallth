@@ -8,20 +8,17 @@ import Home from './screens/Home'
 import Chat from './screens/Chat'
 import Cabinet from './screens/Cabinet'
 import Profile from './screens/Profile'
-import AppShell from './components/AppShell'
 import Onboarding from './screens/Onboarding'
 import CabinetAdd from './screens/CabinetAdd'
 import CabinetDetail from './screens/CabinetDetail'
 
-// Placeholder screens for Wave 2/3 — replaced when those issues are built
+// Placeholder screens for routes not yet built
 function Placeholder({ title }) {
   return (
-    <AppShell title={title}>
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-ink3">
-        <p className="text-[15px] font-medium">{title}</p>
-        <p className="text-[13px]">Coming soon</p>
-      </div>
-    </AppShell>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-ink3 px-5">
+      <p className="text-[15px] font-medium">{title}</p>
+      <p className="text-[13px]">Coming soon</p>
+    </div>
   )
 }
 

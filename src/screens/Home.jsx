@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import AppShell from '../components/AppShell'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -226,8 +225,7 @@ export default function Home() {
   ]
 
   return (
-    <AppShell title="Dashboard">
-      <div className="px-8 py-7 max-w-[960px]">
+    <div className="px-5 py-6 md:px-8 md:py-7 max-w-[960px]">
 
         {/* ── Greeting row ── */}
         <div className="flex items-end justify-between mb-6">
@@ -411,7 +409,6 @@ export default function Home() {
           </div>
         </div>
 
-      </div>
-    </AppShell>
+    </div>
   )
 }
