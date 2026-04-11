@@ -6,8 +6,8 @@ const palette = {
   W: { bg: '#FDE8DE', text: '#7A2A1A' },
 }
 
-export default function SuppCard({ letter, name, meta, dose }) {
-  const colors = palette[letter] || palette.C
+export default function SuppCard({ letter, name, meta, dose, colors: colorsProp }) {
+  const colors = colorsProp || palette[letter] || palette.C
 
   return (
     <div className="bg-white rounded-card border border-border px-5 py-[14px] flex items-center gap-[14px] transition-transform hover:translate-x-1">
