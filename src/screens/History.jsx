@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 /* ------------------------------------------------------------------ */
 /*  Relative time helper                                               */
@@ -81,11 +82,11 @@ function SkeletonRow() {
 /* ------------------------------------------------------------------ */
 /*  Conversation row                                                   */
 /* ------------------------------------------------------------------ */
-function ConversationRow({ item, onClick }) {
+function ConversationRow({ item, fallback, onClick }) {
   const title =
     item.title ||
     item.messages?.[0]?.content?.slice(0, 40) ||
-    'Conversation'
+    fallback
 
   const time = item.createdAt ? relativeTime(item.createdAt) : ''
   const countLabel =
@@ -118,6 +119,7 @@ function ConversationRow({ item, onClick }) {
 /* ------------------------------------------------------------------ */
 export default function History() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -143,7 +145,7 @@ export default function History() {
     const title =
       item.title ||
       item.messages?.[0]?.content?.slice(0, 40) ||
-      'Conversation'
+      t('conversationFallback')
     return title.toLowerCase().includes(search.toLowerCase())
   })
 
@@ -151,8 +153,8 @@ export default function History() {
     <div className="min-h-screen bg-page">
       {/* Header */}
       <OrangeHeader
-        title="History"
-        subtitle={`${conversations.length} conversation${conversations.length !== 1 ? 's' : ''}`}
+        title={t('historyTitle')}
+        subtitle={t('historySub', conversations.length)}
       />
 
       {/* Wave separator */}
@@ -177,7 +179,7 @@ export default function History() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search conversations..."
+            placeholder={t('searchConversations')}
             className="w-full bg-white border-[1.5px] border-border-md rounded-pill py-[10px] pr-4 pl-10 text-[11px] text-ink1 placeholder:text-ink4 outline-none"
           />
         </div>
@@ -216,16 +218,15 @@ export default function History() {
                     <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
                   </svg>
                 </div>
-                <p className="text-ink2 text-[14px] font-medium">No conversations yet</p>
+                <p className="text-ink2 text-[14px] font-medium">{t('noConversationsTitle')}</p>
                 <p className="text-ink3 text-[13px] mt-1">
                   <Link to="/chat" className="text-orange underline">
-                    Start a conversation
-                  </Link>{' '}
-                  to see it here.
+                    {t('startConversation')}
+                  </Link>
                 </p>
               </>
             ) : (
-              <p className="text-ink3 text-[14px]">No conversations match your search.</p>
+              <p className="text-ink3 text-[14px]">{t('noConversationsMatch')}</p>
             )}
           </div>
         ) : (
@@ -233,6 +234,7 @@ export default function History() {
             <ConversationRow
               key={item._id}
               item={item}
+              fallback={t('conversationFallback')}
               onClick={() => navigate('/chat?id=' + item._id)}
             />
           ))

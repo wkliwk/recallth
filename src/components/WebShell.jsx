@@ -4,10 +4,10 @@ import { useLanguage } from '../context/LanguageContext'
 import BottomNav from './BottomNav'
 import FloatingChat from './FloatingChat'
 
-const NAV = [
+const NAV_KEYS = [
   {
     to: '/home',
-    label: 'Home',
+    key: 'home',
     icon: (active) => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
@@ -17,7 +17,7 @@ const NAV = [
   },
   {
     to: '/chat',
-    label: 'Chat',
+    key: 'chat',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -26,7 +26,7 @@ const NAV = [
   },
   {
     to: '/cabinet',
-    label: 'Cabinet',
+    key: 'cabinet',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="3" />
@@ -37,7 +37,7 @@ const NAV = [
   },
   {
     to: '/schedule',
-    label: 'Schedule',
+    key: 'schedule',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -49,7 +49,7 @@ const NAV = [
   },
   {
     to: '/stack-builder',
-    label: 'Stack Builder',
+    key: 'stackBuilder',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -58,7 +58,7 @@ const NAV = [
   },
   {
     to: '/doctor-prep',
-    label: 'Doctor Prep',
+    key: 'doctorPrep',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 12 19.79 19.79 0 0 1 1.07 3.37a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z" />
@@ -67,7 +67,7 @@ const NAV = [
   },
   {
     to: '/history',
-    label: 'History',
+    key: 'history',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="9" />
@@ -77,7 +77,7 @@ const NAV = [
   },
   {
     to: '/profile',
-    label: 'Profile',
+    key: 'profile',
     icon: () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="8" r="4" />
@@ -107,7 +107,7 @@ export default function WebShell({ children }) {
 
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-          {NAV.map(({ to, label, icon }) => (
+          {NAV_KEYS.map(({ to, key, icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -120,7 +120,7 @@ export default function WebShell({ children }) {
               {({ isActive }) => (
                 <>
                   <span className={isActive ? 'text-orange' : 'text-ink3'}>{icon(isActive)}</span>
-                  {label}
+                  {t(key)}
                 </>
               )}
             </NavLink>
@@ -134,7 +134,7 @@ export default function WebShell({ children }) {
           </div>
           <div className="min-w-0">
             <p className="text-[13px] font-semibold text-ink1 truncate">{displayName}</p>
-            <p className="text-[11px] text-ink3">Free plan</p>
+            <p className="text-[11px] text-ink3">{t('freePlan')}</p>
           </div>
         </div>
       </aside>

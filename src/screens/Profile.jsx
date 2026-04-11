@@ -8,6 +8,7 @@ import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 
+
 // ── Icons ──────────────────────────────────────────────────────────────────
 function PencilIcon() {
   return (
@@ -69,6 +70,7 @@ function Field({ label, value, onChange }) {
 }
 
 function EditActions({ saving, error, onSave, onCancel }) {
+  const { t } = useLanguage()
   return (
     <>
       {error && <p className="text-[12px] text-red-500">{error}</p>}
@@ -78,13 +80,13 @@ function EditActions({ saving, error, onSave, onCancel }) {
           disabled={saving}
           className="flex-1 bg-orange text-white rounded-pill py-[9px] text-[12px] font-medium disabled:opacity-60 cursor-pointer"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('savingEllipsis') : t('saveButton')}
         </button>
         <button
           onClick={onCancel}
           className="flex-1 border border-border-md text-ink2 rounded-pill py-[9px] text-[12px] font-medium cursor-pointer"
         >
-          Cancel
+          {t('cancelButton')}
         </button>
       </div>
     </>
@@ -139,6 +141,7 @@ function ProfileSection({ title, open, onToggle, onEdit, children }) {
 
 // ── About me ───────────────────────────────────────────────────────────────
 function AboutSection({ data, onSave }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data)
@@ -154,31 +157,31 @@ function AboutSection({ data, onSave }) {
   async function save() {
     setSaving(true); setError(null)
     try { await onSave({ body: draft }); setEditing(false) }
-    catch { setError('Failed to save — try again') }
+    catch { setError(t('failedToSave')) }
     finally { setSaving(false) }
   }
 
   return (
     <ProfileSection
-      title="About me"
+      title={t('aboutMe')}
       open={open}
       onToggle={() => setOpen((p) => !p)}
       onEdit={() => setEditing(true)}
     >
       {editing ? (
         <div className="flex flex-col gap-3">
-          <Field label="Age" value={draft.age} onChange={(v) => set('age', v)} />
-          <Field label="Height" value={draft.height} onChange={(v) => set('height', v)} />
-          <Field label="Weight" value={draft.weight} onChange={(v) => set('weight', v)} />
-          <Field label="Gender" value={draft.gender} onChange={(v) => set('gender', v)} />
+          <Field label={t('fieldAge')} value={draft.age} onChange={(v) => set('age', v)} />
+          <Field label={t('fieldHeight')} value={draft.height} onChange={(v) => set('height', v)} />
+          <Field label={t('fieldWeight')} value={draft.weight} onChange={(v) => set('weight', v)} />
+          <Field label={t('fieldGender')} value={draft.gender} onChange={(v) => set('gender', v)} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <ReadRow label="Age" value={data.age} />
-          <ReadRow label="Height" value={data.height} />
-          <ReadRow label="Weight" value={data.weight} />
-          <ReadRow label="Gender" value={data.gender} />
+          <ReadRow label={t('fieldAge')} value={data.age} />
+          <ReadRow label={t('fieldHeight')} value={data.height} />
+          <ReadRow label={t('fieldWeight')} value={data.weight} />
+          <ReadRow label={t('fieldGender')} value={data.gender} />
         </div>
       )}
     </ProfileSection>
@@ -187,6 +190,7 @@ function AboutSection({ data, onSave }) {
 
 // ── Goals ──────────────────────────────────────────────────────────────────
 function GoalsSection({ data, onSave }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data)
@@ -202,13 +206,13 @@ function GoalsSection({ data, onSave }) {
   async function save() {
     setSaving(true); setError(null)
     try { await onSave({ goals: draft }); setEditing(false) }
-    catch { setError('Failed to save — try again') }
+    catch { setError(t('failedToSave')) }
     finally { setSaving(false) }
   }
 
   return (
     <ProfileSection
-      title="Goals"
+      title={t('goalsSection')}
       open={open}
       onToggle={() => setOpen((p) => !p)}
       onEdit={() => setEditing(true)}
@@ -216,12 +220,12 @@ function GoalsSection({ data, onSave }) {
       {editing ? (
         <div className="flex flex-col gap-3">
           <Field
-            label="Primary goal"
+            label={t('fieldPrimaryGoal')}
             value={draft.primaryGoal}
             onChange={(v) => set('primaryGoal', v)}
           />
           <Field
-            label="Goals (comma separated)"
+            label={t('fieldGoalsList')}
             value={toCommaString(draft.primary)}
             onChange={(v) => set('primary', fromCommaString(v))}
           />
@@ -236,7 +240,7 @@ function GoalsSection({ data, onSave }) {
               ))}
             </div>
           )}
-          <ReadRow label="Primary goal" value={data.primaryGoal} />
+          <ReadRow label={t('fieldPrimaryGoal')} value={data.primaryGoal} />
         </div>
       )}
     </ProfileSection>
@@ -245,6 +249,7 @@ function GoalsSection({ data, onSave }) {
 
 // ── Exercise ───────────────────────────────────────────────────────────────
 function ExerciseSection({ data, onSave }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data)
@@ -260,29 +265,29 @@ function ExerciseSection({ data, onSave }) {
   async function save() {
     setSaving(true); setError(null)
     try { await onSave({ exercise: draft }); setEditing(false) }
-    catch { setError('Failed to save — try again') }
+    catch { setError(t('failedToSave')) }
     finally { setSaving(false) }
   }
 
   return (
     <ProfileSection
-      title="Exercise"
+      title={t('exerciseSection')}
       open={open}
       onToggle={() => setOpen((p) => !p)}
       onEdit={() => setEditing(true)}
     >
       {editing ? (
         <div className="flex flex-col gap-3">
-          <Field label="Frequency" value={draft.frequency} onChange={(v) => set('frequency', v)} />
-          <Field label="Type" value={draft.type} onChange={(v) => set('type', v)} />
-          <Field label="Fitness level" value={draft.fitnessLevel} onChange={(v) => set('fitnessLevel', v)} />
+          <Field label={t('fieldFrequency')} value={draft.frequency} onChange={(v) => set('frequency', v)} />
+          <Field label={t('fieldType')} value={draft.type} onChange={(v) => set('type', v)} />
+          <Field label={t('fieldFitnessLevel')} value={draft.fitnessLevel} onChange={(v) => set('fitnessLevel', v)} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <ReadRow label="Frequency" value={data.frequency} />
-          <ReadRow label="Type" value={data.type} />
-          <ReadRow label="Fitness level" value={data.fitnessLevel} />
+          <ReadRow label={t('fieldFrequency')} value={data.frequency} />
+          <ReadRow label={t('fieldType')} value={data.type} />
+          <ReadRow label={t('fieldFitnessLevel')} value={data.fitnessLevel} />
         </div>
       )}
     </ProfileSection>
@@ -291,6 +296,7 @@ function ExerciseSection({ data, onSave }) {
 
 // ── Diet ───────────────────────────────────────────────────────────────────
 function DietSection({ data, onSave }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data)
@@ -306,13 +312,13 @@ function DietSection({ data, onSave }) {
   async function save() {
     setSaving(true); setError(null)
     try { await onSave({ diet: draft }); setEditing(false) }
-    catch { setError('Failed to save — try again') }
+    catch { setError(t('failedToSave')) }
     finally { setSaving(false) }
   }
 
   return (
     <ProfileSection
-      title="Diet"
+      title={t('dietSection')}
       open={open}
       onToggle={() => setOpen((p) => !p)}
       onEdit={() => setEditing(true)}
@@ -320,12 +326,12 @@ function DietSection({ data, onSave }) {
       {editing ? (
         <div className="flex flex-col gap-3">
           <Field
-            label="Restrictions (comma separated)"
+            label={t('fieldRestrictions')}
             value={toCommaString(draft.restrictions)}
             onChange={(v) => set('restrictions', fromCommaString(v))}
           />
           <Field
-            label="Allergies (comma separated)"
+            label={t('fieldAllergies')}
             value={toCommaString(draft.allergies)}
             onChange={(v) => set('allergies', fromCommaString(v))}
           />
@@ -333,8 +339,8 @@ function DietSection({ data, onSave }) {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <ReadRow label="Restrictions" value={data.restrictions} />
-          <ReadRow label="Allergies" value={data.allergies} />
+          <ReadRow label={t('fieldRestrictions')} value={data.restrictions} />
+          <ReadRow label={t('fieldAllergies')} value={data.allergies} />
         </div>
       )}
     </ProfileSection>
@@ -343,6 +349,7 @@ function DietSection({ data, onSave }) {
 
 // ── Sleep ──────────────────────────────────────────────────────────────────
 function SleepSection({ data, onSave }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data)
@@ -358,13 +365,13 @@ function SleepSection({ data, onSave }) {
   async function save() {
     setSaving(true); setError(null)
     try { await onSave({ sleep: draft }); setEditing(false) }
-    catch { setError('Failed to save — try again') }
+    catch { setError(t('failedToSave')) }
     finally { setSaving(false) }
   }
 
   return (
     <ProfileSection
-      title="Sleep"
+      title={t('sleepSection')}
       open={open}
       onToggle={() => setOpen((p) => !p)}
       onEdit={() => setEditing(true)}
@@ -372,12 +379,12 @@ function SleepSection({ data, onSave }) {
       {editing ? (
         <div className="flex flex-col gap-3">
           <Field
-            label="Hours per night"
+            label={t('fieldHoursPerNight')}
             value={draft.hoursPerNight}
             onChange={(v) => set('hoursPerNight', v)}
           />
           <Field
-            label="Issues (comma separated)"
+            label={t('fieldIssues')}
             value={toCommaString(draft.issues)}
             onChange={(v) => set('issues', fromCommaString(v))}
           />
@@ -385,8 +392,8 @@ function SleepSection({ data, onSave }) {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <ReadRow label="Hours per night" value={data.hoursPerNight} />
-          <ReadRow label="Issues" value={data.issues} />
+          <ReadRow label={t('fieldHoursPerNight')} value={data.hoursPerNight} />
+          <ReadRow label={t('fieldIssues')} value={data.issues} />
         </div>
       )}
     </ProfileSection>
@@ -395,6 +402,7 @@ function SleepSection({ data, onSave }) {
 
 // ── Lifestyle ──────────────────────────────────────────────────────────────
 function LifestyleSection({ data, onSave }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data)
@@ -410,29 +418,29 @@ function LifestyleSection({ data, onSave }) {
   async function save() {
     setSaving(true); setError(null)
     try { await onSave({ lifestyle: draft }); setEditing(false) }
-    catch { setError('Failed to save — try again') }
+    catch { setError(t('failedToSave')) }
     finally { setSaving(false) }
   }
 
   return (
     <ProfileSection
-      title="Lifestyle"
+      title={t('lifestyleSection')}
       open={open}
       onToggle={() => setOpen((p) => !p)}
       onEdit={() => setEditing(true)}
     >
       {editing ? (
         <div className="flex flex-col gap-3">
-          <Field label="Stress level" value={draft.stressLevel} onChange={(v) => set('stressLevel', v)} />
-          <Field label="Smoking status" value={draft.smokingStatus} onChange={(v) => set('smokingStatus', v)} />
-          <Field label="Alcohol consumption" value={draft.alcoholConsumption} onChange={(v) => set('alcoholConsumption', v)} />
+          <Field label={t('fieldStressLevel')} value={draft.stressLevel} onChange={(v) => set('stressLevel', v)} />
+          <Field label={t('fieldSmokingStatus')} value={draft.smokingStatus} onChange={(v) => set('smokingStatus', v)} />
+          <Field label={t('fieldAlcohol')} value={draft.alcoholConsumption} onChange={(v) => set('alcoholConsumption', v)} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <ReadRow label="Stress level" value={data.stressLevel} />
-          <ReadRow label="Smoking" value={data.smokingStatus} />
-          <ReadRow label="Alcohol" value={data.alcoholConsumption} />
+          <ReadRow label={t('fieldStressLevel')} value={data.stressLevel} />
+          <ReadRow label={t('fieldSmokingStatus')} value={data.smokingStatus} />
+          <ReadRow label={t('fieldAlcohol')} value={data.alcoholConsumption} />
         </div>
       )}
     </ProfileSection>
@@ -509,9 +517,9 @@ export default function Profile() {
   ]
 
   const quickActions = [
-    { label: 'History',   path: '/history' },
-    { label: 'Schedule',  path: '/schedule' },
-    { label: 'Dashboard', path: '/home' },
+    { label: t('profileHistory'),  path: '/history' },
+    { label: t('profileSchedule'), path: '/schedule' },
+    { label: t('profileDashboard'), path: '/home' },
   ]
 
   const bodyData      = profileData?.body      ?? EMPTY_BODY

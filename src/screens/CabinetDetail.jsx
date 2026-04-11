@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -72,6 +73,7 @@ function Skeleton() {
 export default function CabinetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   const [supp, setSupp] = useState(null)
   const [interactions, setInteractions] = useState([])
@@ -217,7 +219,7 @@ export default function CabinetDetail() {
         <div className="px-5 pt-2 pb-[100px]">
           <div className="bg-white rounded-card border border-border p-5 flex flex-col gap-4">
 
-            <EditField label="Name" required error={formErrors.name}>
+            <EditField label={t('fieldName')} required error={formErrors.name}>
               <input
                 className={inputClass}
                 type="text"
@@ -226,7 +228,7 @@ export default function CabinetDetail() {
               />
             </EditField>
 
-            <EditField label="Type">
+            <EditField label={t('fieldType')}>
               <div className="relative">
                 <select
                   className={selectClass}
@@ -243,7 +245,7 @@ export default function CabinetDetail() {
               </div>
             </EditField>
 
-            <EditField label="Dosage" required error={formErrors.dosage}>
+            <EditField label={t('fieldDosage')} required error={formErrors.dosage}>
               <input
                 className={inputClass}
                 type="text"
@@ -253,7 +255,7 @@ export default function CabinetDetail() {
               />
             </EditField>
 
-            <EditField label="Frequency">
+            <EditField label={t('fieldFrequency')}>
               <div className="relative">
                 <select
                   className={selectClass}
@@ -270,7 +272,7 @@ export default function CabinetDetail() {
               </div>
             </EditField>
 
-            <EditField label="Timing">
+            <EditField label={t('fieldTiming')}>
               <div className="relative">
                 <select
                   className={selectClass}
@@ -287,7 +289,7 @@ export default function CabinetDetail() {
               </div>
             </EditField>
 
-            <EditField label="Brand (optional)">
+            <EditField label={t('fieldBrand')}>
               <input
                 className={inputClass}
                 type="text"
@@ -296,7 +298,7 @@ export default function CabinetDetail() {
               />
             </EditField>
 
-            <EditField label="Notes (optional)">
+            <EditField label={t('fieldNotes')}>
               <textarea
                 className={`${inputClass} resize-none`}
                 rows={3}
@@ -315,14 +317,14 @@ export default function CabinetDetail() {
               onClick={() => { setEditing(false); setFormErrors({}) }}
               className="flex-1 rounded-pill border-[1.5px] border-border text-ink2 text-[15px] font-medium py-[12px] cursor-pointer hover:border-ink3 transition-colors"
             >
-              Cancel
+              {t('cancelButton')}
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="flex-1 rounded-pill bg-orange text-white text-[15px] font-medium py-[12px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:bg-orange-dk transition-colors"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('saving') : t('saveButton')}
             </button>
           </div>
         </div>
@@ -395,26 +397,26 @@ export default function CabinetDetail() {
             onClick={() => setEditing(true)}
             className="w-full rounded-pill bg-orange text-white text-[15px] font-medium py-[14px] cursor-pointer hover:bg-orange-dk transition-colors"
           >
-            Edit
+            {t('editButton')}
           </button>
 
           {confirmDelete ? (
             <div className="rounded-card border border-red-200 bg-red-50 p-4 flex flex-col gap-3">
-              <p className="text-[14px] text-ink1 text-center font-medium">Delete this supplement?</p>
-              <p className="text-[12px] text-ink3 text-center">This action cannot be undone.</p>
+              <p className="text-[14px] text-ink1 text-center font-medium">{t('confirmDelete')}</p>
+              <p className="text-[12px] text-ink3 text-center">{t('cannotUndo')}</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmDelete(false)}
                   className="flex-1 rounded-pill border-[1.5px] border-border text-ink2 text-[14px] font-medium py-[10px] cursor-pointer hover:border-ink3 transition-colors"
                 >
-                  Cancel
+                  {t('cancelButton')}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   className="flex-1 rounded-pill bg-red-500 text-white text-[14px] font-medium py-[10px] cursor-pointer disabled:opacity-60 hover:bg-red-600 transition-colors"
                 >
-                  {deleting ? 'Deleting...' : 'Delete'}
+                  {deleting ? t('deleting') : t('deleteButton')}
                 </button>
               </div>
             </div>
@@ -423,7 +425,7 @@ export default function CabinetDetail() {
               onClick={() => setConfirmDelete(true)}
               className="w-full rounded-pill border-[1.5px] border-red-200 text-red-500 text-[15px] font-medium py-[13px] cursor-pointer hover:bg-red-50 transition-colors"
             >
-              Delete supplement
+              {t('deleteButton')}
             </button>
           )}
         </div>

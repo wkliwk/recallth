@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 const TYPE_OPTIONS = ['Supplement', 'Medication', 'Vitamin', 'Herb', 'Other']
 const FREQUENCY_OPTIONS = ['Daily', 'Twice daily', 'As needed']
@@ -29,6 +30,7 @@ const selectClass =
 
 export default function CabinetAdd() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
 
@@ -87,8 +89,8 @@ export default function CabinetAdd() {
   return (
     <div className="min-h-screen bg-page">
       <OrangeHeader
-        title="Add Supplement"
-        subtitle="Track a new item"
+        title={t('addTitle')}
+        subtitle={t('addSubtitle')}
         onBack={() => navigate('/cabinet')}
       />
 
@@ -99,7 +101,7 @@ export default function CabinetAdd() {
       <form onSubmit={handleSubmit} className="px-5 pt-2 pb-[100px]">
         <div className="bg-white rounded-card border border-border p-5 flex flex-col gap-4">
 
-          <Field label="Name" required error={errors.name}>
+          <Field label={t('fieldName')} required error={errors.name}>
             <input
               className={inputClass}
               type="text"
@@ -110,7 +112,7 @@ export default function CabinetAdd() {
             />
           </Field>
 
-          <Field label="Type">
+          <Field label={t('fieldType')}>
             <div className="relative">
               <select
                 className={selectClass}
@@ -127,7 +129,7 @@ export default function CabinetAdd() {
             </div>
           </Field>
 
-          <Field label="Dosage" required error={errors.dosage}>
+          <Field label={t('fieldDosage')} required error={errors.dosage}>
             <input
               className={inputClass}
               type="text"
@@ -137,7 +139,7 @@ export default function CabinetAdd() {
             />
           </Field>
 
-          <Field label="Frequency">
+          <Field label={t('fieldFrequency')}>
             <div className="relative">
               <select
                 className={selectClass}
@@ -154,7 +156,7 @@ export default function CabinetAdd() {
             </div>
           </Field>
 
-          <Field label="Timing">
+          <Field label={t('fieldTiming')}>
             <div className="relative">
               <select
                 className={selectClass}
@@ -171,7 +173,7 @@ export default function CabinetAdd() {
             </div>
           </Field>
 
-          <Field label="Brand (optional)">
+          <Field label={t('fieldBrand')}>
             <input
               className={inputClass}
               type="text"
@@ -181,7 +183,7 @@ export default function CabinetAdd() {
             />
           </Field>
 
-          <Field label="Notes (optional)">
+          <Field label={t('fieldNotes')}>
             <textarea
               className={`${inputClass} resize-none`}
               rows={3}
@@ -201,7 +203,7 @@ export default function CabinetAdd() {
           disabled={submitting}
           className="w-full mt-5 rounded-pill bg-orange text-white text-[15px] font-medium py-[14px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:bg-orange-dk transition-colors"
         >
-          {submitting ? 'Adding...' : 'Add to cabinet'}
+          {submitting ? t('adding') : t('addButton')}
         </button>
       </form>
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Colour palette for schedule time slots ──────────────────────────────────
 const SLOT_COLOURS = [
@@ -12,11 +13,7 @@ const SLOT_COLOURS = [
   { bg: '#FFF1F2', border: '#FECDD3', dot: '#E11D48' },
 ]
 
-const QUICK_PROMPTS = [
-  'Should I take D3 with food?',
-  'Check my interactions',
-  'Best time for magnesium?',
-]
+// QUICK_PROMPTS are generated inside component to use t()
 
 // ── Skeleton primitives ──────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
@@ -72,15 +69,16 @@ function relativeTime(dateStr) {
 export default function Home() {
   const navigate = useNavigate()
   const { email } = useAuth()
+  const { t } = useLanguage()
   const inputRef = useRef(null)
 
-  const today = new Date().toLocaleDateString('en-GB', {
+  const hour = new Date().getHours()
+  const greetingWord = hour < 12 ? t('goodMorning') : hour < 18 ? t('goodAfternoon') : t('goodEvening')
+  const today = new Date().toLocaleDateString(t('locale'), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
-  const hour = new Date().getHours()
-  const greetingWord = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
   // Derive display name from email
   const displayName = email
@@ -217,11 +215,13 @@ export default function Home() {
   }
 
   // ── Stats data ─────────────────────────────────────────────────────────────
+  const QUICK_PROMPTS = [t('quickPrompt1'), t('quickPrompt2'), t('quickPrompt3')]
+
   const STATS = [
-    { value: String(supplementCount), label: 'Supplements', color: 'text-ink1' },
-    { value: String(conflictCount), label: 'Conflicts', color: 'text-[#059669]' },
-    { value: '14d', label: 'Streak', color: 'text-orange' },
-    { value: 'AI', label: 'Powered', color: 'text-[#7C3AED]' },
+    { value: String(supplementCount), label: t('statsSupplements'), color: 'text-ink1' },
+    { value: String(conflictCount), label: t('statsConflicts'), color: 'text-[#059669]' },
+    { value: '14d', label: t('statsStreak'), color: 'text-orange' },
+    { value: 'AI', label: t('statsPowered'), color: 'text-[#7C3AED]' },
   ]
 
   return (
@@ -259,7 +259,7 @@ export default function Home() {
 
           {/* Left — Today's schedule */}
           <div>
-            <h2 className="text-[15px] font-semibold text-ink1 mb-4">Today's schedule</h2>
+            <h2 className="text-[15px] font-semibold text-ink1 mb-4">{t('todaySchedule')}</h2>
             <div className="flex flex-col gap-3">
               {scheduleLoading ? (
                 <>
@@ -269,12 +269,12 @@ export default function Home() {
                 </>
               ) : schedule.length === 0 ? (
                 <div className="rounded-[14px] border border-border bg-white px-6 py-8 text-center">
-                  <p className="text-[13px] text-ink2 mb-2">No schedule yet.</p>
+                  <p className="text-[13px] text-ink2 mb-2">{t('noScheduleYet')}</p>
                   <Link
                     to="/cabinet"
                     className="text-[13px] text-orange font-medium hover:underline"
                   >
-                    Add supplements to see your schedule
+                    {t('addSuppsForSchedule')}
                   </Link>
                 </div>
               ) : (
@@ -300,8 +300,8 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-[14px] font-semibold text-ink1">Ask Recallth AI</p>
-                  <p className="text-[12px] text-ink2">I remember your full health profile</p>
+                  <p className="text-[14px] font-semibold text-ink1">{t('askAI')}</p>
+                  <p className="text-[12px] text-ink2">{t('askAISubtitle')}</p>
                 </div>
               </div>
 
@@ -311,7 +311,7 @@ export default function Home() {
                   ref={inputRef}
                   value={quickInput}
                   onChange={(e) => setQuickInput(e.target.value)}
-                  placeholder="Ask about supplements, dosing, interactions…"
+                  placeholder={t('askPlaceholder')}
                   className="flex-1 text-[13px] text-ink1 placeholder:text-ink4 outline-none bg-transparent"
                   onKeyDown={handleInputKeyDown}
                 />
@@ -345,7 +345,7 @@ export default function Home() {
             {/* Recent conversations */}
             <div className="bg-white border border-border rounded-[14px] overflow-hidden">
               <div className="px-5 py-4 border-b border-border">
-                <p className="text-[13px] font-semibold text-ink1">Recent conversations</p>
+                <p className="text-[13px] font-semibold text-ink1">{t('recentConversations')}</p>
               </div>
 
               {conversationsLoading ? (
@@ -356,12 +356,12 @@ export default function Home() {
                 </div>
               ) : conversations.length === 0 ? (
                 <div className="px-5 py-6 text-center">
-                  <p className="text-[13px] text-ink2 mb-2">No conversations yet.</p>
+                  <p className="text-[13px] text-ink2 mb-2">{t('noConversationsYet')}</p>
                   <Link
                     to="/chat"
                     className="text-[12px] text-orange font-medium hover:underline"
                   >
-                    Start your first chat
+                    {t('startFirstChat')}
                   </Link>
                 </div>
               ) : (
@@ -381,7 +381,7 @@ export default function Home() {
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium text-ink1 truncate">{item.title ?? 'Conversation'}</p>
+                        <p className="text-[13px] font-medium text-ink1 truncate">{item.title ?? t('conversationFallback')}</p>
                         <p className="text-[11px] text-ink3">
                           {item.createdAt ? relativeTime(item.createdAt) : ''}
                           {item.messageCount != null ? ` · ${item.messageCount} message${item.messageCount !== 1 ? 's' : ''}` : ''}
@@ -401,7 +401,7 @@ export default function Home() {
                   onClick={() => navigate('/chat')}
                   className="text-[12px] text-orange font-medium hover:underline cursor-pointer"
                 >
-                  View all conversations →
+                  {t('viewAllConversations')}
                 </button>
               </div>
             </div>
