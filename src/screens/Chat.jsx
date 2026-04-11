@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import BottomNav from '../components/BottomNav'
 import Chip from '../components/Chip'
 import ChatBubble from '../components/ChatBubble'
 import InputPill from '../components/InputPill'
+import { chatService } from '../services/chat'
 
 const suggestions = [
   'My stack today',
@@ -13,29 +15,6 @@ const suggestions = [
   'Add supplement',
   'Side effects',
   "What's new?",
-]
-
-const sampleMessages = [
-  {
-    type: 'ai',
-    text: "Here's your stack for today \u2014 Creatine pre-workout, HMB post, EPA with meals, Superfood in the morning.",
-  },
-  {
-    type: 'user',
-    text: 'Should I move HMB to before bed?',
-  },
-  {
-    type: 'ai',
-    text: 'Great call \u2014 HMB at night supports overnight muscle repair. Try it for a week and track how recovery feels.',
-  },
-  {
-    type: 'user',
-    text: 'Any interactions I should know about?',
-  },
-  {
-    type: 'ai',
-    text: 'Your stack looks clean. EPA and Creatine actually work well together \u2014 no conflicts detected.',
-  },
 ]
 
 const pastelColors = ['#D4ECD8', '#FAE8D0', '#DAE8F8', '#FDE8DE']
@@ -62,26 +41,98 @@ function TypingIndicator() {
 }
 
 export default function Chat() {
-  const [active, setActive] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [messages, setMessages] = useState([])
+  const [conversationId, setConversationId] = useState(null)
+  const [isTyping, setIsTyping] = useState(false)
+  const bottomRef = useRef(null)
+  const autoSentRef = useRef(false)
 
-  const handleChipClick = () => {
-    setActive(true)
+  const active = messages.length > 0 || isTyping
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isTyping])
+
+  // Handle ?id= param — load existing conversation on mount
+  useEffect(() => {
+    const id = searchParams.get('id')
+    if (!id) return
+    chatService
+      .getConversation(id)
+      .then((res) => {
+        if (res.success && res.data) {
+          setConversationId(res.data._id)
+          const mapped = res.data.messages.map((m) => ({
+            type: m.role === 'assistant' ? 'ai' : 'user',
+            text: m.content,
+          }))
+          setMessages(mapped)
+        }
+      })
+      .catch(() => {
+        // silently ignore — start fresh on load error
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle ?q= param — auto-send message after mount
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (!q || autoSentRef.current) return
+    autoSentRef.current = true
+    sendMessage(q)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sendMessage = async (text) => {
+    const trimmed = text.trim()
+    if (!trimmed) return
+
+    // Capture current conversationId in closure before any async
+    setMessages((prev) => [...prev, { type: 'user', text: trimmed }])
+    setIsTyping(true)
+
+    try {
+      const res = await chatService.send(trimmed, conversationId)
+      if (res.success && res.data) {
+        setConversationId(res.data.conversationId)
+        setMessages((prev) => [
+          ...prev,
+          { type: 'ai', text: res.data.reply },
+        ])
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { type: 'ai', text: 'Something went wrong. Please try again.' },
+      ])
+    } finally {
+      setIsTyping(false)
+    }
   }
 
-  const handleSend = () => {
-    setActive(true)
+  const handleNewChat = () => {
+    setMessages([])
+    setConversationId(null)
+    setIsTyping(false)
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-page">
       {/* Header */}
       {active ? (
-        <OrangeHeader subtitle="Stack review" title="Today's plan" />
+        <OrangeHeader
+          subtitle="Stack review"
+          title="Today's plan"
+          pill="New chat"
+          onPillClick={handleNewChat}
+        />
       ) : (
         <OrangeHeader
           title="Ricky 👋"
           subtitle="Good morning"
           pill="New chat"
+          onPillClick={handleNewChat}
         />
       )}
 
@@ -94,12 +145,13 @@ export default function Chat() {
       {active ? (
         /* ---- Active state: chat messages ---- */
         <div className="flex-1 flex flex-col gap-2 px-5 py-4 overflow-y-auto">
-          {sampleMessages.map((msg, i) => (
+          {messages.map((msg, i) => (
             <ChatBubble key={i} type={msg.type}>
               {msg.text}
             </ChatBubble>
           ))}
-          <TypingIndicator />
+          {isTyping && <TypingIndicator />}
+          <div ref={bottomRef} />
         </div>
       ) : (
         /* ---- Empty state: chips + illustration ---- */
@@ -107,7 +159,7 @@ export default function Chat() {
           {/* Chip row */}
           <div className="flex flex-wrap gap-2 px-5 py-4">
             {suggestions.map((label) => (
-              <Chip key={label} onClick={handleChipClick}>
+              <Chip key={label} onClick={() => sendMessage(label)}>
                 {label}
               </Chip>
             ))}
@@ -133,7 +185,7 @@ export default function Chat() {
 
       {/* Sticky input above BottomNav */}
       <div className="sticky bottom-[60px] px-5 py-3 bg-page z-40">
-        <InputPill onSend={handleSend} />
+        <InputPill onSend={sendMessage} />
       </div>
 
       {/* Bottom navigation */}

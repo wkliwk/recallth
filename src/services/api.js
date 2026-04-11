@@ -30,8 +30,12 @@ export const api = {
   },
   cabinet: {
     list: () => request('/cabinet'),
+    create: (data) => request('/cabinet', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/cabinet/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: (id) => request(`/cabinet/${id}`, { method: 'DELETE' }),
     schedule: () => request('/cabinet/schedule'),
     interactions: () => request('/cabinet/interactions'),
+    evidenceScores: () => request('/cabinet/evidence-scores'),
   },
   chat: {
     history: () => request('/chat/history'),

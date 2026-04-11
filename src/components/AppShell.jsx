@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { chatService } from '../services/chat'
 
 const NAV = [
   {
@@ -84,12 +85,6 @@ const NAV = [
   },
 ]
 
-const SAMPLE_MESSAGES = [
-  { type: 'ai', text: "Hey! I know your full stack — 5 supplements, 0 conflicts, 14-day streak. What would you like to know?" },
-  { type: 'user', text: 'Should I take D3 with food?' },
-  { type: 'ai', text: 'Yes — Vitamin D3 is fat-soluble, so taking it with a meal containing healthy fats improves absorption by up to 32%.' },
-]
-
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -98,24 +93,53 @@ function SparkleIcon({ size = 20, color = 'currentColor' }) {
   )
 }
 
+function PanelTypingIndicator() {
+  return (
+    <div className="flex justify-start">
+      <div className="w-6 h-6 rounded-[8px] bg-orange-lt flex items-center justify-center shrink-0 mr-2 mt-1">
+        <SparkleIcon size={12} color="#E07B4A" />
+      </div>
+      <div className="bg-sand rounded-[16px] rounded-bl-[4px] px-4 py-[10px] flex items-center gap-1">
+        <span className="w-[5px] h-[5px] rounded-full bg-ink3" />
+        <span className="w-[5px] h-[5px] rounded-full bg-ink3" />
+        <span className="w-[5px] h-[5px] rounded-full bg-ink3" />
+      </div>
+    </div>
+  )
+}
+
 function ChatPanel({ onClose }) {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState(SAMPLE_MESSAGES)
+  const [messages, setMessages] = useState([])
+  const [panelConversationId, setPanelConversationId] = useState(null)
+  const [isTyping, setIsTyping] = useState(false)
   const bottomRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, isTyping])
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim()
     if (!text) return
-    setMessages((m) => [
-      ...m,
-      { type: 'user', text },
-      { type: 'ai', text: 'Great question — let me think about that with your full health profile in mind...' },
-    ])
     setInput('')
+    setMessages((m) => [...m, { type: 'user', text }])
+    setIsTyping(true)
+
+    try {
+      const res = await chatService.send(text, panelConversationId)
+      if (res.success && res.data) {
+        setPanelConversationId(res.data.conversationId)
+        setMessages((m) => [...m, { type: 'ai', text: res.data.reply }])
+      }
+    } catch {
+      setMessages((m) => [
+        ...m,
+        { type: 'ai', text: 'Something went wrong. Try again.' },
+      ])
+    } finally {
+      setIsTyping(false)
+    }
   }
 
   return (
@@ -152,6 +176,11 @@ function ChatPanel({ onClose }) {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+          {messages.length === 0 && !isTyping && (
+            <p className="text-[13px] text-ink3 text-center mt-8">
+              Ask anything about your supplement stack...
+            </p>
+          )}
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.type === 'ai' && (
@@ -170,6 +199,7 @@ function ChatPanel({ onClose }) {
               </div>
             </div>
           ))}
+          {isTyping && <PanelTypingIndicator />}
           <div ref={bottomRef} />
         </div>
 

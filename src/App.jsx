@@ -7,6 +7,9 @@ import Chat from './screens/Chat'
 import Cabinet from './screens/Cabinet'
 import Profile from './screens/Profile'
 import AppShell from './components/AppShell'
+import Onboarding from './screens/Onboarding'
+import CabinetAdd from './screens/CabinetAdd'
+import CabinetDetail from './screens/CabinetDetail'
 
 // Placeholder screens for Wave 2/3 — replaced when those issues are built
 function Placeholder({ title }) {
@@ -46,7 +49,9 @@ function AppRoutes() {
       <Route path="/chat"          element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/cabinet"       element={<ProtectedRoute><Cabinet /></ProtectedRoute>} />
       <Route path="/profile"       element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/onboarding"    element={<ProtectedRoute><Placeholder title="Onboarding" /></ProtectedRoute>} />
+      <Route path="/onboarding"    element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+      <Route path="/cabinet/add"   element={<ProtectedRoute><CabinetAdd /></ProtectedRoute>} />
+      <Route path="/cabinet/:id"   element={<ProtectedRoute><CabinetDetail /></ProtectedRoute>} />
       <Route path="/schedule"      element={<ProtectedRoute><Placeholder title="Schedule" /></ProtectedRoute>} />
       <Route path="/stack-builder" element={<ProtectedRoute><Placeholder title="Stack Builder" /></ProtectedRoute>} />
       <Route path="/doctor-prep"   element={<ProtectedRoute><Placeholder title="Doctor Prep" /></ProtectedRoute>} />
