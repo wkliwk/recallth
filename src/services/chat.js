@@ -16,11 +16,13 @@ async function request(path, options = {}) {
 }
 
 export const chatService = {
-  send: (message, conversationId) =>
-    request('/chat', {
+  send: (message, conversationId) => {
+    const language = localStorage.getItem('recallth_language') || 'en'
+    return request('/chat', {
       method: 'POST',
-      body: JSON.stringify({ message, ...(conversationId ? { conversationId } : {}) }),
-    }),
+      body: JSON.stringify({ message, language, ...(conversationId ? { conversationId } : {}) }),
+    })
+  },
   history: () => request('/chat/history'),
   getConversation: (id) => request(`/chat/${id}`),
 }

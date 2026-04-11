@@ -4,6 +4,7 @@ import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import BottomNav from '../components/BottomNav'
 import FloatingChat from '../components/FloatingChat'
+import LanguageSelector from '../components/LanguageSelector'
 import Chip from '../components/Chip'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -561,8 +562,13 @@ export default function Profile() {
         <LifestyleSection data={lifestyleData} onSave={handleSave} />
       </div>
 
-      {/* Logout */}
+      {/* Language selector */}
       <div className="px-5 mt-6">
+        <LanguageSelector />
+      </div>
+
+      {/* Logout */}
+      <div className="px-5 mt-4">
         <button
           onClick={handleLogout}
           className="w-full border-[1.5px] border-orange text-orange rounded-pill py-[11px] text-[13px] font-medium cursor-pointer"
