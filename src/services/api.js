@@ -40,6 +40,9 @@ export const api = {
   chat: {
     history: () => request('/chat/history'),
   },
+  history: {
+    list: () => request('/history'),
+  },
   profile: {
     get: () => request('/profile'),
     update: (data) => request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
