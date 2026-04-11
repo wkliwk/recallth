@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import FloatingChat from '../components/FloatingChat'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import BottomNav from '../components/BottomNav'
@@ -42,6 +44,8 @@ function TypingIndicator() {
 
 export default function Chat() {
   const [searchParams] = useSearchParams()
+  const { email } = useAuth()
+  const displayName = email ? email.split('@')[0] : 'there'
   const [messages, setMessages] = useState([])
   const [conversationId, setConversationId] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -129,7 +133,7 @@ export default function Chat() {
         />
       ) : (
         <OrangeHeader
-          title="Ricky 👋"
+          title={`${displayName} 👋`}
           subtitle="Good morning"
           pill="New chat"
           onPillClick={handleNewChat}

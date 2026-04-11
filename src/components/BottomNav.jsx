@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 
 const tabs = [
+  { label: 'Home', path: '/home' },
   { label: 'Chat', path: '/chat' },
   { label: 'Cabinet', path: '/cabinet' },
   { label: 'Profile', path: '/profile' },

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import BottomNav from '../components/BottomNav'
+import FloatingChat from '../components/FloatingChat'
 import Chip from '../components/Chip'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -571,6 +572,7 @@ export default function Profile() {
       </div>
 
       <BottomNav />
+      <FloatingChat />
     </div>
   )
 }
