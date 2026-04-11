@@ -95,7 +95,7 @@ function NavBar() {
         <a href="#chat" className="text-white/70 text-[14px] hover:text-white transition-colors">Chat</a>
         <a href="#cabinet" className="text-white/70 text-[14px] hover:text-white transition-colors">Cabinet</a>
         <a
-          href="/chat"
+          href="/auth?mode=signup"
           className="rounded-pill bg-white text-orange-dk text-[14px] font-medium px-5 py-[8px] hover:bg-white/90 transition-colors"
         >
           Get started
@@ -168,7 +168,7 @@ export default function Landing() {
             custom={0.5}
           >
             <div className="flex gap-3 justify-center flex-wrap">
-              <a href="/chat" className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] hover:opacity-90 transition-all cursor-pointer">
+              <a href="/auth?mode=signup" className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] hover:opacity-90 transition-all cursor-pointer">
                 Get started
               </a>
               <a
@@ -283,9 +283,9 @@ export default function Landing() {
             <p className="text-[16px] text-ink2 font-light leading-[1.7] mb-8 max-w-[480px]">
               Your personal supplement expert, available any time. No more guessing — just ask.
             </p>
-            <button className="rounded-pill bg-orange text-white text-[15px] font-medium px-7 py-[14px] cursor-pointer hover:bg-orange-dk transition-colors">
+            <a href="/auth?mode=signup" className="rounded-pill bg-orange text-white text-[15px] font-medium px-7 py-[14px] cursor-pointer hover:bg-orange-dk transition-colors no-underline inline-block">
               Try it free
-            </button>
+            </a>
           </motion.div>
 
           {/* Right column — slides in from right */}
@@ -431,11 +431,11 @@ export default function Landing() {
             variants={fadeUp}
             transition={{ duration: 0.6, ease: 'easeOut' }}
           >
-            <a href="/chat" className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] hover:opacity-90 transition-all cursor-pointer">
+            <a href="/auth?mode=signup" className="rounded-pill bg-white text-orange-dk text-[15px] font-medium px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] hover:opacity-90 transition-all cursor-pointer">
               Get started — it's free
             </a>
             <a
-              href="/chat"
+              href="/auth?mode=login"
               className="rounded-pill text-white text-[15px] px-8 py-[14px] no-underline inline-block hover:-translate-y-[2px] transition-all cursor-pointer"
               style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
             >
