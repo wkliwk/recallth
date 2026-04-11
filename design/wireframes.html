@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recallth — Mobile UI Wireframes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #E5E7EB;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+    padding: 40px;
+  }
+  h1 {
+    text-align: center;
+    color: #111827;
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #6B7280;
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 375px);
+    gap: 40px;
+    justify-content: center;
+    margin: 0 auto;
+  }
+  .screen-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .screen-sublabel {
+    font-size: 11px;
+    color: #9CA3AF;
+    margin-bottom: 12px;
+  }
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: #F9FAFB;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  /* Status bar */
+  .status-bar {
+    height: 54px;
+    background: inherit;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 700; }
+  .status-bar .icons { display: flex; gap: 4px; align-items: center; font-size: 11px; }
+  /* Bottom tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 83px;
+    background: #FFFFFF;
+    border-top: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 8px;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: #9CA3AF;
+  }
+  .tab-item.active { color: #10B981; }
+  .tab-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #E5E7EB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .tab-item.active .tab-icon { background: #D1FAE5; }
+  /* Common elements */
+  .content { padding: 0 20px; }
+  .card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 12px;
+  }
+  .btn-primary {
+    background: #10B981;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: #10B981;
+    border: 2px solid #10B981;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    text-align: center;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: #6B7280;
+    border: none;
+    font-size: 14px;
+    text-align: center;
+    padding: 12px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-supplement { background: #D1FAE5; color: #065F46; }
+  .badge-medication { background: #DBEAFE; color: #1E40AF; }
+  .badge-vitamin { background: #FEF3C7; color: #92400E; }
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px 12px;
+  }
+  .header-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .search-bar {
+    margin: 0 20px 12px;
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #9CA3AF;
+    border: 1px solid #E5E7EB;
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+  }
+  .filter-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: #F3F4F6;
+    color: #6B7280;
+  }
+  .filter-tab.active {
+    background: #10B981;
+    color: #FFFFFF;
+  }
+  .fab {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    background: #10B981;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 28px;
+    font-weight: 300;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+  }
+  .divider {
+    height: 1px;
+    background: #F3F4F6;
+    margin: 12px 0;
+  }
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: #111827;
+    border-radius: 3px;
+    opacity: 0.2;
+  }
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #111827;
+    border-radius: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Recallth — Mobile UI Wireframes</h1>
+<p class="subtitle">Health Memory + AI Supplement Advisor &mdash; 375 x 812 viewport &mdash; Design v1.0</p>
+
+<div class="grid">
+
+<!-- ==================== SCREEN 1: ONBOARDING ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">1. Onboarding / Welcome</div>
+  <div class="screen-sublabel">First launch experience</div>
+  <div class="phone" style="background: #FFFFFF;">
+    <div class="dynamic-island"></div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding: 40px 32px;">
+      <!-- Logo area -->
+      <div style="width:88px; height:88px; background: linear-gradient(135deg, #10B981, #059669); border-radius:24px; margin-bottom:24px; display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:40px; color:#FFF;">R</span>
+      </div>
+      <div style="font-size:28px; font-weight:800; color:#111827; margin-bottom:8px; letter-spacing:-0.5px;">Recallth</div>
+      <div style="font-size:15px; color:#6B7280; text-align:center; line-height:1.5; margin-bottom:48px; max-width:280px;">Your private health consultant with perfect memory</div>
+
+      <!-- Illustration placeholder -->
+      <div style="width:240px; height:180px; background: linear-gradient(135deg, #D1FAE5, #A7F3D0); border-radius:24px; margin-bottom:48px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;">
+        <div style="width:60px; height:60px; background:#10B981; border-radius:50%; opacity:0.3;"></div>
+        <div style="font-size:11px; color:#065F46; font-weight:600;">Health Illustration</div>
+      </div>
+
+      <!-- CTA Buttons -->
+      <div style="width:100%;">
+        <div class="btn-primary" style="margin-bottom:12px;">Get Started</div>
+        <div class="btn-ghost" style="color:#10B981; font-weight:600;">Already have an account? <span style="text-decoration:underline;">Log in</span></div>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 2: HEALTH PROFILE SETUP ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">2. Health Profile Setup</div>
+  <div class="screen-sublabel">Guided category-based data entry</div>
+  <div class="phone">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <!-- Header -->
+    <div style="padding: 0 20px 16px;">
+      <div style="font-size:24px; font-weight:800; color:#111827; margin-bottom:4px;">Set Up Your Profile</div>
+      <div style="font-size:14px; color:#6B7280; margin-bottom:16px;">Fill in what you know. Come back anytime.</div>
+      <!-- Progress bar -->
+      <div style="background:#E5E7EB; border-radius:4px; height:8px; overflow:hidden;">
+        <div style="background: linear-gradient(90deg, #10B981, #34D399); width:33%; height:100%; border-radius:4px;"></div>
+      </div>
+      <div style="font-size:11px; color:#6B7280; margin-top:4px;">2 of 6 completed</div>
+    </div>
+
+    <!-- Category Cards -->
+    <div class="content" style="overflow-y:auto; height:580px;">
+      <!-- Body - completed -->
+      <div class="card" style="border-left: 4px solid #10B981;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; background:#D1FAE5; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">&#9829;</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#111827;">Body</div>
+              <div style="font-size:12px; color:#6B7280;">Height, weight, blood type, allergies</div>
+            </div>
+          </div>
+          <div style="color:#10B981; font-size:18px; font-weight:700;">&#10003;</div>
+        </div>
+      </div>
+
+      <!-- Diet - completed -->
+      <div class="card" style="border-left: 4px solid #10B981;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; background:#D1FAE5; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">&#127860;</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#111827;">Diet</div>
+              <div style="font-size:12px; color:#6B7280;">Dietary preferences, restrictions</div>
+            </div>
+          </div>
+          <div style="color:#10B981; font-size:18px; font-weight:700;">&#10003;</div>
+        </div>
+      </div>
+
+      <!-- Exercise - empty -->
+      <div class="card" style="border-left: 4px solid #E5E7EB;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; background:#F3F4F6; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">&#127939;</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#111827;">Exercise</div>
+              <div style="font-size:12px; color:#6B7280;">Activity level, workout routine</div>
+            </div>
+          </div>
+          <div style="color:#9CA3AF; font-size:14px;">&#10148;</div>
+        </div>
+      </div>
+
+      <!-- Sleep - empty -->
+      <div class="card" style="border-left: 4px solid #E5E7EB;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; background:#F3F4F6; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">&#127769;</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#111827;">Sleep</div>
+              <div style="font-size:12px; color:#6B7280;">Sleep schedule, quality, issues</div>
+            </div>
+          </div>
+          <div style="color:#9CA3AF; font-size:14px;">&#10148;</div>
+        </div>
+      </div>
+
+      <!-- Lifestyle - empty -->
+      <div class="card" style="border-left: 4px solid #E5E7EB;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; background:#F3F4F6; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">&#9749;</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#111827;">Lifestyle</div>
+              <div style="font-size:12px; color:#6B7280;">Stress, alcohol, smoking, caffeine</div>
+            </div>
+          </div>
+          <div style="color:#9CA3AF; font-size:14px;">&#10148;</div>
+        </div>
+      </div>
+
+      <!-- Goals - empty -->
+      <div class="card" style="border-left: 4px solid #E5E7EB;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; background:#F3F4F6; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">&#127919;</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#111827;">Goals</div>
+              <div style="font-size:12px; color:#6B7280;">Health goals and priorities</div>
+            </div>
+          </div>
+          <div style="color:#9CA3AF; font-size:14px;">&#10148;</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 0;">
+        <div class="btn-primary">Continue to Dashboard</div>
+        <div class="btn-ghost">Skip for now</div>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 3: DASHBOARD / HOME ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">3. Dashboard / Home</div>
+  <div class="screen-sublabel">Main hub with quick actions</div>
+  <div class="phone">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <!-- Greeting -->
+    <div style="padding: 0 20px 16px;">
+      <div style="font-size:14px; color:#6B7280;">Good morning</div>
+      <div style="font-size:24px; font-weight:800; color:#111827;">Sarah</div>
+    </div>
+
+    <div class="content" style="overflow-y:auto; height:580px; padding-bottom:100px;">
+      <!-- Profile completeness card -->
+      <div class="card" style="background: linear-gradient(135deg, #059669, #10B981); color:#FFF;">
+        <div style="font-size:13px; font-weight:600; opacity:0.9; margin-bottom:8px;">Profile Completeness</div>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="position:relative; width:56px; height:56px;">
+            <svg width="56" height="56" viewBox="0 0 56 56">
+              <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+              <circle cx="28" cy="28" r="24" fill="none" stroke="#FFF" stroke-width="4" stroke-dasharray="100.5 50.3" stroke-linecap="round" transform="rotate(-90 28 28)"/>
+            </svg>
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:14px; font-weight:800;">67%</div>
+          </div>
+          <div>
+            <div style="font-size:15px; font-weight:700;">4 of 6 sections filled</div>
+            <div style="font-size:12px; opacity:0.8;">Complete Sleep and Goals for better advice</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick action -->
+      <div class="card" style="display:flex; align-items:center; gap:14px; cursor:pointer;">
+        <div style="width:48px; height:48px; background: linear-gradient(135deg, #6366F1, #818CF8); border-radius:14px; display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:22px; color:#FFF;">&#128172;</span>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:16px; font-weight:700; color:#111827;">Ask a health question</div>
+          <div style="font-size:12px; color:#6B7280;">Get personalized advice based on your profile</div>
+        </div>
+        <div style="color:#9CA3AF; font-size:16px;">&#10148;</div>
+      </div>
+
+      <!-- Interaction Alert -->
+      <div class="card" style="border-left: 4px solid #F59E0B;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <div style="background:#FEF3C7; color:#92400E; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700;">MODERATE</div>
+          <div style="font-size:13px; font-weight:700; color:#111827;">Interaction Alert</div>
+        </div>
+        <div style="font-size:13px; color:#374151; line-height:1.4;">Vitamin D + Magnesium may affect absorption if taken together. Consider spacing 2 hours apart.</div>
+        <div style="font-size:11px; color:#6B7280; margin-top:8px;">Tap to learn more</div>
+      </div>
+
+      <!-- Cabinet summary -->
+      <div style="display:flex; gap:12px; margin-bottom:12px;">
+        <div class="card" style="flex:1; text-align:center;">
+          <div style="font-size:28px; font-weight:800; color:#10B981;">5</div>
+          <div style="font-size:11px; color:#6B7280;">Supplements</div>
+        </div>
+        <div class="card" style="flex:1; text-align:center;">
+          <div style="font-size:28px; font-weight:800; color:#6366F1;">2</div>
+          <div style="font-size:11px; color:#6B7280;">Medications</div>
+        </div>
+        <div class="card" style="flex:1; text-align:center;">
+          <div style="font-size:28px; font-weight:800; color:#F59E0B;">1</div>
+          <div style="font-size:11px; color:#6B7280;">Alert</div>
+        </div>
+      </div>
+
+      <!-- Recent activity -->
+      <div style="font-size:16px; font-weight:700; color:#111827; margin-bottom:8px;">Recent Activity</div>
+      <div class="card">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; background:#EEF2FF; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px;">&#128172;</div>
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:#111827;">Asked about Vitamin B12 timing</div>
+            <div style="font-size:11px; color:#9CA3AF;">2 hours ago</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; background:#D1FAE5; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px;">&#128138;</div>
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:#111827;">Added Omega-3 Fish Oil</div>
+            <div style="font-size:11px; color:#9CA3AF;">Yesterday</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="text-align:center; padding:16px 0;">
+        <div style="font-size:10px; color:#9CA3AF;">Recallth provides informational guidance only.</div>
+        <div style="font-size:10px; color:#9CA3AF;">Not a substitute for professional medical advice.</div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <div class="tab-icon">&#8962;</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128138;</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128172;</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128340;</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128100;</div>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 4: SUPPLEMENT CABINET ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">4. Supplement & Medication Cabinet</div>
+  <div class="screen-sublabel">List view with filters</div>
+  <div class="phone">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div class="header-bar">
+      <div class="header-title">My Cabinet</div>
+      <div style="font-size:13px; color:#10B981; font-weight:600;">Sort</div>
+    </div>
+
+    <div class="search-bar">&#128269; Search supplements, medications...</div>
+
+    <div class="filter-tabs">
+      <div class="filter-tab active">All (7)</div>
+      <div class="filter-tab">Supplements</div>
+      <div class="filter-tab">Medications</div>
+      <div class="filter-tab">Vitamins</div>
+      <div class="filter-tab">Archived</div>
+    </div>
+
+    <div class="content" style="overflow-y:auto; height:500px; padding-bottom:100px;">
+      <!-- Item 1 -->
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:15px; font-weight:700; color:#111827;">Vitamin D3</span>
+              <span class="badge badge-vitamin">Vitamin</span>
+            </div>
+            <div style="font-size:12px; color:#6B7280;">NOW Foods</div>
+          </div>
+          <div style="color:#9CA3AF; font-size:18px;">&#8942;</div>
+        </div>
+        <div style="display:flex; gap:16px; font-size:12px; color:#374151;">
+          <div><span style="color:#9CA3AF;">Dose:</span> 5000 IU</div>
+          <div><span style="color:#9CA3AF;">Freq:</span> Daily</div>
+          <div><span style="color:#9CA3AF;">Time:</span> Morning</div>
+        </div>
+      </div>
+
+      <!-- Item 2 with alert -->
+      <div class="card" style="border: 1px solid #FDE68A;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:15px; font-weight:700; color:#111827;">Magnesium Glycinate</span>
+              <span class="badge badge-supplement">Supplement</span>
+            </div>
+            <div style="font-size:12px; color:#6B7280;">Doctor's Best</div>
+          </div>
+          <div style="color:#9CA3AF; font-size:18px;">&#8942;</div>
+        </div>
+        <div style="display:flex; gap:16px; font-size:12px; color:#374151;">
+          <div><span style="color:#9CA3AF;">Dose:</span> 400mg</div>
+          <div><span style="color:#9CA3AF;">Freq:</span> Daily</div>
+          <div><span style="color:#9CA3AF;">Time:</span> Evening</div>
+        </div>
+        <div style="margin-top:8px; padding:6px 10px; background:#FFFBEB; border-radius:8px; display:flex; align-items:center; gap:6px;">
+          <span style="font-size:12px;">&#9888;</span>
+          <span style="font-size:11px; color:#92400E;">Interaction with Vitamin D3 — tap for details</span>
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:15px; font-weight:700; color:#111827;">Omega-3 Fish Oil</span>
+              <span class="badge badge-supplement">Supplement</span>
+            </div>
+            <div style="font-size:12px; color:#6B7280;">Nordic Naturals</div>
+          </div>
+          <div style="color:#9CA3AF; font-size:18px;">&#8942;</div>
+        </div>
+        <div style="display:flex; gap:16px; font-size:12px; color:#374151;">
+          <div><span style="color:#9CA3AF;">Dose:</span> 1000mg</div>
+          <div><span style="color:#9CA3AF;">Freq:</span> 2x daily</div>
+          <div><span style="color:#9CA3AF;">Time:</span> With meals</div>
+        </div>
+      </div>
+
+      <!-- Item 4 -->
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:15px; font-weight:700; color:#111827;">Metformin</span>
+              <span class="badge badge-medication">Medication</span>
+            </div>
+            <div style="font-size:12px; color:#6B7280;">Prescribed</div>
+          </div>
+          <div style="color:#9CA3AF; font-size:18px;">&#8942;</div>
+        </div>
+        <div style="display:flex; gap:16px; font-size:12px; color:#374151;">
+          <div><span style="color:#9CA3AF;">Dose:</span> 500mg</div>
+          <div><span style="color:#9CA3AF;">Freq:</span> 2x daily</div>
+          <div><span style="color:#9CA3AF;">Time:</span> With meals</div>
+        </div>
+      </div>
+
+      <!-- Item 5 -->
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:15px; font-weight:700; color:#111827;">Probiotics</span>
+              <span class="badge badge-supplement">Supplement</span>
+            </div>
+            <div style="font-size:12px; color:#6B7280;">Garden of Life</div>
+          </div>
+          <div style="color:#9CA3AF; font-size:18px;">&#8942;</div>
+        </div>
+        <div style="display:flex; gap:16px; font-size:12px; color:#374151;">
+          <div><span style="color:#9CA3AF;">Dose:</span> 50B CFU</div>
+          <div><span style="color:#9CA3AF;">Freq:</span> Daily</div>
+          <div><span style="color:#9CA3AF;">Time:</span> Morning</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">+</div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">&#8962;</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">&#128138;</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128172;</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128340;</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128100;</div>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 5: ADD/EDIT CABINET ITEM ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">5. Add/Edit Cabinet Item</div>
+  <div class="screen-sublabel">Form with interaction check</div>
+  <div class="phone" style="background:#FFFFFF;">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <!-- Nav header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 20px 16px;">
+      <div style="font-size:15px; color:#10B981; font-weight:600;">Cancel</div>
+      <div style="font-size:17px; font-weight:700; color:#111827;">Add New Item</div>
+      <div style="width:50px;"></div>
+    </div>
+
+    <div style="padding:0 20px; overflow-y:auto; height:640px;">
+      <!-- Name field -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Name *</div>
+        <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#111827;">Vitamin B12</div>
+      </div>
+
+      <!-- Type dropdown -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Type *</div>
+        <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#111827; display:flex; justify-content:space-between; align-items:center;">
+          <span>Vitamin</span>
+          <span style="color:#9CA3AF;">&#9660;</span>
+        </div>
+      </div>
+
+      <!-- Dosage + Frequency row -->
+      <div style="display:flex; gap:12px; margin-bottom:20px;">
+        <div style="flex:1;">
+          <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Dosage *</div>
+          <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#111827;">1000 mcg</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Frequency *</div>
+          <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#111827; display:flex; justify-content:space-between;">
+            <span>Daily</span>
+            <span style="color:#9CA3AF;">&#9660;</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timing -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Timing</div>
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; background:#10B981; color:#FFF; padding:10px; border-radius:10px; text-align:center; font-size:13px; font-weight:600;">Morning</div>
+          <div style="flex:1; background:#F3F4F6; color:#6B7280; padding:10px; border-radius:10px; text-align:center; font-size:13px; font-weight:600;">Afternoon</div>
+          <div style="flex:1; background:#F3F4F6; color:#6B7280; padding:10px; border-radius:10px; text-align:center; font-size:13px; font-weight:600;">Evening</div>
+          <div style="flex:1; background:#F3F4F6; color:#6B7280; padding:10px; border-radius:10px; text-align:center; font-size:13px; font-weight:600;">Bedtime</div>
+        </div>
+      </div>
+
+      <!-- Brand -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Brand <span style="color:#9CA3AF;">(optional)</span></div>
+        <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#9CA3AF;">e.g. Nature Made</div>
+      </div>
+
+      <!-- Start date -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Start Date</div>
+        <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#111827; display:flex; justify-content:space-between;">
+          <span>April 9, 2026</span>
+          <span style="color:#9CA3AF;">&#128197;</span>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Notes <span style="color:#9CA3AF;">(optional)</span></div>
+        <div style="background:#F9FAFB; border:1.5px solid #D1D5DB; border-radius:12px; padding:14px 16px; font-size:15px; color:#9CA3AF; height:80px;">Add any notes about this item...</div>
+      </div>
+
+      <!-- Check Interactions -->
+      <div class="btn-secondary" style="margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <span>&#9888;</span> Check Interactions
+      </div>
+
+      <!-- Save -->
+      <div class="btn-primary" style="margin-bottom:32px;">Save to Cabinet</div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 6: INTERACTION ALERT CARD ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">6. Interaction Alert Cards</div>
+  <div class="screen-sublabel">Severity levels: minor, moderate, major</div>
+  <div class="phone" style="background:#F9FAFB;">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <!-- Nav header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 20px 16px;">
+      <div style="font-size:15px; color:#10B981; font-weight:600;">&#8592; Back</div>
+      <div style="font-size:17px; font-weight:700; color:#111827;">Interaction Check</div>
+      <div style="width:50px;"></div>
+    </div>
+
+    <div class="content" style="overflow-y:auto; height:640px;">
+      <!-- Summary -->
+      <div style="text-align:center; margin-bottom:20px;">
+        <div style="font-size:14px; color:#6B7280; margin-bottom:4px;">Checking Vitamin B12 against your cabinet</div>
+        <div style="font-size:13px; color:#374151;"><strong>3 results found</strong></div>
+      </div>
+
+      <!-- MAJOR alert -->
+      <div class="card" style="border-left:4px solid #EF4444;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <div style="background:#FEE2E2; color:#991B1B; padding:3px 10px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:0.5px;">MAJOR</div>
+        </div>
+        <div style="font-size:15px; font-weight:700; color:#111827; margin-bottom:6px;">Vitamin B12 + Metformin</div>
+        <div style="font-size:13px; color:#374151; line-height:1.5; margin-bottom:10px;">
+          Metformin is known to reduce Vitamin B12 absorption significantly. Long-term use of Metformin can lead to B12 deficiency. Consider monitoring B12 levels regularly with your doctor.
+        </div>
+        <div style="font-size:11px; color:#6B7280; padding-top:8px; border-top:1px solid #F3F4F6;">
+          &#128218; Source: NIH Drug Interactions Database
+        </div>
+      </div>
+
+      <!-- MODERATE alert -->
+      <div class="card" style="border-left:4px solid #F59E0B;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <div style="background:#FEF3C7; color:#92400E; padding:3px 10px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:0.5px;">MODERATE</div>
+        </div>
+        <div style="font-size:15px; font-weight:700; color:#111827; margin-bottom:6px;">Vitamin B12 + Vitamin D3</div>
+        <div style="font-size:13px; color:#374151; line-height:1.5; margin-bottom:10px;">
+          Taking both together is generally safe, but high doses of both fat-soluble vitamins may compete for absorption. Space intake by 2-4 hours for optimal absorption.
+        </div>
+        <div style="font-size:11px; color:#6B7280; padding-top:8px; border-top:1px solid #F3F4F6;">
+          &#128218; Source: Mayo Clinic Reference
+        </div>
+      </div>
+
+      <!-- MINOR alert -->
+      <div class="card" style="border-left:4px solid #10B981;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+          <div style="background:#D1FAE5; color:#065F46; padding:3px 10px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:0.5px;">MINOR</div>
+        </div>
+        <div style="font-size:15px; font-weight:700; color:#111827; margin-bottom:6px;">Vitamin B12 + Probiotics</div>
+        <div style="font-size:13px; color:#374151; line-height:1.5; margin-bottom:10px;">
+          Probiotics may actually enhance B12 absorption. No negative interaction expected. Safe to take together.
+        </div>
+        <div style="font-size:11px; color:#6B7280; padding-top:8px; border-top:1px solid #F3F4F6;">
+          &#128218; Source: PubMed Central
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="background:#F3F4F6; border-radius:12px; padding:14px; margin-top:8px; margin-bottom:24px;">
+        <div style="font-size:11px; color:#6B7280; line-height:1.5; text-align:center;">
+          This information is for educational purposes only and does not replace professional medical advice. Always consult your healthcare provider before making changes to your supplement or medication regimen.
+        </div>
+      </div>
+
+      <div class="btn-primary" style="margin-bottom:32px;">Add to Cabinet Anyway</div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 7: AI HEALTH CHAT ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">7. AI Health Chat</div>
+  <div class="screen-sublabel">Conversational interface with context</div>
+  <div class="phone" style="background:#F9FAFB;">
+    <div class="dynamic-island"></div>
+    <div class="status-bar" style="background:#FFFFFF;">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <!-- Chat header -->
+    <div style="background:#FFFFFF; padding:8px 20px 12px; border-bottom:1px solid #E5E7EB;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:36px; height:36px; background: linear-gradient(135deg, #6366F1, #818CF8); border-radius:12px; display:flex; align-items:center; justify-content:center;">
+          <span style="color:#FFF; font-size:16px;">AI</span>
+        </div>
+        <div>
+          <div style="font-size:16px; font-weight:700; color:#111827;">Health Assistant</div>
+          <div style="font-size:11px; color:#10B981;">Online</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; background:#FEF3C7; padding:6px 12px; border-radius:8px; font-size:10px; color:#92400E; text-align:center;">
+        For informational purposes only. Not medical advice.
+      </div>
+    </div>
+
+    <!-- Chat messages -->
+    <div style="padding:16px 20px; overflow-y:auto; height:480px;">
+      <!-- AI message -->
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <div style="width:28px; height:28px; background:#EEF2FF; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#6366F1; font-weight:700; flex-shrink:0;">AI</div>
+        <div style="background:#FFFFFF; border-radius:0 16px 16px 16px; padding:12px 16px; max-width:280px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+          <div style="font-size:14px; color:#111827; line-height:1.5;">
+            Hi Sarah! How can I help you with your health today? I have your profile and cabinet data ready.
+          </div>
+          <div style="font-size:10px; color:#9CA3AF; margin-top:6px;">10:23 AM</div>
+        </div>
+      </div>
+
+      <!-- User message -->
+      <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+        <div style="background:#10B981; border-radius:16px 0 16px 16px; padding:12px 16px; max-width:260px;">
+          <div style="font-size:14px; color:#FFFFFF; line-height:1.5;">
+            Should I take my Vitamin B12 with breakfast or on an empty stomach?
+          </div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.7); margin-top:6px; text-align:right;">10:24 AM</div>
+        </div>
+      </div>
+
+      <!-- AI response with data pills -->
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <div style="width:28px; height:28px; background:#EEF2FF; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#6366F1; font-weight:700; flex-shrink:0;">AI</div>
+        <div style="background:#FFFFFF; border-radius:0 16px 16px 16px; padding:12px 16px; max-width:280px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+          <div style="font-size:14px; color:#111827; line-height:1.6;">
+            Great question! Based on your profile:
+          </div>
+          <div style="margin:8px 0;">
+            <span style="display:inline-block; background:#EEF2FF; color:#4338CA; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600; margin:2px;">B12 - 1000mcg</span>
+            <span style="display:inline-block; background:#DBEAFE; color:#1E40AF; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600; margin:2px;">Metformin - 500mg</span>
+          </div>
+          <div style="font-size:14px; color:#111827; line-height:1.6;">
+            Since you're taking <strong>Metformin</strong>, I'd recommend taking B12 on an empty stomach for best absorption. Take it at least 30 minutes before breakfast.
+            <br><br>
+            Also, since Metformin can reduce B12 absorption, consider asking your doctor about testing your B12 levels every 6 months.
+          </div>
+          <div style="font-size:10px; color:#9CA3AF; margin-top:6px;">10:24 AM</div>
+        </div>
+      </div>
+
+      <!-- User follow-up -->
+      <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+        <div style="background:#10B981; border-radius:16px 0 16px 16px; padding:12px 16px; max-width:260px;">
+          <div style="font-size:14px; color:#FFFFFF; line-height:1.5;">
+            Thanks! Can I take it with my Vitamin D?
+          </div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.7); margin-top:6px; text-align:right;">10:25 AM</div>
+        </div>
+      </div>
+
+      <!-- AI typing indicator -->
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <div style="width:28px; height:28px; background:#EEF2FF; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; color:#6366F1; font-weight:700; flex-shrink:0;">AI</div>
+        <div style="background:#FFFFFF; border-radius:0 16px 16px 16px; padding:12px 20px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+          <div style="display:flex; gap:4px; align-items:center;">
+            <div style="width:6px; height:6px; background:#9CA3AF; border-radius:50%; animation:bounce 1s infinite;"></div>
+            <div style="width:6px; height:6px; background:#9CA3AF; border-radius:50%; animation:bounce 1s infinite 0.2s;"></div>
+            <div style="width:6px; height:6px; background:#9CA3AF; border-radius:50%; animation:bounce 1s infinite 0.4s;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat input -->
+    <div style="position:absolute; bottom:0; left:0; right:0; background:#FFFFFF; border-top:1px solid #E5E7EB; padding:12px 20px 36px;">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div style="flex:1; background:#F3F4F6; border-radius:24px; padding:12px 20px; font-size:14px; color:#9CA3AF;">Ask a health question...</div>
+        <div style="width:44px; height:44px; background:#10B981; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+          <span style="color:#FFF; font-size:18px;">&#9650;</span>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+      }
+    </style>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 8: HISTORY ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">8. History Screen</div>
+  <div class="screen-sublabel">Conversations, profile & cabinet changes</div>
+  <div class="phone">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div class="header-bar">
+      <div class="header-title">History</div>
+      <div style="font-size:22px; color:#6B7280;">&#9776;</div>
+    </div>
+
+    <div class="search-bar">&#128269; Search history...</div>
+
+    <!-- Tabs -->
+    <div style="display:flex; margin:0 20px 16px; background:#F3F4F6; border-radius:10px; padding:3px;">
+      <div style="flex:1; background:#FFFFFF; border-radius:8px; padding:8px 0; text-align:center; font-size:12px; font-weight:700; color:#111827; box-shadow:0 1px 2px rgba(0,0,0,0.06);">Conversations</div>
+      <div style="flex:1; padding:8px 0; text-align:center; font-size:12px; font-weight:600; color:#6B7280;">Profile</div>
+      <div style="flex:1; padding:8px 0; text-align:center; font-size:12px; font-weight:600; color:#6B7280;">Cabinet</div>
+    </div>
+
+    <div class="content" style="overflow-y:auto; height:500px; padding-bottom:100px;">
+      <!-- Date header -->
+      <div style="font-size:12px; font-weight:700; color:#9CA3AF; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Today</div>
+
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <div style="width:40px; height:40px; background:#EEF2FF; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">&#128172;</div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:700; color:#111827; margin-bottom:2px;">B12 timing and absorption</div>
+            <div style="font-size:12px; color:#6B7280; margin-bottom:4px;">Should I take my Vitamin B12 with breakfast or on an empty stomach?</div>
+            <div style="display:flex; gap:12px; font-size:11px; color:#9CA3AF;">
+              <span>10:23 AM</span>
+              <span>4 messages</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date header -->
+      <div style="font-size:12px; font-weight:700; color:#9CA3AF; margin-bottom:8px; margin-top:8px; text-transform:uppercase; letter-spacing:0.5px;">Yesterday</div>
+
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <div style="width:40px; height:40px; background:#EEF2FF; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">&#128172;</div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:700; color:#111827; margin-bottom:2px;">Omega-3 benefits for joints</div>
+            <div style="font-size:12px; color:#6B7280; margin-bottom:4px;">What dosage of Omega-3 is best for joint health?</div>
+            <div style="display:flex; gap:12px; font-size:11px; color:#9CA3AF;">
+              <span>3:15 PM</span>
+              <span>6 messages</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <div style="width:40px; height:40px; background:#EEF2FF; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">&#128172;</div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:700; color:#111827; margin-bottom:2px;">Sleep quality improvement</div>
+            <div style="font-size:12px; color:#6B7280; margin-bottom:4px;">I've been having trouble sleeping lately. Any supplement recommendations?</div>
+            <div style="display:flex; gap:12px; font-size:11px; color:#9CA3AF;">
+              <span>11:42 AM</span>
+              <span>8 messages</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date header -->
+      <div style="font-size:12px; font-weight:700; color:#9CA3AF; margin-bottom:8px; margin-top:8px; text-transform:uppercase; letter-spacing:0.5px;">April 7, 2026</div>
+
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <div style="width:40px; height:40px; background:#EEF2FF; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">&#128172;</div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:700; color:#111827; margin-bottom:2px;">Magnesium types comparison</div>
+            <div style="font-size:12px; color:#6B7280; margin-bottom:4px;">What's the difference between magnesium glycinate and citrate?</div>
+            <div style="display:flex; gap:12px; font-size:11px; color:#9CA3AF;">
+              <span>9:05 AM</span>
+              <span>5 messages</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <div style="width:40px; height:40px; background:#EEF2FF; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">&#128172;</div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:700; color:#111827; margin-bottom:2px;">Diet and supplement interaction</div>
+            <div style="font-size:12px; color:#6B7280; margin-bottom:4px;">Does my vegetarian diet affect how I should take my supplements?</div>
+            <div style="display:flex; gap:12px; font-size:11px; color:#9CA3AF;">
+              <span>8:20 AM</span>
+              <span>7 messages</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">&#8962;</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128138;</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128172;</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">&#128340;</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128100;</div>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 9: PROFILE SUMMARY ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">9. Profile Summary</div>
+  <div class="screen-sublabel">Health data overview with edit actions</div>
+  <div class="phone">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div class="header-bar">
+      <div class="header-title">My Profile</div>
+      <div style="font-size:13px; color:#10B981; font-weight:600;">Settings</div>
+    </div>
+
+    <div class="content" style="overflow-y:auto; height:600px; padding-bottom:100px;">
+      <!-- Profile header -->
+      <div style="text-align:center; margin-bottom:20px;">
+        <div style="width:72px; height:72px; background: linear-gradient(135deg, #10B981, #34D399); border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:28px; color:#FFF; font-weight:700;">S</span>
+        </div>
+        <div style="font-size:18px; font-weight:700; color:#111827;">Sarah Chen</div>
+        <div style="font-size:13px; color:#6B7280;">Member since March 2026</div>
+        <!-- Profile completeness -->
+        <div style="display:flex; align-items:center; gap:8px; justify-content:center; margin-top:10px;">
+          <div style="background:#E5E7EB; border-radius:4px; height:6px; width:120px; overflow:hidden;">
+            <div style="background:#10B981; width:67%; height:100%; border-radius:4px;"></div>
+          </div>
+          <span style="font-size:12px; color:#6B7280; font-weight:600;">67%</span>
+        </div>
+      </div>
+
+      <!-- Body section -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:15px; font-weight:700; color:#111827;">&#9829; Body</div>
+          <div style="font-size:12px; color:#10B981; font-weight:600;">Edit</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><span style="font-size:11px; color:#9CA3AF;">Height</span><div style="font-size:13px; color:#111827; font-weight:600;">165 cm</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Weight</span><div style="font-size:13px; color:#111827; font-weight:600;">58 kg</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Blood Type</span><div style="font-size:13px; color:#111827; font-weight:600;">A+</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Allergies</span><div style="font-size:13px; color:#111827; font-weight:600;">Shellfish</div></div>
+        </div>
+      </div>
+
+      <!-- Diet section -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:15px; font-weight:700; color:#111827;">&#127860; Diet</div>
+          <div style="font-size:12px; color:#10B981; font-weight:600;">Edit</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><span style="font-size:11px; color:#9CA3AF;">Type</span><div style="font-size:13px; color:#111827; font-weight:600;">Vegetarian</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Restrictions</span><div style="font-size:13px; color:#111827; font-weight:600;">Lactose intolerant</div></div>
+        </div>
+      </div>
+
+      <!-- Exercise section -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:15px; font-weight:700; color:#111827;">&#127939; Exercise</div>
+          <div style="font-size:12px; color:#10B981; font-weight:600;">Edit</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><span style="font-size:11px; color:#9CA3AF;">Activity Level</span><div style="font-size:13px; color:#111827; font-weight:600;">Moderate</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Routine</span><div style="font-size:13px; color:#111827; font-weight:600;">Yoga 3x/week</div></div>
+        </div>
+      </div>
+
+      <!-- Sleep - empty -->
+      <div class="card" style="border:1.5px dashed #D1D5DB;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:15px; font-weight:700; color:#9CA3AF;">&#127769; Sleep</div>
+          <div style="font-size:12px; color:#10B981; font-weight:600;">+ Add</div>
+        </div>
+        <div style="font-size:12px; color:#9CA3AF; margin-top:6px;">Tap to add your sleep information</div>
+      </div>
+
+      <!-- Lifestyle section -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:15px; font-weight:700; color:#111827;">&#9749; Lifestyle</div>
+          <div style="font-size:12px; color:#10B981; font-weight:600;">Edit</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div><span style="font-size:11px; color:#9CA3AF;">Stress</span><div style="font-size:13px; color:#111827; font-weight:600;">Moderate</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Caffeine</span><div style="font-size:13px; color:#111827; font-weight:600;">2 cups/day</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Alcohol</span><div style="font-size:13px; color:#111827; font-weight:600;">Occasional</div></div>
+          <div><span style="font-size:11px; color:#9CA3AF;">Smoking</span><div style="font-size:13px; color:#111827; font-weight:600;">Never</div></div>
+        </div>
+      </div>
+
+      <!-- Goals - empty -->
+      <div class="card" style="border:1.5px dashed #D1D5DB; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:15px; font-weight:700; color:#9CA3AF;">&#127919; Goals</div>
+          <div style="font-size:12px; color:#10B981; font-weight:600;">+ Add</div>
+        </div>
+        <div style="font-size:12px; color:#9CA3AF; margin-top:6px;">Set your health goals for personalized advice</div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">&#8962;</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128138;</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128172;</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">&#128340;</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">&#128100;</div>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+</div><!-- end grid -->
+
+<!-- Color palette reference -->
+<div style="margin-top:60px; max-width:1200px; margin-left:auto; margin-right:auto;">
+  <h2 style="font-size:20px; color:#111827; margin-bottom:16px;">Design Tokens Reference</h2>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px;">
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#10B981; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Primary<br>#10B981</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#6366F1; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Secondary<br>#6366F1</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#F59E0B; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Warning<br>#F59E0B</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#EF4444; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Danger<br>#EF4444</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#F9FAFB; border:1px solid #E5E7EB; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Background<br>#F9FAFB</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Card<br>#FFFFFF</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#111827; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Text Primary<br>#111827</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="width:64px; height:64px; background:#6B7280; border-radius:12px; margin-bottom:4px;"></div>
+      <div style="font-size:10px; color:#6B7280;">Text Secondary<br>#6B7280</div>
+    </div>
+  </div>
+
+  <h2 style="font-size:20px; color:#111827; margin-bottom:16px;">Component Patterns</h2>
+  <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; font-size:12px; color:#374151;">
+    <div><strong>Border Radius</strong><br>Cards: 16px<br>Buttons: 12px<br>Inputs: 12px<br>Badges: 20px<br>Pills: 12px<br>FAB: 16px</div>
+    <div><strong>Spacing Scale</strong><br>4px, 8px, 12px, 16px, 20px, 24px, 32px, 40px, 48px</div>
+    <div><strong>Typography</strong><br>H1: 24px/800<br>H2: 20px/700<br>H3: 16px/700<br>Body: 14px/400<br>Caption: 12px/400<br>Micro: 10px/600</div>
+    <div><strong>Shadows</strong><br>Card: 0 1px 3px rgba(0,0,0,0.06)<br>Elevated: 0 4px 12px rgba(0,0,0,0.1)<br>FAB: 0 4px 12px rgba(16,185,129,0.4)</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recallth v3 — Gamified UI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0C0C1D;
+    --surface: #141428;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.06);
+    --green: #34D399;
+    --green-glow: rgba(52,211,153,0.3);
+    --purple: #A78BFA;
+    --purple-deep: #7C3AED;
+    --amber: #FBBF24;
+    --red: #F87171;
+    --cyan: #22D3EE;
+    --pink: #F472B6;
+    --text: #E5E5E5;
+    --text2: #737373;
+    --text3: #404040;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    padding: 48px;
+    color: var(--text);
+  }
+
+  /* ============ ANIMATIONS ============ */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(3deg); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(52,211,153,0.2); }
+    50% { box-shadow: 0 0 40px rgba(52,211,153,0.4), 0 0 80px rgba(52,211,153,0.15); }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes bounce-in {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes progress-fill {
+    0% { width: 0%; }
+    100% { width: var(--fill-width, 67%); }
+  }
+  @keyframes slide-up {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes xp-pop {
+    0% { transform: scale(0.5) translateY(10px); opacity: 0; }
+    60% { transform: scale(1.2) translateY(-5px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  @keyframes streak-flame {
+    0%, 100% { transform: scaleY(1) scaleX(1); }
+    25% { transform: scaleY(1.15) scaleX(0.9); }
+    50% { transform: scaleY(0.95) scaleX(1.05); }
+    75% { transform: scaleY(1.1) scaleX(0.95); }
+  }
+  @keyframes typing-dot {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+  @keyframes orbit {
+    0% { transform: rotate(0deg) translateX(40px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(40px) rotate(-360deg); }
+  }
+  @keyframes badge-unlock {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    60% { transform: scale(1.15) rotate(10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(30px) rotate(720deg); opacity: 0; }
+  }
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(20deg); }
+    75% { transform: rotate(-15deg); }
+  }
+
+  /* ============ LAYOUT ============ */
+  h1 {
+    text-align: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  h1 .g { background: linear-gradient(135deg, #34D399, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h1 .p { background: linear-gradient(135deg, #A78BFA, #F472B6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle {
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 375px);
+    gap: 48px;
+    justify-content: center;
+  }
+  .screen-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .screen-sublabel {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 14px;
+  }
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: var(--surface);
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px var(--border),
+      0 40px 80px rgba(0,0,0,0.5),
+      0 0 200px rgba(52,211,153,0.03),
+      0 0 200px rgba(167,139,250,0.03);
+    position: relative;
+  }
+  .status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    position: relative;
+    z-index: 2;
+  }
+  .status-bar .time { font-size: 16px; font-weight: 700; }
+  .status-bar .icons { font-size: 11px; color: var(--text2); }
+
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 83px;
+    background: rgba(20,20,40,0.9);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 10px;
+    z-index: 5;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text3);
+  }
+  .tab-item.active { color: var(--green); }
+  .tab-icon { font-size: 16px; }
+  .tab-item.active .tab-icon { animation: float 3s ease-in-out infinite; }
+
+  /* Glass card */
+  .glass {
+    background: var(--card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+
+  /* XP badge */
+  .xp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    animation: xp-pop 0.5s ease-out both;
+  }
+  .xp-green { background: rgba(52,211,153,0.15); color: var(--green); }
+  .xp-purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+  .xp-amber { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .xp-cyan { background: rgba(34,211,238,0.15); color: var(--cyan); }
+
+  /* Level bar */
+  .level-bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .level-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--green), var(--cyan));
+    animation: progress-fill 1.5s ease-out both;
+    position: relative;
+  }
+  .level-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  /* Badge */
+  .achievement-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    position: relative;
+    animation: badge-unlock 0.6s ease-out both;
+  }
+  .achievement-badge.locked {
+    filter: grayscale(1) brightness(0.4);
+    animation: none;
+  }
+  .achievement-badge::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .streak-fire {
+    animation: streak-flame 0.8s ease-in-out infinite;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<h1><span class="g">Recallth</span> <span class="p">Gamified</span></h1>
+<div class="subtitle">Level up your health &bull; Mobile UI v3.0</div>
+
+<div class="grid">
+
+<!-- ==================== SCREEN 1: WELCOME ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">01 &mdash; Welcome</div>
+  <div class="screen-sublabel">Gamified onboarding</div>
+  <div class="phone">
+    <!-- Animated background -->
+    <div style="position:absolute;inset:0;overflow:hidden;">
+      <div style="position:absolute;top:15%;left:50%;transform:translateX(-50%);width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(52,211,153,0.15),transparent 70%);animation:pulse-glow 3s ease-in-out infinite;"></div>
+      <div style="position:absolute;top:12%;left:50%;transform:translateX(-50%);width:100px;height:100px;">
+        <div style="position:absolute;animation:orbit 8s linear infinite;"><div style="width:8px;height:8px;border-radius:50%;background:var(--cyan);opacity:0.5;"></div></div>
+        <div style="position:absolute;animation:orbit 12s linear infinite reverse;"><div style="width:6px;height:6px;border-radius:50%;background:var(--purple);opacity:0.4;"></div></div>
+        <div style="position:absolute;animation:orbit 6s linear infinite;"><div style="width:5px;height:5px;border-radius:50%;background:var(--amber);opacity:0.3;"></div></div>
+      </div>
+      <!-- Grid pattern -->
+      <div style="position:absolute;inset:0;background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 40px 40px;opacity:0.5;"></div>
+    </div>
+
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;padding:0 32px;text-align:center;">
+      <!-- Animated logo -->
+      <div style="margin-top:80px;margin-bottom:24px;position:relative;display:inline-block;">
+        <div style="width:96px;height:96px;margin:0 auto;border-radius:28px;
+          background:linear-gradient(135deg, #34D399 0%, #22D3EE 100%);
+          display:flex;align-items:center;justify-content:center;
+          font-size:44px;font-weight:800;color:#fff;font-family:'Space Grotesk';
+          animation: float-slow 4s ease-in-out infinite;
+          box-shadow:0 20px 60px var(--green-glow);">
+          R
+        </div>
+        <!-- Pulse ring -->
+        <div style="position:absolute;inset:-8px;border-radius:32px;border:2px solid var(--green);animation:pulse-ring 2s ease-out infinite;"></div>
+      </div>
+
+      <div style="font-family:'Space Grotesk';font-size:32px;font-weight:800;color:#fff;margin-bottom:8px;">
+        Recallth
+      </div>
+      <div style="font-size:16px;color:var(--text2);line-height:1.5;margin-bottom:12px;">
+        Your health journey,<br><span style="background:linear-gradient(90deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600;">gamified & personalized</span>
+      </div>
+
+      <!-- Level preview -->
+      <div class="glass" style="padding:16px;margin:24px 0;text-align:left;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--amber),#F59E0B);display:flex;align-items:center;justify-content:center;font-size:18px;animation:bounce-in 0.5s ease-out both;">🏆</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#fff;">Start at Level 1</div>
+            <div style="font-size:11px;color:var(--text3);">Earn XP by building your health profile</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <span class="xp-badge xp-green">+50 XP profile</span>
+          <span class="xp-badge xp-purple">+30 XP chat</span>
+          <span class="xp-badge xp-amber">+20 XP streak</span>
+        </div>
+      </div>
+
+      <!-- CTA with shimmer -->
+      <div style="padding:18px 0;border-radius:16px;position:relative;overflow:hidden;
+        background:linear-gradient(135deg, #34D399, #22D3EE);
+        font-size:17px;font-weight:700;color:#fff;
+        box-shadow:0 16px 48px var(--green-glow);
+        cursor:pointer;margin-bottom:16px;">
+        <span style="position:relative;z-index:1;">Begin Your Journey</span>
+        <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;"></div>
+      </div>
+
+      <div style="font-size:14px;color:var(--text3);">
+        Already playing? <span style="color:var(--cyan);font-weight:500;">Sign in</span>
+      </div>
+    </div>
+
+    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:rgba(255,255,255,0.1);"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 2: PROFILE QUEST ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">02 &mdash; Health Quest</div>
+  <div class="screen-sublabel">Profile as quest progression</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-family:'Space Grotesk';font-size:20px;font-weight:700;">Health Quest</div>
+        <div class="xp-badge xp-green" style="animation-delay:0.2s;">+100 XP</div>
+      </div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:14px;">Complete quests to unlock AI features</div>
+
+      <!-- Quest progress ring -->
+      <div class="glass" style="padding:20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+        <div style="position:relative;width:72px;height:72px;flex-shrink:0;">
+          <svg width="72" height="72" viewBox="0 0 72 72" style="transform:rotate(-90deg);">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6"/>
+            <circle cx="36" cy="36" r="30" fill="none" stroke="url(#grad)" stroke-width="6" stroke-linecap="round"
+              stroke-dasharray="188.5" stroke-dashoffset="125" style="transition:stroke-dashoffset 1.5s ease-out;">
+              <animate attributeName="stroke-dashoffset" from="188.5" to="125" dur="1.5s" fill="freeze"/>
+            </circle>
+            <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#34D399"/><stop offset="100%" style="stop-color:#22D3EE"/>
+            </linearGradient></defs>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-size:18px;font-weight:800;color:#fff;">2/6</div>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:#fff;">Quest Progress</div>
+          <div style="font-size:12px;color:var(--text2);margin:3px 0;">2 of 6 quests completed</div>
+          <div class="level-bar-track" style="width:140px;margin-top:6px;">
+            <div class="level-bar-fill" style="--fill-width:33%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quest cards -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <!-- Completed quest -->
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid rgba(52,211,153,0.15);background:rgba(52,211,153,0.03);">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));display:flex;align-items:center;justify-content:center;font-size:22px;">🫀</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;font-weight:600;color:#fff;">Body Stats</span>
+              <span style="font-size:12px;color:var(--green);">✓</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);">Height, weight, blood type</div>
+          </div>
+          <span class="xp-badge xp-green" style="font-size:10px;">+50 XP</span>
+        </div>
+
+        <!-- Completed quest -->
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;border:1px solid rgba(52,211,153,0.15);background:rgba(52,211,153,0.03);">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));display:flex;align-items:center;justify-content:center;font-size:22px;">🥬</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;font-weight:600;color:#fff;">Diet Preferences</span>
+              <span style="font-size:12px;color:var(--green);">✓</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);">Allergies, restrictions</div>
+          </div>
+          <span class="xp-badge xp-green" style="font-size:10px;">+50 XP</span>
+        </div>
+
+        <!-- Active quest (glowing) -->
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;animation:pulse-glow 3s ease-in-out infinite;border:1px solid rgba(34,211,238,0.2);background:rgba(34,211,238,0.03);">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(34,211,238,0.2),rgba(34,211,238,0.05));display:flex;align-items:center;justify-content:center;font-size:22px;">⚡</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#fff;">Exercise Routine</div>
+            <div style="font-size:11px;color:var(--cyan);">Tap to start quest &rarr;</div>
+          </div>
+          <span class="xp-badge xp-cyan" style="font-size:10px;">+50 XP</span>
+        </div>
+
+        <!-- Locked quests -->
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;opacity:0.5;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:22px;">🌙</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--text2);">Sleep Pattern</div>
+            <div style="font-size:11px;color:var(--text3);">Unlocks after Exercise</div>
+          </div>
+          <span style="font-size:14px;color:var(--text3);">🔒</span>
+        </div>
+
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;opacity:0.5;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:22px;">☕</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--text2);">Lifestyle</div>
+            <div style="font-size:11px;color:var(--text3);">Unlocks after Sleep</div>
+          </div>
+          <span style="font-size:14px;color:var(--text3);">🔒</span>
+        </div>
+
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;opacity:0.5;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:22px;">🎯</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--text2);">Set Goals</div>
+            <div style="font-size:11px;color:var(--text3);">Final quest — unlock full AI</div>
+          </div>
+          <span style="font-size:14px;color:var(--text3);">🔒</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 3: DASHBOARD ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">03 &mdash; Dashboard</div>
+  <div class="screen-sublabel">Gamified home with XP & streaks</div>
+  <div class="phone">
+    <div style="position:absolute;top:0;left:0;right:0;height:200px;
+      background:radial-gradient(ellipse 300px 150px at 50% 0%, rgba(52,211,153,0.06) 0%, transparent 70%);"></div>
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;padding:0 20px;">
+      <!-- Header with level -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:13px;color:var(--text3);">Good morning <span style="animation:wave 1s ease-in-out 2;display:inline-block;">👋</span></div>
+          <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;">Sarah</div>
+        </div>
+        <!-- Level badge -->
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Level 7</div>
+            <div class="level-bar-track" style="width:60px;margin-top:3px;">
+              <div class="level-bar-fill" style="--fill-width:72%;"></div>
+            </div>
+          </div>
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--green),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;font-family:'Space Grotesk';color:#fff;box-shadow:0 8px 24px var(--green-glow);">7</div>
+        </div>
+      </div>
+
+      <!-- Streak + XP bar -->
+      <div class="glass" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="streak-fire" style="font-size:20px;">🔥</span>
+          <div>
+            <div style="font-size:18px;font-weight:800;color:var(--amber);font-family:'Space Grotesk';">12 day streak</div>
+            <div style="font-size:11px;color:var(--text3);">Keep it going!</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:16px;font-weight:700;color:var(--green);font-family:'Space Grotesk';">2,450</div>
+          <div style="font-size:10px;color:var(--text3);">Total XP</div>
+        </div>
+      </div>
+
+      <!-- Bento grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- AI Chat -->
+        <div style="grid-column:1/-1;padding:18px;border-radius:16px;position:relative;overflow:hidden;
+          background:linear-gradient(135deg, rgba(167,139,250,0.1), rgba(244,114,182,0.05));
+          border:1px solid rgba(167,139,250,0.15);">
+          <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(167,139,250,0.08);animation:float 5s ease-in-out infinite;"></div>
+          <div style="font-size:22px;margin-bottom:6px;">✨</div>
+          <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:2px;">Ask your AI consultant</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">Earns +30 XP per conversation</div>
+          <div style="display:inline-block;padding:8px 14px;border-radius:10px;background:rgba(167,139,250,0.2);font-size:12px;color:var(--purple);font-weight:600;">Chat now &rarr;</div>
+        </div>
+
+        <!-- Profile -->
+        <div class="glass" style="padding:14px;">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Quest</div>
+          <div style="font-family:'Space Grotesk';font-size:28px;font-weight:800;color:var(--cyan);">4<span style="font-size:14px;color:var(--text3);">/6</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;">Quests done</div>
+        </div>
+
+        <!-- Alert -->
+        <div class="glass" style="padding:14px;border:1px solid rgba(248,113,113,0.15);background:rgba(248,113,113,0.04);">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Alert</div>
+          <div style="font-family:'Space Grotesk';font-size:28px;font-weight:800;color:var(--red);">1</div>
+          <div style="font-size:11px;color:var(--red);margin-top:2px;">Interaction found</div>
+        </div>
+
+        <!-- Cabinet -->
+        <div class="glass" style="grid-column:1/-1;padding:14px 16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Cabinet</div>
+            <div style="font-size:12px;color:var(--green);font-weight:500;">View all &rarr;</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <div style="flex:1;padding:10px;border-radius:10px;background:rgba(52,211,153,0.06);text-align:center;">
+              <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;color:var(--green);">5</div>
+              <div style="font-size:10px;color:var(--text3);">Supps</div>
+            </div>
+            <div style="flex:1;padding:10px;border-radius:10px;background:rgba(59,130,246,0.06);text-align:center;">
+              <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;color:#3B82F6;">2</div>
+              <div style="font-size:10px;color:var(--text3);">Meds</div>
+            </div>
+            <div style="flex:1;padding:10px;border-radius:10px;background:rgba(167,139,250,0.06);text-align:center;">
+              <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;color:var(--purple);">1</div>
+              <div style="font-size:10px;color:var(--text3);">Vit</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievements preview -->
+        <div class="glass" style="grid-column:1/-1;padding:14px 16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;">Badges</div>
+            <div style="font-size:12px;color:var(--amber);font-weight:500;">3/12 &rarr;</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div class="achievement-badge" style="background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));animation-delay:0s;">🫀</div>
+            <div class="achievement-badge" style="background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05));animation-delay:0.15s;">🔥</div>
+            <div class="achievement-badge" style="background:linear-gradient(135deg,rgba(167,139,250,0.2),rgba(167,139,250,0.05));animation-delay:0.3s;">💬</div>
+            <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);">🏆</div>
+            <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);">⚡</div>
+            <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);">🧬</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:8px;font-size:10px;color:var(--text3);padding-bottom:90px;">Not medical advice. Always consult your doctor.</div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active"><div class="tab-icon">🏠</div><span>Home</span></div>
+      <div class="tab-item"><div class="tab-icon">💊</div><span>Cabinet</span></div>
+      <div class="tab-item"><div class="tab-icon">✨</div><span>Chat</span></div>
+      <div class="tab-item"><div class="tab-icon">🏆</div><span>Badges</span></div>
+      <div class="tab-item"><div class="tab-icon">👤</div><span>Profile</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 4: CABINET ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">04 &mdash; Cabinet</div>
+  <div class="screen-sublabel">Items with XP rewards</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;">My Cabinet</div>
+        <span class="xp-badge xp-green">+10 XP / item</span>
+      </div>
+
+      <!-- Search -->
+      <div class="glass" style="padding:12px 16px;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="color:var(--text3);font-size:14px;">🔍</span>
+        <span style="color:var(--text3);font-size:14px;">Search...</span>
+      </div>
+
+      <!-- Filter chips -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <div style="padding:6px 12px;border-radius:100px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);font-size:12px;color:var(--green);font-weight:600;">All (8)</div>
+        <div style="padding:6px 12px;border-radius:100px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text2);">Supps</div>
+        <div style="padding:6px 12px;border-radius:100px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text2);">Meds</div>
+        <div style="padding:6px 12px;border-radius:100px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text2);">Archive</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <!-- Vitamin D3 -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05));display:flex;align-items:center;justify-content:center;font-size:20px;animation:float 4s ease-in-out infinite;">☀️</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:#fff;">Vitamin D3</div>
+                <div style="display:flex;gap:4px;margin-top:3px;">
+                  <span style="padding:2px 6px;border-radius:4px;background:rgba(52,211,153,0.1);font-size:10px;color:var(--green);">Supplement</span>
+                  <span style="padding:2px 6px;border-radius:4px;background:rgba(251,191,36,0.1);font-size:10px;color:var(--amber);">30 days</span>
+                </div>
+              </div>
+            </div>
+            <span style="color:var(--text3);">⋯</span>
+          </div>
+          <div style="display:flex;gap:16px;">
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Dose</div><div style="font-size:13px;color:var(--text);font-weight:500;">5000 IU</div></div>
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Freq</div><div style="font-size:13px;color:var(--text);font-weight:500;">Daily</div></div>
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Time</div><div style="font-size:13px;color:var(--text);font-weight:500;">Morning</div></div>
+          </div>
+        </div>
+
+        <!-- Magnesium with warning -->
+        <div class="glass" style="padding:16px;border:1px solid rgba(248,113,113,0.15);background:rgba(248,113,113,0.02);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));display:flex;align-items:center;justify-content:center;font-size:20px;">🧲</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:#fff;">Magnesium</div>
+                <div style="display:flex;gap:4px;margin-top:3px;">
+                  <span style="padding:2px 6px;border-radius:4px;background:rgba(52,211,153,0.1);font-size:10px;color:var(--green);">Supplement</span>
+                </div>
+              </div>
+            </div>
+            <span style="color:var(--text3);">⋯</span>
+          </div>
+          <div style="display:flex;gap:16px;margin-bottom:10px;">
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Dose</div><div style="font-size:13px;color:var(--text);font-weight:500;">500mg</div></div>
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Freq</div><div style="font-size:13px;color:var(--text);font-weight:500;">Daily</div></div>
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Time</div><div style="font-size:13px;color:var(--text);font-weight:500;">Evening</div></div>
+          </div>
+          <div style="padding:8px 12px;border-radius:10px;background:rgba(248,113,113,0.08);display:flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;">⚠️</span>
+            <span style="font-size:11px;color:var(--red);font-weight:500;">Major interaction with Metformin</span>
+          </div>
+        </div>
+
+        <!-- Metformin -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(59,130,246,0.05));display:flex;align-items:center;justify-content:center;font-size:20px;">💊</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:#fff;">Metformin</div>
+                <div style="display:flex;gap:4px;margin-top:3px;">
+                  <span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.1);font-size:10px;color:#3B82F6;">Medication</span>
+                </div>
+              </div>
+            </div>
+            <span style="color:var(--text3);">⋯</span>
+          </div>
+          <div style="display:flex;gap:16px;">
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Dose</div><div style="font-size:13px;color:var(--text);font-weight:500;">500mg</div></div>
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Freq</div><div style="font-size:13px;color:var(--text);font-weight:500;">2x daily</div></div>
+            <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Time</div><div style="font-size:13px;color:var(--text);font-weight:500;">AM / PM</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div style="position:absolute;bottom:100px;right:24px;width:56px;height:56px;border-radius:16px;
+      background:linear-gradient(135deg,var(--green),var(--cyan));
+      display:flex;align-items:center;justify-content:center;
+      font-size:28px;color:#fff;font-weight:300;
+      box-shadow:0 12px 40px var(--green-glow);
+      animation:float 3s ease-in-out infinite;">+</div>
+
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">🏠</div><span>Home</span></div>
+      <div class="tab-item active"><div class="tab-icon">💊</div><span>Cabinet</span></div>
+      <div class="tab-item"><div class="tab-icon">✨</div><span>Chat</span></div>
+      <div class="tab-item"><div class="tab-icon">🏆</div><span>Badges</span></div>
+      <div class="tab-item"><div class="tab-icon">👤</div><span>Profile</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 5: AI CHAT ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">05 &mdash; AI Chat</div>
+  <div class="screen-sublabel">Chat with XP rewards</div>
+  <div class="phone">
+    <div style="position:absolute;top:0;left:0;right:0;height:120px;
+      background:radial-gradient(ellipse 300px 100px at 50% 0%, rgba(167,139,250,0.08) 0%, transparent 70%);"></div>
+    <div class="status-bar" style="position:relative;z-index:1;">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;">
+      <!-- Chat header -->
+      <div style="padding:0 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+        <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--pink));display:flex;align-items:center;justify-content:center;font-size:16px;animation:float 3s ease-in-out infinite;">✨</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:600;color:#fff;">Recallth AI</div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div style="width:6px;height:6px;border-radius:3px;background:var(--green);"></div>
+            <span style="font-size:11px;color:var(--text3);">Knows your profile</span>
+          </div>
+        </div>
+        <span class="xp-badge xp-purple">+30 XP</span>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="margin:8px 20px;padding:6px 10px;border-radius:8px;background:var(--card);border:1px solid var(--border);text-align:center;">
+        <span style="font-size:10px;color:var(--text3);">Not medical advice. Consult your doctor.</span>
+      </div>
+
+      <!-- Chat messages -->
+      <div style="padding:8px 20px;display:flex;flex-direction:column;gap:12px;">
+        <!-- User -->
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="max-width:250px;padding:12px 16px;border-radius:18px 18px 4px 18px;
+            background:linear-gradient(135deg,var(--green),var(--cyan));
+            font-size:14px;color:#fff;line-height:1.4;">
+            Should I take magnesium with my metformin at night?
+          </div>
+        </div>
+
+        <!-- AI -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--pink));display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">✨</div>
+          <div style="max-width:270px;">
+            <div style="padding:14px 16px;border-radius:4px 18px 18px 18px;background:var(--card);border:1px solid var(--border);font-size:14px;color:#d4d4d4;line-height:1.5;">
+              Based on your cabinet:<br><br>
+              <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(167,139,250,0.15);color:var(--purple);font-size:12px;font-weight:500;">Magnesium 500mg</span> can reduce absorption of
+              <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(59,130,246,0.15);color:#60A5FA;font-size:12px;font-weight:500;">Metformin</span> by 30%.<br><br>
+              <strong style="color:var(--amber);">Tip:</strong> Take them 2h apart.
+            </div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <div style="padding:4px 8px;border-radius:6px;background:var(--card);font-size:10px;color:var(--text3);">📎 NIH</div>
+              <div style="padding:4px 8px;border-radius:6px;background:var(--card);font-size:10px;color:var(--text3);">📎 PubMed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User -->
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="max-width:250px;padding:12px 16px;border-radius:18px 18px 4px 18px;
+            background:linear-gradient(135deg,var(--green),var(--cyan));
+            font-size:14px;color:#fff;line-height:1.4;">
+            Makes sense. Morning ok instead?
+          </div>
+        </div>
+
+        <!-- Typing -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--pink));display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">✨</div>
+          <div style="padding:14px 20px;border-radius:4px 18px 18px 18px;background:var(--card);border:1px solid var(--border);">
+            <div style="display:flex;gap:5px;">
+              <div style="width:6px;height:6px;border-radius:3px;background:var(--purple);animation:typing-dot 1.4s ease-in-out infinite;"></div>
+              <div style="width:6px;height:6px;border-radius:3px;background:var(--purple);animation:typing-dot 1.4s ease-in-out 0.2s infinite;"></div>
+              <div style="width:6px;height:6px;border-radius:3px;background:var(--purple);animation:typing-dot 1.4s ease-in-out 0.4s infinite;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div style="position:absolute;bottom:83px;left:0;right:0;padding:12px 20px;background:rgba(20,20,40,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="flex:1;padding:12px 16px;border-radius:14px;background:var(--card);border:1px solid var(--border);font-size:14px;color:var(--text3);">
+            Ask about your health...
+          </div>
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--pink));display:flex;align-items:center;justify-content:center;font-size:16px;">↑</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">🏠</div><span>Home</span></div>
+      <div class="tab-item"><div class="tab-icon">💊</div><span>Cabinet</span></div>
+      <div class="tab-item active"><div class="tab-icon">✨</div><span>Chat</span></div>
+      <div class="tab-item"><div class="tab-icon">🏆</div><span>Badges</span></div>
+      <div class="tab-item"><div class="tab-icon">👤</div><span>Profile</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 6: BADGES & ACHIEVEMENTS ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">06 &mdash; Achievements</div>
+  <div class="screen-sublabel">Badge collection & rewards</div>
+  <div class="phone">
+    <div style="position:absolute;inset:0;overflow:hidden;">
+      <div style="position:absolute;top:10%;left:30%;width:150px;height:150px;border-radius:50%;background:rgba(251,191,36,0.05);filter:blur(40px);animation:float-slow 6s ease-in-out infinite;"></div>
+      <div style="position:absolute;top:40%;right:20%;width:100px;height:100px;border-radius:50%;background:rgba(167,139,250,0.05);filter:blur(30px);animation:float-slow 8s ease-in-out 1s infinite;"></div>
+    </div>
+    <div class="status-bar" style="position:relative;z-index:1;">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;padding:0 20px;">
+      <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;margin-bottom:4px;">Achievements</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">3 of 12 badges unlocked</div>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <div class="glass" style="flex:1;padding:14px;text-align:center;">
+          <div style="font-family:'Space Grotesk';font-size:24px;font-weight:800;color:var(--green);">2,450</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Total XP</div>
+        </div>
+        <div class="glass" style="flex:1;padding:14px;text-align:center;">
+          <div style="font-family:'Space Grotesk';font-size:24px;font-weight:800;color:var(--amber);"><span class="streak-fire">🔥</span> 12</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Day Streak</div>
+        </div>
+        <div class="glass" style="flex:1;padding:14px;text-align:center;">
+          <div style="font-family:'Space Grotesk';font-size:24px;font-weight:800;color:var(--cyan);">Lv.7</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Level</div>
+        </div>
+      </div>
+
+      <!-- Unlocked badges -->
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Unlocked</div>
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-bottom:20px;">
+        <div class="glass" style="padding:16px;text-align:center;">
+          <div class="achievement-badge" style="background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));margin:0 auto 8px;animation-delay:0s;">🫀</div>
+          <div style="font-size:12px;font-weight:600;color:#fff;">Body Basics</div>
+          <div style="font-size:10px;color:var(--green);margin-top:2px;">+100 XP</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;">
+          <div class="achievement-badge" style="background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05));margin:0 auto 8px;animation-delay:0.15s;">🔥</div>
+          <div style="font-size:12px;font-weight:600;color:#fff;">7-Day Streak</div>
+          <div style="font-size:10px;color:var(--amber);margin-top:2px;">+200 XP</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;">
+          <div class="achievement-badge" style="background:linear-gradient(135deg,rgba(167,139,250,0.2),rgba(167,139,250,0.05));margin:0 auto 8px;animation-delay:0.3s;">💬</div>
+          <div style="font-size:12px;font-weight:600;color:#fff;">First Chat</div>
+          <div style="font-size:10px;color:var(--purple);margin-top:2px;">+50 XP</div>
+        </div>
+      </div>
+
+      <!-- Locked badges -->
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Locked</div>
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;">
+        <div class="glass" style="padding:16px;text-align:center;opacity:0.5;">
+          <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);margin:0 auto 8px;">🏆</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);">All Quests</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">6/6 quests</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;opacity:0.5;">
+          <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);margin:0 auto 8px;">⚡</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);">Safety Pro</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">10 checks</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;opacity:0.5;">
+          <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);margin:0 auto 8px;">🧬</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);">Health Guru</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Level 20</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;opacity:0.5;">
+          <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);margin:0 auto 8px;">📚</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);">Bookworm</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">50 chats</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;opacity:0.5;">
+          <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);margin:0 auto 8px;">💊</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);">Collector</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">20 items</div>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center;opacity:0.5;">
+          <div class="achievement-badge locked" style="background:rgba(255,255,255,0.04);margin:0 auto 8px;">🌟</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);">Legend</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Level 50</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">🏠</div><span>Home</span></div>
+      <div class="tab-item"><div class="tab-icon">💊</div><span>Cabinet</span></div>
+      <div class="tab-item"><div class="tab-icon">✨</div><span>Chat</span></div>
+      <div class="tab-item active"><div class="tab-icon">🏆</div><span>Badges</span></div>
+      <div class="tab-item"><div class="tab-icon">👤</div><span>Profile</span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Annotation -->
+<div style="max-width:1200px;margin:48px auto 0;padding:24px;border-radius:16px;background:var(--card);border:1px solid var(--border);">
+  <div style="font-family:'Space Grotesk';font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px;">Animation Index</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;color:var(--text2);">
+    <div><span style="color:var(--green);">float / float-slow</span> — Logo, FAB, tab icons, orbs</div>
+    <div><span style="color:var(--cyan);">pulse-glow / pulse-ring</span> — Active quest, logo ring</div>
+    <div><span style="color:var(--amber);">streak-flame</span> — Streak fire emoji wiggle</div>
+    <div><span style="color:var(--purple);">shimmer</span> — CTA button, XP bar highlight</div>
+    <div><span style="color:var(--pink);">badge-unlock</span> — Achievement pop-in</div>
+    <div><span style="color:var(--cyan);">orbit</span> — Welcome screen particles</div>
+    <div><span style="color:var(--green);">progress-fill</span> — Level bars animate on load</div>
+    <div><span style="color:var(--purple);">typing-dot</span> — AI typing indicator</div>
+    <div><span style="color:var(--amber);">wave</span> — Greeting hand wave</div>
+    <div><span style="color:var(--cyan);">bounce-in / xp-pop</span> — XP badges pop animation</div>
+    <div><span style="color:var(--pink);">spin-slow</span> — Decorative elements</div>
+    <div><span style="color:var(--green);">slide-up</span> — Card entrance transitions</div>
+  </div>
+</div>
+
+</body>
+</html>

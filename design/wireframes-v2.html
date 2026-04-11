@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recallth v2 — Premium Mobile UI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0A0A0A;
+    font-family: 'Inter', -apple-system, sans-serif;
+    padding: 48px;
+    color: #fff;
+  }
+  h1 {
+    text-align: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #34D399, #6EE7B7, #A7F3D0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #525252;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 375px);
+    gap: 48px;
+    justify-content: center;
+  }
+  .screen-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #34D399;
+    margin-bottom: 4px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .screen-sublabel {
+    font-size: 11px;
+    color: #525252;
+    margin-bottom: 14px;
+  }
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: #111111;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 80px rgba(0,0,0,0.6),
+      0 0 120px rgba(52,211,153,0.05);
+    position: relative;
+  }
+  .status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .status-bar .time { font-size: 16px; font-weight: 700; }
+  .status-bar .icons { display: flex; gap: 4px; align-items: center; font-size: 11px; color: #737373; }
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 83px;
+    background: rgba(17,17,17,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #525252;
+  }
+  .tab-item.active { color: #34D399; }
+  .tab-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .tab-item.active .tab-icon {
+    background: rgba(52,211,153,0.12);
+  }
+
+  /* Glass card */
+  .glass {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+  }
+  .glass-bright {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+  }
+
+  /* Glow accent */
+  .glow-green {
+    box-shadow: 0 0 40px rgba(52,211,153,0.1), 0 0 0 1px rgba(52,211,153,0.15);
+  }
+  .glow-purple {
+    box-shadow: 0 0 40px rgba(139,92,246,0.1), 0 0 0 1px rgba(139,92,246,0.15);
+  }
+
+  /* Badge styles */
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(52,211,153,0.15); color: #34D399; }
+  .badge-purple { background: rgba(139,92,246,0.15); color: #8B5CF6; }
+  .badge-amber { background: rgba(245,158,11,0.15); color: #F59E0B; }
+  .badge-red { background: rgba(239,68,68,0.15); color: #EF4444; }
+  .badge-blue { background: rgba(59,130,246,0.15); color: #3B82F6; }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.06); margin: 0; }
+
+  /* Design tokens section */
+  .tokens-section {
+    margin-top: 64px;
+    padding: 32px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tokens-section h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    color: #e5e5e5;
+    margin-bottom: 20px;
+  }
+  .token-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .token-swatch {
+    width: 80px;
+    text-align: center;
+  }
+  .token-swatch .color {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    margin: 0 auto 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .token-swatch .name { font-size: 10px; color: #a3a3a3; }
+  .token-swatch .hex { font-size: 10px; color: #525252; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<h1>Recallth</h1>
+<div class="subtitle">Premium Health Intelligence &bull; Mobile UI v2.0</div>
+
+<div class="grid">
+
+<!-- ==================== SCREEN 1: WELCOME ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">01 &mdash; Welcome</div>
+  <div class="screen-sublabel">First impression & onboarding</div>
+  <div class="phone">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;
+      background:
+        radial-gradient(ellipse 300px 400px at 50% 35%, rgba(52,211,153,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 200px 200px at 20% 70%, rgba(139,92,246,0.08) 0%, transparent 70%),
+        #111111;
+    "></div>
+    <div class="status-bar" style="position:relative;z-index:1;">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;padding:0 32px;text-align:center;">
+      <!-- Floating orbs decoration -->
+      <div style="position:absolute;top:30px;left:40px;width:60px;height:60px;border-radius:50%;background:rgba(52,211,153,0.08);filter:blur(20px);"></div>
+      <div style="position:absolute;top:80px;right:30px;width:40px;height:40px;border-radius:50%;background:rgba(139,92,246,0.1);filter:blur(15px);"></div>
+
+      <!-- Logo -->
+      <div style="margin-top:100px;margin-bottom:32px;">
+        <div style="width:88px;height:88px;margin:0 auto;border-radius:24px;
+          background:linear-gradient(135deg, #34D399 0%, #059669 100%);
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 20px 60px rgba(52,211,153,0.25);
+          font-size:40px;font-weight:800;color:#fff;font-family:'Space Grotesk',sans-serif;">
+          R
+        </div>
+      </div>
+
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.1;">
+        Recallth
+      </div>
+      <div style="font-size:16px;color:#737373;line-height:1.5;margin-bottom:48px;">
+        Your AI health consultant<br>that <span style="color:#34D399;font-weight:500;">never forgets</span>
+      </div>
+
+      <!-- Feature pills -->
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:48px;">
+        <div style="padding:8px 14px;border-radius:100px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);font-size:12px;color:#34D399;font-weight:500;">Health Memory</div>
+        <div style="padding:8px 14px;border-radius:100px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);font-size:12px;color:#8B5CF6;font-weight:500;">AI Chat</div>
+        <div style="padding:8px 14px;border-radius:100px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);font-size:12px;color:#F59E0B;font-weight:500;">Safety Alerts</div>
+      </div>
+
+      <!-- Glowing CTA -->
+      <div style="padding:18px 0;border-radius:16px;
+        background:linear-gradient(135deg, #34D399 0%, #059669 100%);
+        font-size:17px;font-weight:600;color:#fff;
+        box-shadow:0 16px 48px rgba(52,211,153,0.3);
+        cursor:pointer;margin-bottom:16px;">
+        Get Started
+      </div>
+
+      <div style="font-size:14px;color:#525252;">
+        Already have an account? <span style="color:#34D399;font-weight:500;">Sign in</span>
+      </div>
+    </div>
+
+    <!-- Bottom decoration -->
+    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+      width:134px;height:5px;border-radius:3px;background:rgba(255,255,255,0.15);"></div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 2: PROFILE SETUP ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">02 &mdash; Profile Setup</div>
+  <div class="screen-sublabel">Guided health onboarding</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;">Your Health Map</div>
+        <div style="font-size:12px;color:#34D399;font-weight:600;">2/6</div>
+      </div>
+      <div style="font-size:13px;color:#525252;margin-bottom:16px;">Tap any card. No rush — fill over time.</div>
+
+      <!-- Organic progress -->
+      <div style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:24px;overflow:hidden;">
+        <div style="height:100%;width:33%;background:linear-gradient(90deg,#34D399,#6EE7B7);border-radius:2px;"></div>
+      </div>
+
+      <!-- Bento grid cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- Body - completed, large -->
+        <div class="glass glow-green" style="padding:16px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-10px;right:-10px;width:50px;height:50px;border-radius:50%;background:rgba(52,211,153,0.1);"></div>
+          <div style="font-size:28px;margin-bottom:8px;">🫀</div>
+          <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:3px;">Body</div>
+          <div style="font-size:11px;color:#525252;margin-bottom:10px;">Height, weight, blood type</div>
+          <div class="badge badge-green">Complete</div>
+        </div>
+
+        <!-- Diet - completed -->
+        <div class="glass glow-green" style="padding:16px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-10px;right:-10px;width:50px;height:50px;border-radius:50%;background:rgba(52,211,153,0.1);"></div>
+          <div style="font-size:28px;margin-bottom:8px;">🥬</div>
+          <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:3px;">Diet</div>
+          <div style="font-size:11px;color:#525252;margin-bottom:10px;">Preferences & restrictions</div>
+          <div class="badge badge-green">Complete</div>
+        </div>
+
+        <!-- Exercise - empty -->
+        <div class="glass" style="padding:16px;position:relative;">
+          <div style="font-size:28px;margin-bottom:8px;">⚡</div>
+          <div style="font-size:15px;font-weight:600;color:#a3a3a3;margin-bottom:3px;">Exercise</div>
+          <div style="font-size:11px;color:#404040;margin-bottom:10px;">Activity & routine</div>
+          <div style="font-size:18px;color:#404040;position:absolute;top:16px;right:16px;">+</div>
+        </div>
+
+        <!-- Sleep - empty -->
+        <div class="glass" style="padding:16px;position:relative;">
+          <div style="font-size:28px;margin-bottom:8px;">🌙</div>
+          <div style="font-size:15px;font-weight:600;color:#a3a3a3;margin-bottom:3px;">Sleep</div>
+          <div style="font-size:11px;color:#404040;margin-bottom:10px;">Schedule & quality</div>
+          <div style="font-size:18px;color:#404040;position:absolute;top:16px;right:16px;">+</div>
+        </div>
+
+        <!-- Lifestyle - empty -->
+        <div class="glass" style="padding:16px;position:relative;">
+          <div style="font-size:28px;margin-bottom:8px;">☕</div>
+          <div style="font-size:15px;font-weight:600;color:#a3a3a3;margin-bottom:3px;">Lifestyle</div>
+          <div style="font-size:11px;color:#404040;">Stress, habits, caffeine</div>
+        </div>
+
+        <!-- Goals - empty -->
+        <div class="glass" style="padding:16px;position:relative;">
+          <div style="font-size:28px;margin-bottom:8px;">🎯</div>
+          <div style="font-size:15px;font-weight:600;color:#a3a3a3;margin-bottom:3px;">Goals</div>
+          <div style="font-size:11px;color:#404040;">What you want to achieve</div>
+        </div>
+      </div>
+
+      <!-- Skip / Continue -->
+      <div style="margin-top:24px;">
+        <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg,#34D399,#059669);text-align:center;font-size:15px;font-weight:600;color:#fff;box-shadow:0 12px 40px rgba(52,211,153,0.2);">
+          Continue to Dashboard
+        </div>
+        <div style="text-align:center;margin-top:12px;font-size:13px;color:#404040;">Skip for now</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 3: DASHBOARD ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">03 &mdash; Dashboard</div>
+  <div class="screen-sublabel">Home with bento grid layout</div>
+  <div class="phone">
+    <div style="position:absolute;top:0;left:0;right:0;height:200px;
+      background:radial-gradient(ellipse 400px 200px at 50% 0%, rgba(52,211,153,0.08) 0%, transparent 70%);
+    "></div>
+    <div class="status-bar" style="position:relative;z-index:1;">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;padding:0 20px;">
+      <!-- Greeting -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <div style="font-size:13px;color:#525252;margin-bottom:2px;">Good morning</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">Sarah</div>
+        </div>
+        <div style="width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#34D399,#059669);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;">S</div>
+      </div>
+
+      <!-- Bento grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+
+        <!-- AI Chat CTA - spans full width -->
+        <div class="glass glow-purple" style="grid-column:1/-1;padding:20px;position:relative;overflow:hidden;
+          background:linear-gradient(135deg, rgba(139,92,246,0.12), rgba(139,92,246,0.04));
+          border:1px solid rgba(139,92,246,0.15);">
+          <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(139,92,246,0.08);"></div>
+          <div style="font-size:22px;margin-bottom:8px;">✨</div>
+          <div style="font-size:17px;font-weight:600;color:#fff;margin-bottom:4px;">Ask me anything</div>
+          <div style="font-size:12px;color:#737373;">Personalized health advice, powered by your profile</div>
+          <div style="margin-top:12px;display:inline-block;padding:8px 16px;border-radius:10px;background:rgba(139,92,246,0.2);font-size:12px;color:#A78BFA;font-weight:500;">Start conversation &rarr;</div>
+        </div>
+
+        <!-- Profile completeness -->
+        <div class="glass" style="padding:16px;">
+          <div style="font-size:11px;color:#525252;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Profile</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#34D399;margin-bottom:2px;">67<span style="font-size:16px;color:#525252;">%</span></div>
+          <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:8px;">
+            <div style="height:100%;width:67%;background:linear-gradient(90deg,#34D399,#6EE7B7);border-radius:2px;"></div>
+          </div>
+        </div>
+
+        <!-- Alert card -->
+        <div class="glass" style="padding:16px;border:1px solid rgba(245,158,11,0.15);background:rgba(245,158,11,0.04);">
+          <div style="font-size:11px;color:#525252;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Alerts</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#F59E0B;">1</div>
+          <div style="font-size:11px;color:#F59E0B;margin-top:4px;">Moderate interaction</div>
+        </div>
+
+        <!-- Cabinet summary - spans full width -->
+        <div class="glass" style="grid-column:1/-1;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-size:11px;color:#525252;text-transform:uppercase;letter-spacing:1px;">My Cabinet</div>
+            <div style="font-size:12px;color:#34D399;font-weight:500;">View all &rarr;</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;padding:10px;border-radius:10px;background:rgba(52,211,153,0.06);text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#34D399;">5</div>
+              <div style="font-size:10px;color:#525252;">Supplements</div>
+            </div>
+            <div style="flex:1;padding:10px;border-radius:10px;background:rgba(59,130,246,0.06);text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#3B82F6;">2</div>
+              <div style="font-size:10px;color:#525252;">Medications</div>
+            </div>
+            <div style="flex:1;padding:10px;border-radius:10px;background:rgba(168,85,247,0.06);text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#A855F7;">1</div>
+              <div style="font-size:10px;color:#525252;">Vitamin</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent activity -->
+        <div class="glass" style="grid-column:1/-1;padding:16px;">
+          <div style="font-size:11px;color:#525252;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Recent</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(139,92,246,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;">💬</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:500;color:#e5e5e5;">B12 timing question</div>
+              <div style="font-size:11px;color:#404040;">2 hours ago</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(52,211,153,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;">💊</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:500;color:#e5e5e5;">Added Omega-3 Fish Oil</div>
+              <div style="font-size:11px;color:#404040;">Yesterday</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="text-align:center;margin-top:12px;font-size:10px;color:#333;padding-bottom:90px;">Not medical advice. Always consult your doctor.</div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <div class="tab-icon">🏠</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">💊</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">✨</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">📋</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">👤</div>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 4: SUPPLEMENT CABINET ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">04 &mdash; Cabinet</div>
+  <div class="screen-sublabel">Supplement & medication manager</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:14px;">My Cabinet</div>
+
+      <!-- Search -->
+      <div class="glass" style="padding:12px 16px;display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="color:#404040;font-size:14px;">🔍</span>
+        <span style="color:#404040;font-size:14px;">Search supplements...</span>
+      </div>
+
+      <!-- Filter chips -->
+      <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;">
+        <div style="padding:6px 14px;border-radius:100px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);font-size:12px;color:#34D399;font-weight:500;white-space:nowrap;">All (8)</div>
+        <div style="padding:6px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:12px;color:#737373;font-weight:500;white-space:nowrap;">Supplements</div>
+        <div style="padding:6px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:12px;color:#737373;font-weight:500;white-space:nowrap;">Medications</div>
+        <div style="padding:6px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:12px;color:#737373;font-weight:500;white-space:nowrap;">Archived</div>
+      </div>
+
+      <!-- Cabinet items -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <!-- Vitamin D3 -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">☀️</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:#fff;">Vitamin D3</div>
+                <div class="badge badge-green" style="margin-top:3px;">Supplement</div>
+              </div>
+            </div>
+            <div style="font-size:16px;color:#404040;">⋯</div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:10px;">
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Dose</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">5000 IU</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Frequency</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">Daily</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Time</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">Morning</div></div>
+          </div>
+        </div>
+
+        <!-- Magnesium with warning -->
+        <div class="glass" style="padding:16px;border:1px solid rgba(245,158,11,0.15);background:rgba(245,158,11,0.03);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(52,211,153,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">🧲</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:#fff;">Magnesium</div>
+                <div class="badge badge-green" style="margin-top:3px;">Supplement</div>
+              </div>
+            </div>
+            <div style="font-size:16px;color:#404040;">⋯</div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:10px;margin-bottom:10px;">
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Dose</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">500mg</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Frequency</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">Daily</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Time</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">Evening</div></div>
+          </div>
+          <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);display:flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;">⚠️</span>
+            <span style="font-size:11px;color:#F59E0B;">Moderate interaction with Metformin</span>
+          </div>
+        </div>
+
+        <!-- Metformin -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(59,130,246,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">💊</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:#fff;">Metformin</div>
+                <div class="badge badge-blue" style="margin-top:3px;">Medication</div>
+              </div>
+            </div>
+            <div style="font-size:16px;color:#404040;">⋯</div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:10px;">
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Dose</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">500mg</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Frequency</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">2x daily</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Time</div><div style="font-size:13px;color:#a3a3a3;font-weight:500;">AM / PM</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div style="position:absolute;bottom:100px;right:24px;width:56px;height:56px;border-radius:16px;
+      background:linear-gradient(135deg,#34D399,#059669);
+      display:flex;align-items:center;justify-content:center;
+      font-size:28px;color:#fff;font-weight:300;
+      box-shadow:0 12px 40px rgba(52,211,153,0.3);">+</div>
+
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">🏠</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">💊</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">✨</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">📋</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">👤</div>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 5: AI CHAT ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">05 &mdash; AI Chat</div>
+  <div class="screen-sublabel">Contextual health conversations</div>
+  <div class="phone">
+    <div style="position:absolute;top:0;left:0;right:0;height:120px;
+      background:radial-gradient(ellipse 300px 100px at 50% 0%, rgba(139,92,246,0.1) 0%, transparent 70%);
+    "></div>
+    <div class="status-bar" style="position:relative;z-index:1;">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="position:relative;z-index:1;">
+      <!-- Chat header -->
+      <div style="padding:0 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);display:flex;align-items:center;justify-content:center;font-size:16px;">✨</div>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:#fff;">Recallth AI</div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div style="width:6px;height:6px;border-radius:3px;background:#34D399;"></div>
+            <span style="font-size:11px;color:#525252;">Knows your profile</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div style="margin:10px 20px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);text-align:center;">
+        <span style="font-size:11px;color:#404040;">This is not medical advice. Always consult your doctor.</span>
+      </div>
+
+      <!-- Chat messages -->
+      <div style="padding:8px 20px;display:flex;flex-direction:column;gap:12px;">
+        <!-- User message -->
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="max-width:260px;padding:12px 16px;border-radius:18px 18px 4px 18px;
+            background:linear-gradient(135deg,#34D399,#059669);
+            font-size:14px;color:#fff;line-height:1.4;">
+            Should I take magnesium with my metformin? I usually take them together at night.
+          </div>
+        </div>
+
+        <!-- AI message -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">✨</div>
+          <div style="max-width:280px;">
+            <div style="padding:14px 16px;border-radius:4px 18px 18px 18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.06);font-size:14px;color:#d4d4d4;line-height:1.5;">
+              Great question, Sarah. Based on your cabinet:<br><br>
+              <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(139,92,246,0.15);color:#A78BFA;font-size:12px;font-weight:500;margin:2px 0;">Magnesium 500mg</span> can reduce the absorption of
+              <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(59,130,246,0.15);color:#60A5FA;font-size:12px;font-weight:500;margin:2px 0;">Metformin 500mg</span>
+              by up to 30%.<br><br>
+              <strong style="color:#F59E0B;">Recommendation:</strong> Take them 2 hours apart. Metformin with dinner, magnesium at bedtime.
+            </div>
+            <div style="display:flex;gap:8px;margin-top:6px;">
+              <div style="padding:4px 10px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:11px;color:#525252;">NIH Source</div>
+              <div style="padding:4px 10px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:11px;color:#525252;">PubMed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User follow up -->
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="max-width:260px;padding:12px 16px;border-radius:18px 18px 4px 18px;
+            background:linear-gradient(135deg,#34D399,#059669);
+            font-size:14px;color:#fff;line-height:1.4;">
+            What about taking them in the morning instead?
+          </div>
+        </div>
+
+        <!-- AI typing indicator -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">✨</div>
+          <div style="padding:14px 20px;border-radius:4px 18px 18px 18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex;gap:4px;">
+              <div style="width:6px;height:6px;border-radius:3px;background:#525252;"></div>
+              <div style="width:6px;height:6px;border-radius:3px;background:#404040;"></div>
+              <div style="width:6px;height:6px;border-radius:3px;background:#333;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input bar -->
+      <div style="position:absolute;bottom:83px;left:0;right:0;padding:12px 20px;background:rgba(17,17,17,0.9);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="flex:1;padding:12px 16px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.06);font-size:14px;color:#404040;">
+            Ask about your health...
+          </div>
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);display:flex;align-items:center;justify-content:center;font-size:16px;">↑</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">🏠</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">💊</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">✨</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">📋</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">👤</div>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 6: INTERACTION ALERTS ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">06 &mdash; Interactions</div>
+  <div class="screen-sublabel">Safety checks & alerts</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="font-size:14px;color:#525252;">←</span>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;">Interaction Check</div>
+      </div>
+      <div style="font-size:13px;color:#525252;margin-bottom:20px;">Checking Vitamin B12 against your cabinet</div>
+
+      <!-- Result count -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div class="badge badge-red">1 Major</div>
+        <div class="badge badge-amber">1 Moderate</div>
+        <div class="badge badge-green">1 Safe</div>
+      </div>
+
+      <!-- Major alert -->
+      <div style="border-radius:16px;overflow:hidden;margin-bottom:12px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.04);">
+        <div style="padding:4px 16px;background:rgba(239,68,68,0.1);display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:4px;background:#EF4444;"></div>
+          <span style="font-size:11px;font-weight:600;color:#EF4444;text-transform:uppercase;letter-spacing:1px;">Major</span>
+        </div>
+        <div style="padding:16px;">
+          <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;">Vitamin B12 + Metformin</div>
+          <div style="font-size:13px;color:#a3a3a3;line-height:1.5;margin-bottom:12px;">
+            Metformin is known to reduce Vitamin B12 absorption significantly. Long-term use may lead to B12 deficiency. Monitor levels regularly.
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:12px;">📎</span>
+            <span style="font-size:12px;color:#8B5CF6;font-weight:500;">NIH Drug Interactions Database</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moderate alert -->
+      <div style="border-radius:16px;overflow:hidden;margin-bottom:12px;border:1px solid rgba(245,158,11,0.2);background:rgba(245,158,11,0.04);">
+        <div style="padding:4px 16px;background:rgba(245,158,11,0.1);display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:4px;background:#F59E0B;"></div>
+          <span style="font-size:11px;font-weight:600;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;">Moderate</span>
+        </div>
+        <div style="padding:16px;">
+          <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;">Vitamin B12 + Vitamin D3</div>
+          <div style="font-size:13px;color:#a3a3a3;line-height:1.5;margin-bottom:12px;">
+            High doses taken together may compete for absorption. Space intake by 2+ hours for optimal absorption.
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:12px;">📎</span>
+            <span style="font-size:12px;color:#8B5CF6;font-weight:500;">Mayo Clinic Reference</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safe -->
+      <div style="border-radius:16px;overflow:hidden;margin-bottom:20px;border:1px solid rgba(52,211,153,0.15);background:rgba(52,211,153,0.03);">
+        <div style="padding:4px 16px;background:rgba(52,211,153,0.1);display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:4px;background:#34D399;"></div>
+          <span style="font-size:11px;font-weight:600;color:#34D399;text-transform:uppercase;letter-spacing:1px;">Safe</span>
+        </div>
+        <div style="padding:16px;">
+          <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:4px;">Vitamin B12 + Probiotics</div>
+          <div style="font-size:13px;color:#a3a3a3;line-height:1.5;">No known interactions. Safe to take together.</div>
+        </div>
+      </div>
+
+      <!-- Action button -->
+      <div style="padding:16px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);text-align:center;font-size:15px;font-weight:600;color:#fff;">
+        Add to Cabinet Anyway
+      </div>
+
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:#333;">Consult your healthcare provider for concerns.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 7: HISTORY ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">07 &mdash; History</div>
+  <div class="screen-sublabel">Conversation & change logs</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:14px;">History</div>
+
+      <!-- Search -->
+      <div class="glass" style="padding:12px 16px;display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="color:#404040;font-size:14px;">🔍</span>
+        <span style="color:#404040;font-size:14px;">Search history...</span>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;margin-bottom:20px;background:rgba(255,255,255,0.04);border-radius:10px;padding:3px;">
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:rgba(52,211,153,0.1);font-size:12px;font-weight:600;color:#34D399;">Chats</div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:500;color:#525252;">Profile</div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:500;color:#525252;">Cabinet</div>
+      </div>
+
+      <!-- Date header -->
+      <div style="font-size:11px;color:#404040;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Today</div>
+
+      <!-- History items -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(139,92,246,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">💬</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#e5e5e5;">B12 timing and absorption</div>
+            <div style="font-size:12px;color:#525252;margin-top:2px;">Should I take Vitamin B12 with breakfast?</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:#404040;">10:23 AM</div>
+            <div style="margin-top:4px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:10px;color:#525252;">4 msg</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:#404040;text-transform:uppercase;letter-spacing:1px;margin:6px 0;">Yesterday</div>
+
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(52,211,153,0.15),rgba(52,211,153,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">💬</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#e5e5e5;">Omega-3 benefits for joints</div>
+            <div style="font-size:12px;color:#525252;margin-top:2px;">What dosage for joint health?</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:#404040;">3:15 PM</div>
+            <div style="margin-top:4px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:10px;color:#525252;">6 msg</div>
+          </div>
+        </div>
+
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">💬</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#e5e5e5;">Sleep quality improvement</div>
+            <div style="font-size:12px;color:#525252;margin-top:2px;">Having trouble sleeping lately...</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:#404040;">11:42 AM</div>
+            <div style="margin-top:4px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:10px;color:#525252;">8 msg</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:#404040;text-transform:uppercase;letter-spacing:1px;margin:6px 0;">April 7</div>
+
+        <div class="glass" style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(59,130,246,0.05));display:flex;align-items:center;justify-content:center;font-size:18px;">💬</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#e5e5e5;">Magnesium types comparison</div>
+            <div style="font-size:12px;color:#525252;margin-top:2px;">Glycinate vs citrate difference?</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:#404040;">9:06 AM</div>
+            <div style="margin-top:4px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:10px;color:#525252;">5 msg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">🏠</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">💊</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">✨</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">📋</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">👤</div>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 8: PROFILE SUMMARY ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">08 &mdash; Profile</div>
+  <div class="screen-sublabel">Health data overview</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;">My Profile</div>
+        <div style="font-size:13px;color:#525252;">Settings</div>
+      </div>
+
+      <!-- Avatar & name -->
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#34D399,#059669);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;margin:0 auto 10px;box-shadow:0 12px 32px rgba(52,211,153,0.2);">S</div>
+        <div style="font-size:17px;font-weight:600;color:#fff;">Sarah Chen</div>
+        <div style="font-size:12px;color:#404040;margin-top:2px;">Member since March 2026</div>
+        <!-- Progress -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;">
+          <div style="width:100px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:67%;background:linear-gradient(90deg,#34D399,#6EE7B7);border-radius:2px;"></div>
+          </div>
+          <span style="font-size:12px;color:#34D399;font-weight:600;">67%</span>
+        </div>
+      </div>
+
+      <!-- Profile sections as bento cards -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <!-- Body -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;">🫀</span>
+              <span style="font-size:14px;font-weight:600;color:#e5e5e5;">Body</span>
+            </div>
+            <span style="font-size:12px;color:#34D399;font-weight:500;">Edit</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Height</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">165 cm</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Weight</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">58 kg</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Blood Type</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">A+</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Allergies</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">Shellfish</div></div>
+          </div>
+        </div>
+
+        <!-- Diet -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;">🥬</span>
+              <span style="font-size:14px;font-weight:600;color:#e5e5e5;">Diet</span>
+            </div>
+            <span style="font-size:12px;color:#34D399;font-weight:500;">Edit</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Type</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">Vegetarian</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Intolerance</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">Lactose</div></div>
+          </div>
+        </div>
+
+        <!-- Exercise -->
+        <div class="glass" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;">⚡</span>
+              <span style="font-size:14px;font-weight:600;color:#e5e5e5;">Exercise</span>
+            </div>
+            <span style="font-size:12px;color:#34D399;font-weight:500;">Edit</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Intensity</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">Moderate</div></div>
+            <div><div style="font-size:10px;color:#404040;text-transform:uppercase;letter-spacing:0.5px;">Frequency</div><div style="font-size:14px;color:#d4d4d4;font-weight:500;">3x/week</div></div>
+          </div>
+        </div>
+
+        <!-- Sleep - empty -->
+        <div style="padding:16px;border-radius:16px;border:1px dashed rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:16px;">🌙</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#525252;">Sleep</div>
+            <div style="font-size:11px;color:#333;">Tap to add your sleep data</div>
+          </div>
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:14px;color:#525252;">+</div>
+        </div>
+
+        <!-- Goals - empty -->
+        <div style="padding:16px;border-radius:16px;border:1px dashed rgba(255,255,255,0.08);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:16px;">🎯</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:#525252;">Goals</div>
+            <div style="font-size:11px;color:#333;">Define your health goals</div>
+          </div>
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:14px;color:#525252;">+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item">
+        <div class="tab-icon">🏠</div>
+        <span>Home</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">💊</div>
+        <span>Cabinet</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">✨</div>
+        <span>Chat</span>
+      </div>
+      <div class="tab-item">
+        <div class="tab-icon">📋</div>
+        <span>History</span>
+      </div>
+      <div class="tab-item active">
+        <div class="tab-icon">👤</div>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 9: ADD ITEM FORM ==================== -->
+<div class="screen-wrapper">
+  <div class="screen-label">09 &mdash; Add Item</div>
+  <div class="screen-sublabel">Cabinet item form</div>
+  <div class="phone">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <span class="icons">LTE ||||</span>
+    </div>
+
+    <div style="padding:0 20px;">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <span style="font-size:14px;color:#34D399;font-weight:500;">Cancel</span>
+        <span style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;">Add New Item</span>
+        <span style="width:40px;"></span>
+      </div>
+
+      <!-- Form fields -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Name -->
+        <div>
+          <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Name *</div>
+          <div class="glass-bright" style="padding:14px 16px;font-size:15px;color:#fff;">Vitamin B12</div>
+        </div>
+
+        <!-- Type -->
+        <div>
+          <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Type *</div>
+          <div class="glass-bright" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:15px;color:#fff;">Vitamin</span>
+            <span style="color:#525252;">▾</span>
+          </div>
+        </div>
+
+        <!-- Dosage & Frequency in a row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Dosage *</div>
+            <div class="glass-bright" style="padding:14px 16px;font-size:15px;color:#fff;">1000 mcg</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Frequency *</div>
+            <div class="glass-bright" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:15px;color:#fff;">Daily</span>
+              <span style="color:#525252;">▾</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timing chips -->
+        <div>
+          <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Timing</div>
+          <div style="display:flex;gap:8px;">
+            <div style="padding:10px 16px;border-radius:100px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);font-size:13px;color:#34D399;font-weight:500;">Morning</div>
+            <div style="padding:10px 16px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:13px;color:#737373;">Afternoon</div>
+            <div style="padding:10px 16px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:13px;color:#737373;">Evening</div>
+          </div>
+        </div>
+
+        <!-- Brand -->
+        <div>
+          <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Brand <span style="color:#333;">(optional)</span></div>
+          <div class="glass-bright" style="padding:14px 16px;font-size:15px;color:#404040;">e.g. Nature Made</div>
+        </div>
+
+        <!-- Start date -->
+        <div>
+          <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Start Date</div>
+          <div class="glass-bright" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:15px;color:#fff;">April 9, 2026</span>
+            <span style="color:#525252;">📅</span>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <div style="font-size:12px;color:#525252;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Notes <span style="color:#333;">(optional)</span></div>
+          <div class="glass-bright" style="padding:14px 16px;min-height:60px;font-size:14px;color:#404040;">Add any notes...</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="padding:10px;border-radius:12px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);text-align:center;font-size:14px;color:#A78BFA;font-weight:500;">
+          🔍 Check Interactions First
+        </div>
+        <div style="padding:16px;border-radius:14px;background:linear-gradient(135deg,#34D399,#059669);text-align:center;font-size:15px;font-weight:600;color:#fff;box-shadow:0 12px 40px rgba(52,211,153,0.2);">
+          Save to Cabinet
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Design Tokens -->
+<div class="tokens-section">
+  <h2>Design Tokens</h2>
+  <div class="token-grid">
+    <div class="token-swatch"><div class="color" style="background:linear-gradient(135deg,#34D399,#059669);"></div><div class="name">Primary</div><div class="hex">#34D399</div></div>
+    <div class="token-swatch"><div class="color" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);"></div><div class="name">AI / Chat</div><div class="hex">#8B5CF6</div></div>
+    <div class="token-swatch"><div class="color" style="background:#F59E0B;"></div><div class="name">Warning</div><div class="hex">#F59E0B</div></div>
+    <div class="token-swatch"><div class="color" style="background:#EF4444;"></div><div class="name">Danger</div><div class="hex">#EF4444</div></div>
+    <div class="token-swatch"><div class="color" style="background:#3B82F6;"></div><div class="name">Info</div><div class="hex">#3B82F6</div></div>
+    <div class="token-swatch"><div class="color" style="background:#111111;border:1px solid #333;"></div><div class="name">Surface</div><div class="hex">#111111</div></div>
+    <div class="token-swatch"><div class="color" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);"></div><div class="name">Glass</div><div class="hex">4% white</div></div>
+    <div class="token-swatch"><div class="color" style="background:#e5e5e5;"></div><div class="name">Text</div><div class="hex">#E5E5E5</div></div>
+  </div>
+  <div style="margin-top:20px;display:flex;gap:32px;font-size:12px;color:#525252;">
+    <div><strong style="color:#a3a3a3;">Font:</strong> Space Grotesk (headings) + Inter (body)</div>
+    <div><strong style="color:#a3a3a3;">Radius:</strong> Cards 16px, Buttons 14px, Pills 100px</div>
+    <div><strong style="color:#a3a3a3;">Style:</strong> Dark glassmorphism + bento grid</div>
+  </div>
+</div>
+
+</body>
+</html>
