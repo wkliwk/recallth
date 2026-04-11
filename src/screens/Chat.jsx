@@ -79,7 +79,7 @@ export default function Chat() {
         <OrangeHeader subtitle="Stack review" title="Today's plan" />
       ) : (
         <OrangeHeader
-          title="Ricky \uD83D\uDC4B"
+          title="Ricky 👋"
           subtitle="Good morning"
           pill="New chat"
         />
