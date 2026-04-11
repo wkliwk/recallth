@@ -1,0 +1,45 @@
+import { Link, useLocation } from 'react-router-dom'
+
+const tabs = [
+  { label: 'Chat', path: '/chat' },
+  { label: 'Cabinet', path: '/cabinet' },
+  { label: 'Profile', path: '/profile' },
+]
+
+export default function BottomNav() {
+  const { pathname } = useLocation()
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-page border-t border-border flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)] md:hidden z-50">
+      {tabs.map((tab) => {
+        const active = pathname === tab.path
+
+        return (
+          <Link
+            key={tab.path}
+            to={tab.path}
+            className="flex flex-col items-center gap-1 no-underline"
+          >
+            {/* Dot / active indicator */}
+            {active ? (
+              <span className="w-5 h-5 rounded-full bg-orange-lt flex items-center justify-center">
+                <span className="w-[6px] h-[6px] rounded-full bg-orange" />
+              </span>
+            ) : (
+              <span className="w-5 h-5 flex items-center justify-center">
+                <span className="w-[6px] h-[6px] rounded-full bg-ink3" />
+              </span>
+            )}
+
+            {/* Label */}
+            <span
+              className={`text-[8px] ${active ? 'text-ink1' : 'text-ink3'}`}
+            >
+              {tab.label}
+            </span>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
