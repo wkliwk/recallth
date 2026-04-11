@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
 const NAV = [
@@ -44,9 +44,136 @@ const NAV = [
   },
 ]
 
+const SAMPLE_MESSAGES = [
+  { type: 'ai', text: "Hey Ricky! I know your full stack — 5 supplements, 0 conflicts, 14-day streak. What would you like to know?" },
+  { type: 'user', text: 'Should I take D3 with food?' },
+  { type: 'ai', text: 'Yes — Vitamin D3 is fat-soluble, so taking it with a meal that contains healthy fats (avocado, eggs, olive oil) improves absorption by up to 32%.' },
+]
+
+function SparkleIcon({ size = 20, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+    </svg>
+  )
+}
+
+function ChatPanel({ onClose }) {
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState(SAMPLE_MESSAGES)
+  const bottomRef = useRef(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const send = () => {
+    const text = input.trim()
+    if (!text) return
+    setMessages((m) => [
+      ...m,
+      { type: 'user', text },
+      { type: 'ai', text: 'Great question — let me think about that with your full health profile in mind...' },
+    ])
+    setInput('')
+  }
+
+  return (
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-50 flex justify-end"
+      style={{ background: 'rgba(42,34,26,0.25)' }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      {/* Panel */}
+      <div
+        className="w-[420px] h-full bg-white flex flex-col shadow-2xl"
+        style={{ animation: 'slideIn 0.22s ease-out' }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[12px] bg-orange flex items-center justify-center shrink-0">
+              <SparkleIcon size={16} color="white" />
+            </div>
+            <div>
+              <p className="text-[14px] font-semibold text-ink1">Ask Recallth AI</p>
+              <p className="text-[11px] text-ink3">I remember your full health profile</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink3 cursor-pointer"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {msg.type === 'ai' && (
+                <div className="w-6 h-6 rounded-[8px] bg-orange-lt flex items-center justify-center shrink-0 mr-2 mt-1">
+                  <SparkleIcon size={12} color="#E07B4A" />
+                </div>
+              )}
+              <div
+                className={`max-w-[78%] rounded-[16px] px-4 py-[10px] text-[13px] leading-[1.55] ${
+                  msg.type === 'user'
+                    ? 'bg-orange text-white rounded-br-[4px]'
+                    : 'bg-sand text-ink1 rounded-bl-[4px]'
+                }`}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div className="px-4 py-4 border-t border-border shrink-0">
+          <div className="flex items-center gap-2 border border-border rounded-pill px-4 py-[10px] bg-page focus-within:border-orange transition-colors">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && send()}
+              placeholder="Ask anything about your stack…"
+              className="flex-1 text-[13px] text-ink1 placeholder:text-ink4 outline-none bg-transparent"
+              autoFocus
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim()}
+              className="w-8 h-8 rounded-full bg-orange flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-40 transition-opacity hover:bg-orange-dk"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export default function AppShell({ children, title = 'Dashboard' }) {
   const navigate = useNavigate()
   const [searchVal, setSearchVal] = useState('')
+  const [chatOpen, setChatOpen] = useState(false)
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -137,6 +264,19 @@ export default function AppShell({ children, title = 'Dashboard' }) {
           {children}
         </main>
       </div>
+
+      {/* ── Floating chat button ── */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 w-[56px] h-[56px] rounded-full bg-orange shadow-[0_8px_24px_rgba(224,123,74,0.45)] flex items-center justify-center cursor-pointer hover:bg-orange-dk hover:scale-105 transition-all"
+        >
+          <SparkleIcon size={22} color="white" />
+        </button>
+      )}
+
+      {/* ── Chat slide-over panel ── */}
+      {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
     </div>
   )
 }
