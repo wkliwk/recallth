@@ -47,13 +47,16 @@ export const api = {
         body: JSON.stringify({ message: prompt }),
       }),
   },
+  settings: {
+    get: () => request('/settings'),
+    update: (data) => request('/settings', { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+  goals: {
+    checkIns: () => request('/goals/check-ins'),
+    checkIn: (data) => request('/goals/check-in', { method: 'POST', body: JSON.stringify(data) }),
+  },
   history: {
     list: () => request('/history'),
-  },
-  bloodwork: {
-    list: () => request('/bloodwork'),
-    create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
-    interpret: (data) => request('/bloodwork/interpret', { method: 'POST', body: JSON.stringify(data) }),
   },
   journal: {
     list: () => request('/journal/logs'),
@@ -73,16 +76,5 @@ export const api = {
   bodyStats: {
     list: () => request('/body-stats'),
     create: (data) => request('/body-stats', { method: 'POST', body: JSON.stringify(data) }),
-  },
-  bloodwork: {
-    list: () => request('/bloodwork'),
-    create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
-    interpret: (data) => request('/bloodwork/interpret', { method: 'POST', body: JSON.stringify(data) }),
-  },
-  journal: {
-    list: () => request('/journal/logs'),
-    create: (data) => request('/journal/logs', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => request(`/journal/logs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    remove: (id) => request(`/journal/logs/${id}`, { method: 'DELETE' }),
   },
 }
