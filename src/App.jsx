@@ -16,6 +16,7 @@ import Schedule from './screens/Schedule'
 import StackBuilder from './screens/StackBuilder'
 import DoctorPrep from './screens/DoctorPrep'
 import SideEffects from './screens/SideEffects'
+import Journal from './screens/Journal'
 import Progress from './screens/Progress'
 
 // Placeholder screens for routes not yet built
@@ -69,6 +70,7 @@ function AppRoutes() {
       <Route path="/doctor-prep"   element={<ProtectedRoute><DoctorPrep /></ProtectedRoute>} />
       <Route path="/history"       element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/side-effects"  element={<ProtectedRoute><SideEffects /></ProtectedRoute>} />
+      <Route path="/journal"       element={<ProtectedRoute><Journal /></ProtectedRoute>} />
       <Route path="/progress"      element={<ProtectedRoute><Progress /></ProtectedRoute>} />
 
       {/* Fallback */}
