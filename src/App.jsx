@@ -12,6 +12,7 @@ import Onboarding from './screens/Onboarding'
 import CabinetAdd from './screens/CabinetAdd'
 import CabinetDetail from './screens/CabinetDetail'
 import History from './screens/History'
+import DoctorPrep from './screens/DoctorPrep'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -61,7 +62,7 @@ function AppRoutes() {
       <Route path="/cabinet/:id"   element={<ProtectedRoute><CabinetDetail /></ProtectedRoute>} />
       <Route path="/schedule"      element={<ProtectedRoute><Placeholder title="Schedule" /></ProtectedRoute>} />
       <Route path="/stack-builder" element={<ProtectedRoute><Placeholder title="Stack Builder" /></ProtectedRoute>} />
-      <Route path="/doctor-prep"   element={<ProtectedRoute><Placeholder title="Doctor Prep" /></ProtectedRoute>} />
+      <Route path="/doctor-prep"   element={<ProtectedRoute><DoctorPrep /></ProtectedRoute>} />
       <Route path="/history"       element={<ProtectedRoute><History /></ProtectedRoute>} />
 
       {/* Fallback */}
