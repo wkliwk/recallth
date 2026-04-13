@@ -7,6 +7,7 @@ export default function BottomNav() {
 
   const tabs = [
     { labelKey: 'home', path: '/home' },
+    { labelKey: 'journal', path: '/journal' },
     { labelKey: 'chat', path: '/chat' },
     { labelKey: 'cabinet', path: '/cabinet' },
     {
