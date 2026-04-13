@@ -40,6 +40,13 @@ export const api = {
   chat: {
     history: () => request('/chat/history'),
   },
+  doctorPrep: {
+    generate: (prompt) =>
+      request('/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: prompt }),
+      }),
+  },
   history: {
     list: () => request('/history'),
   },
