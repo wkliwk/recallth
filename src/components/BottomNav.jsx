@@ -5,43 +5,12 @@ export default function BottomNav() {
   const { pathname } = useLocation()
   const { t } = useLanguage()
 
+  // Max 5 tabs — Goals skipped (already at 5)
   const tabs = [
     { labelKey: 'home', path: '/home' },
     { labelKey: 'journal', path: '/journal' },
     { labelKey: 'chat', path: '/chat' },
-    {
-      labelKey: 'journal',
-      path: '/journal',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-      ),
-    },
     { labelKey: 'cabinet', path: '/cabinet' },
-    {
-      labelKey: 'sideEffects',
-      path: '/side-effects',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      ),
-    },
-    {
-      labelKey: 'progress',
-      path: '/progress',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-      ),
-    },
     { labelKey: 'profile', path: '/profile' },
   ]
 
@@ -56,13 +25,7 @@ export default function BottomNav() {
             to={tab.path}
             className="flex flex-col items-center gap-1 no-underline"
           >
-            {tab.icon ? (
-              <span
-                className={`w-5 h-5 flex items-center justify-center ${active ? 'text-orange' : 'text-ink3'}`}
-              >
-                {tab.icon}
-              </span>
-            ) : active ? (
+            {active ? (
               <span className="w-5 h-5 rounded-full bg-orange-lt flex items-center justify-center">
                 <span className="w-[6px] h-[6px] rounded-full bg-orange" />
               </span>
@@ -81,4 +44,3 @@ export default function BottomNav() {
     </nav>
   )
 }
-
