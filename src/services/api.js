@@ -38,15 +38,14 @@ export const api = {
     evidenceScores: () => request('/cabinet/evidence-scores'),
   },
   chat: {
-    send: (message, conversationId) =>
+    history: () => request('/chat/history'),
+  },
+  doctorPrep: {
+    generate: (prompt) =>
       request('/chat', {
         method: 'POST',
-        body: JSON.stringify({
-          message,
-          ...(conversationId ? { conversationId } : {}),
-        }),
+        body: JSON.stringify({ message: prompt }),
       }),
-    history: () => request('/chat/history'),
   },
   history: {
     list: () => request('/history'),
