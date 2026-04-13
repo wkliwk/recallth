@@ -54,4 +54,9 @@ export const api = {
     get: () => request('/profile'),
     update: (data) => request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
   },
+  sideEffects: {
+    list: () => request('/side-effects'),
+    create: (data) => request('/side-effects', { method: 'POST', body: JSON.stringify(data) }),
+    remove: (id) => request(`/side-effects/${id}`, { method: 'DELETE' }),
+  },
 }
