@@ -14,6 +14,7 @@ const TRANSLATIONS = {
     sideEffects: 'Side Effects',
     journal: 'Journal',
     progress: 'Progress',
+    journal: 'Journal',
     freePlan: 'Free plan',
     // ── Greetings ────────────────────────────────────────────────────────
     goodMorning: 'Good morning',
@@ -127,6 +128,7 @@ const TRANSLATIONS = {
     sideEffects: '副作用',
     journal: '日誌',
     progress: '進度',
+    journal: '日誌',
     freePlan: '免費方案',
     goodMorning: '早安',
     goodAfternoon: '午安',
@@ -230,6 +232,7 @@ const TRANSLATIONS = {
     sideEffects: '副作用',
     journal: '日誌',
     progress: '進度',
+    journal: '日誌',
     freePlan: '免費計劃',
     goodMorning: '早晨',
     goodAfternoon: '午安',
@@ -366,3 +369,4 @@ export function LanguageProvider({ children }) {
     </LanguageContext.Provider>
   )
 }
+
