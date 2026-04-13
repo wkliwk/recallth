@@ -47,6 +47,10 @@ export const api = {
         body: JSON.stringify({ message: prompt }),
       }),
   },
+  goals: {
+    checkIns: () => request('/goals/check-ins'),
+    checkIn: (data) => request('/goals/check-in', { method: 'POST', body: JSON.stringify(data) }),
+  },
   history: {
     list: () => request('/history'),
   },
@@ -68,11 +72,5 @@ export const api = {
   bodyStats: {
     list: () => request('/body-stats'),
     create: (data) => request('/body-stats', { method: 'POST', body: JSON.stringify(data) }),
-  },
-  journal: {
-    list: () => request('/journal/logs'),
-    create: (data) => request('/journal/logs', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => request(`/journal/logs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    remove: (id) => request(`/journal/logs/${id}`, { method: 'DELETE' }),
   },
 }
