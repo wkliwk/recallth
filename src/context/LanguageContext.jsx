@@ -12,6 +12,7 @@ const TRANSLATIONS = {
     stackBuilder: 'Stack Builder',
     doctorPrep: 'Doctor Prep',
     sideEffects: 'Side Effects',
+    journal: 'Journal',
     progress: 'Progress',
     freePlan: 'Free plan',
     // ── Greetings ────────────────────────────────────────────────────────
@@ -124,6 +125,7 @@ const TRANSLATIONS = {
     stackBuilder: '堆疊配方',
     doctorPrep: '醫師準備',
     sideEffects: '副作用',
+    journal: '日誌',
     progress: '進度',
     freePlan: '免費方案',
     goodMorning: '早安',
@@ -226,6 +228,7 @@ const TRANSLATIONS = {
     stackBuilder: '配方搭配',
     doctorPrep: '醫生準備',
     sideEffects: '副作用',
+    journal: '日誌',
     progress: '進度',
     freePlan: '免費計劃',
     goodMorning: '早晨',
