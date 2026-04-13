@@ -13,6 +13,7 @@ const TRANSLATIONS = {
     doctorPrep: 'Doctor Prep',
     sideEffects: 'Side Effects',
     journal: 'Journal',
+    bloodwork: 'Bloodwork',
     progress: 'Progress',
     journal: 'Journal',
     freePlan: 'Free plan',

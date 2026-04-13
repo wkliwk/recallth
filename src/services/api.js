@@ -50,6 +50,11 @@ export const api = {
   history: {
     list: () => request('/history'),
   },
+  bloodwork: {
+    list: () => request('/bloodwork'),
+    create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
+    interpret: (data) => request('/bloodwork/interpret', { method: 'POST', body: JSON.stringify(data) }),
+  },
   journal: {
     list: () => request('/journal/logs'),
     create: (data) => request('/journal/logs', { method: 'POST', body: JSON.stringify(data) }),
@@ -68,6 +73,11 @@ export const api = {
   bodyStats: {
     list: () => request('/body-stats'),
     create: (data) => request('/body-stats', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  bloodwork: {
+    list: () => request('/bloodwork'),
+    create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
+    interpret: (data) => request('/bloodwork/interpret', { method: 'POST', body: JSON.stringify(data) }),
   },
   journal: {
     list: () => request('/journal/logs'),
