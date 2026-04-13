@@ -60,6 +60,10 @@ export const api = {
     get: () => request('/profile'),
     update: (data) => request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
   },
+  settings: {
+    get: () => request('/settings'),
+    update: (data) => request('/settings', { method: 'PATCH', body: JSON.stringify(data) }),
+  },
   sideEffects: {
     list: () => request('/side-effects'),
     create: (data) => request('/side-effects', { method: 'POST', body: JSON.stringify(data) }),
@@ -68,11 +72,5 @@ export const api = {
   bodyStats: {
     list: () => request('/body-stats'),
     create: (data) => request('/body-stats', { method: 'POST', body: JSON.stringify(data) }),
-  },
-  journal: {
-    list: () => request('/journal/logs'),
-    create: (data) => request('/journal/logs', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => request(`/journal/logs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    remove: (id) => request(`/journal/logs/${id}`, { method: 'DELETE' }),
   },
 }
