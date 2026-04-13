@@ -11,6 +11,7 @@ const TRANSLATIONS = {
     schedule: 'Schedule',
     stackBuilder: 'Stack Builder',
     doctorPrep: 'Doctor Prep',
+    sideEffects: 'Side Effects',
     freePlan: 'Free plan',
     // ── Greetings ────────────────────────────────────────────────────────
     goodMorning: 'Good morning',
@@ -121,6 +122,7 @@ const TRANSLATIONS = {
     schedule: '排程',
     stackBuilder: '堆疊配方',
     doctorPrep: '醫師準備',
+    sideEffects: '副作用',
     freePlan: '免費方案',
     goodMorning: '早安',
     goodAfternoon: '午安',
@@ -221,6 +223,7 @@ const TRANSLATIONS = {
     schedule: '時間表',
     stackBuilder: '配方搭配',
     doctorPrep: '醫生準備',
+    sideEffects: '副作用',
     freePlan: '免費計劃',
     goodMorning: '早晨',
     goodAfternoon: '午安',
