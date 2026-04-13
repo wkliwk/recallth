@@ -38,6 +38,14 @@ export const api = {
     evidenceScores: () => request('/cabinet/evidence-scores'),
   },
   chat: {
+    send: (message, conversationId) =>
+      request('/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          message,
+          ...(conversationId ? { conversationId } : {}),
+        }),
+      }),
     history: () => request('/chat/history'),
   },
   history: {
