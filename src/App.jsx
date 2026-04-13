@@ -17,6 +17,7 @@ import StackBuilder from './screens/StackBuilder'
 import DoctorPrep from './screens/DoctorPrep'
 import SideEffects from './screens/SideEffects'
 import Progress from './screens/Progress'
+import Journal from './screens/Journal'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -70,6 +71,7 @@ function AppRoutes() {
       <Route path="/history"       element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/side-effects"  element={<ProtectedRoute><SideEffects /></ProtectedRoute>} />
       <Route path="/progress"      element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+      <Route path="/journal"       element={<ProtectedRoute><Journal /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
