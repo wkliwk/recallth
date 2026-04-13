@@ -59,4 +59,8 @@ export const api = {
     create: (data) => request('/side-effects', { method: 'POST', body: JSON.stringify(data) }),
     remove: (id) => request(`/side-effects/${id}`, { method: 'DELETE' }),
   },
+  bodyStats: {
+    list: () => request('/body-stats'),
+    create: (data) => request('/body-stats', { method: 'POST', body: JSON.stringify(data) }),
+  },
 }
