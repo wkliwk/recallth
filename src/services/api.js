@@ -1,14 +1,15 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? ''
 
-async function request(path, options = {}) {
+export async function request(path, options = {}) {
   const token = localStorage.getItem('recallth_token')
+  const { headers: customHeaders, ...restOptions } = options
   const res = await fetch(`${BASE_URL}${path}`, {
+    ...restOptions,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
+      ...customHeaders,
     },
-    ...options,
   })
   const json = await res.json()
   if (!res.ok) throw new Error(json.error ?? 'Request failed')
@@ -17,10 +18,10 @@ async function request(path, options = {}) {
 
 export const api = {
   auth: {
-    register: (email, password) =>
+    register: (name, email, password) =>
       request('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       }),
     login: (email, password) =>
       request('/auth/login', {
@@ -36,9 +37,11 @@ export const api = {
     schedule: () => request('/cabinet/schedule'),
     interactions: () => request('/cabinet/interactions'),
     evidenceScores: () => request('/cabinet/evidence-scores'),
+    aiLookup: (query) => request('/cabinet/ai-lookup', { method: 'POST', body: JSON.stringify({ query }) }),
   },
   chat: {
     history: () => request('/chat/history'),
+    delete: (id) => request(`/chat/${id}`, { method: 'DELETE' }),
   },
   doctorPrep: {
     generate: (prompt) =>
@@ -56,7 +59,7 @@ export const api = {
     checkIn: (data) => request('/goals/check-in', { method: 'POST', body: JSON.stringify(data) }),
   },
   history: {
-    list: () => request('/history'),
+    list: () => request('/chat/history'),
   },
   journal: {
     list: () => request('/journal/logs'),
@@ -76,5 +79,14 @@ export const api = {
   bodyStats: {
     list: () => request('/body-stats'),
     create: (data) => request('/body-stats', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  intake: {
+    streak: () => request('/intake/streak'),
+    log: () => request('/intake/log', { method: 'POST' }),
+  },
+  bloodwork: {
+    list: () => request('/bloodwork'),
+    create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
+    interpret: () => request('/bloodwork/interpret', { method: 'POST' }),
   },
 }

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Colour palette for schedule time slots ──────────────────────────────────
 const SLOT_COLOURS = [
-  { bg: '#FFFBEB', border: '#FEF3C7', dot: '#D97706' },
-  { bg: '#EFF6FF', border: '#BFDBFE', dot: '#2563EB' },
-  { bg: '#F5F3FF', border: '#DDD6FE', dot: '#7C3AED' },
-  { bg: '#ECFDF5', border: '#A7F3D0', dot: '#059669' },
-  { bg: '#FFF1F2', border: '#FECDD3', dot: '#E11D48' },
+  { bg: '#FDE8DE', border: '#E8C4B0', dot: '#E07B4A' },  // orange
+  { bg: '#F2EDE4', border: '#D8D0C4', dot: '#7A6A5A' },  // sand/ink2
+  { bg: '#E8E0D4', border: '#C8BCA8', dot: '#2A221A' },  // warm dark
+  { bg: '#E8F0E8', border: '#C5D8C5', dot: '#3D6B3D' },  // sage
+  { bg: '#FBF9F5', border: '#E8C4B0', dot: '#C05A28' },  // orange-dk
 ]
 
 // Canonical ordering for the five named time windows
@@ -42,27 +43,27 @@ function ScheduleBlock({ block }) {
               </div>
             </div>
             {item.conflict && (
-              <div className="flex items-center gap-2 px-4 py-[8px] bg-[#FFFBEB] border-t border-[#FEF3C7]">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="flex items-center gap-2 px-4 py-[8px] bg-orange-lt border-t border-orange-md">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C05A28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                   <line x1="12" y1="9" x2="12" y2="13"/>
                   <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
-                <p className="text-[11px] text-[#92400E]">{item.conflict}</p>
+                <p className="text-[11px] text-orange-dk">{item.conflict}</p>
               </div>
             )}
           </div>
         ))}
         {block.conflicts && block.conflicts.length > 0 && (
-          <div className="flex items-start gap-2 px-4 py-[10px] bg-[#FFFBEB]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-[1px]" aria-hidden="true">
+          <div className="flex items-start gap-2 px-4 py-[10px] bg-orange-lt">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C05A28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-[1px]" aria-hidden="true">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/>
               <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
             <div className="min-w-0">
               {block.conflicts.map((c, i) => (
-                <p key={i} className="text-[11px] text-[#92400E]">{c}</p>
+                <p key={i} className="text-[11px] text-orange-dk">{c}</p>
               ))}
             </div>
           </div>
@@ -74,6 +75,7 @@ function ScheduleBlock({ block }) {
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Schedule() {
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [schedule, setSchedule] = useState([])
 
@@ -91,36 +93,24 @@ export default function Schedule() {
         const res = await api.cabinet.schedule()
         if (cancelled) return
 
-        const raw = res?.data ?? res ?? []
+        const raw = res?.data ?? {}
 
-        if (Array.isArray(raw) && raw.length > 0) {
-          // Backend may return grouped blocks or flat items — normalise both
-          const normalised = raw.map((block, idx) => {
-            const colours = SLOT_COLOURS[idx % SLOT_COLOURS.length]
-            const items = Array.isArray(block.items)
-              ? block.items.map((it) => ({
-                  name: it.name ?? it.supplementName ?? 'Unknown',
-                  dose: it.dose ?? it.dosage ?? '',
-                  conflict: it.conflict ?? null,
-                }))
-              : [
-                  {
-                    name: block.name ?? block.supplementName ?? 'Unknown',
-                    dose: block.dose ?? block.dosage ?? '',
-                    conflict: block.conflict ?? null,
-                  },
-                ]
+        // Backend returns { schedule: { morning: [...], ... } } or flat array
+        const scheduleObj = raw.schedule ?? raw
+        const SLOT_LABELS = { morning: t('slotMorning'), afternoon: t('slotAfternoon'), evening: t('slotEvening'), night: t('slotNight'), anytime: t('slotAnytime') }
 
-            return {
-              label: block.label ?? block.timing ?? block.slot ?? 'Schedule',
-              time: block.time ?? block.scheduledTime ?? '',
-              bg: colours.bg,
-              border: colours.border,
-              dot: colours.dot,
-              items,
-              conflicts: Array.isArray(block.conflicts) ? block.conflicts : [],
-            }
-          })
+        if (scheduleObj && typeof scheduleObj === 'object' && !Array.isArray(scheduleObj)) {
+          const normalised = Object.entries(SLOT_LABELS)
+            .filter(([key]) => Array.isArray(scheduleObj[key]) && scheduleObj[key].length > 0)
+            .map(([key, label], idx) => {
+              const colours = SLOT_COLOURS[idx % SLOT_COLOURS.length]
+              const items = scheduleObj[key].map((it) => ({
+                name: it.name ?? 'Unknown',
+                dose: it.dosage ?? it.dose ?? '',
+                conflict: it.conflict ?? null,
+              }))
+              return { label, time: '', bg: colours.bg, border: colours.border, dot: colours.dot, items, conflicts: [] }
+            })
 
           // Sort by canonical time window order; unknowns go last
           const sorted = [...normalised].sort((a, b) => {
@@ -146,13 +136,13 @@ export default function Schedule() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [t])
 
   return (
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[960px]">
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="font-display text-[28px] text-ink1 mb-1">Schedule</h1>
+        <h1 className="font-display text-[28px] text-ink1 mb-1">{t('scheduleTitle')}</h1>
         <p className="text-[13px] text-ink3">{today}</p>
       </div>
 
@@ -162,7 +152,7 @@ export default function Schedule() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="animate-pulse rounded-[10px] bg-gray-100 h-[90px]"
+              className="animate-pulse rounded-[10px] bg-sand h-[90px]"
               aria-hidden="true"
             />
           ))}
@@ -170,16 +160,16 @@ export default function Schedule() {
       ) : schedule.length === 0 ? (
         <div className="rounded-[14px] border border-border bg-white px-6 py-12 text-center">
           <p className="text-[14px] font-medium text-ink2 mb-3">
-            No schedule yet
+            {t('scheduleEmpty')}
           </p>
           <p className="text-[13px] text-ink3 mb-5">
-            Add supplements to your cabinet to generate a schedule
+            {t('scheduleEmptySub')}
           </p>
           <Link
             to="/cabinet"
             className="inline-block text-[13px] font-medium text-orange hover:underline"
           >
-            Go to Cabinet
+            {t('scheduleGoToCabinet')}
           </Link>
         </div>
       ) : (

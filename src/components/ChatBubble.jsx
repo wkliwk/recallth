@@ -1,4 +1,4 @@
-export default function ChatBubble({ type = 'ai', children }) {
+export default function ChatBubble({ type = 'ai', image, children }) {
   const isAi = type === 'ai'
 
   return (
@@ -10,6 +10,9 @@ export default function ChatBubble({ type = 'ai', children }) {
             : 'bg-orange text-white rounded-[16px_16px_4px_16px]'
         }`}
       >
+        {image && (
+          <img src={image} alt="Attached" className="w-full max-w-[200px] rounded-[8px] mb-2" />
+        )}
         {children}
       </div>
     </div>

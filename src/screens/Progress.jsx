@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Skeleton primitive ───────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
   return (
     <div
-      className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-sand ${className}`}
       aria-hidden="true"
     />
   )
@@ -114,6 +115,7 @@ function LineChart({ entries, valueKey, label }) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function Progress() {
+  const { t } = useLanguage()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -146,7 +148,7 @@ export default function Progress() {
     e.preventDefault()
     setFormError('')
     if (!weight) {
-      setFormError('Weight is required.')
+      setFormError(t('progressWeightRequired'))
       return
     }
     setSubmitting(true)
@@ -163,7 +165,7 @@ export default function Progress() {
       setDate(todayISO())
       await fetchEntries()
     } catch (err) {
-      setFormError(err.message ?? 'Failed to log stats — try again.')
+      setFormError(err.message ?? t('progressFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -185,18 +187,18 @@ export default function Progress() {
 
   return (
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[760px]">
-      <h1 className="font-display text-[28px] text-ink1 leading-none mb-1">Progress</h1>
-      <p className="text-[14px] text-ink2 mb-7">Track your body stats over time</p>
+      <h1 className="font-display text-[28px] text-ink1 leading-none mb-1">{t('progressTitle')}</h1>
+      <p className="text-[14px] text-ink2 mb-7">{t('progressSub')}</p>
 
       {/* ── Log form ── */}
       <div className="rounded-[14px] border border-border bg-white px-5 py-5 mb-6">
-        <p className="text-[14px] font-semibold text-ink1 mb-4">Log Stats</p>
+        <p className="text-[14px] font-semibold text-ink1 mb-4">{t('progressLogStats')}</p>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-3 mb-3">
             {/* Weight */}
             <div className="flex flex-col gap-1">
               <label className="text-[12px] text-ink2 font-medium" htmlFor="prog-weight">
-                Weight (kg)
+                {t('progressWeight')}
               </label>
               <input
                 id="prog-weight"
@@ -207,14 +209,14 @@ export default function Progress() {
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 className="border border-border rounded-[8px] px-3 py-[9px] text-[13px] text-ink1 outline-none focus:border-orange bg-white"
-                placeholder="e.g. 72.5"
+                placeholder={t('progressWeightPlaceholder')}
               />
             </div>
 
             {/* Body fat */}
             <div className="flex flex-col gap-1">
               <label className="text-[12px] text-ink2 font-medium" htmlFor="prog-bf">
-                Body fat %
+                {t('progressBodyFat')}
               </label>
               <input
                 id="prog-bf"
@@ -225,14 +227,14 @@ export default function Progress() {
                 value={bodyFat}
                 onChange={(e) => setBodyFat(e.target.value)}
                 className="border border-border rounded-[8px] px-3 py-[9px] text-[13px] text-ink1 outline-none focus:border-orange bg-white"
-                placeholder="optional"
+                placeholder={t('progressOptional')}
               />
             </div>
 
             {/* Date */}
             <div className="flex flex-col gap-1">
               <label className="text-[12px] text-ink2 font-medium" htmlFor="prog-date">
-                Date
+                {t('progressDate')}
               </label>
               <input
                 id="prog-date"
@@ -246,7 +248,7 @@ export default function Progress() {
             {/* Notes */}
             <div className="flex flex-col gap-1">
               <label className="text-[12px] text-ink2 font-medium" htmlFor="prog-notes">
-                Notes
+                {t('progressNotes')}
               </label>
               <input
                 id="prog-notes"
@@ -254,13 +256,13 @@ export default function Progress() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="border border-border rounded-[8px] px-3 py-[9px] text-[13px] text-ink1 outline-none focus:border-orange bg-white"
-                placeholder="optional"
+                placeholder={t('progressOptional')}
               />
             </div>
           </div>
 
           {formError && (
-            <p className="text-[12px] text-red-500 mb-3" role="alert">{formError}</p>
+            <p className="text-[12px] text-[#C05A28] mb-3" role="alert">{formError}</p>
           )}
 
           <button
@@ -268,7 +270,7 @@ export default function Progress() {
             disabled={submitting}
             className="bg-orange text-white text-[13px] font-medium rounded-[8px] px-5 py-[9px] hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
           >
-            {submitting ? 'Logging…' : 'Log Stats'}
+            {submitting ? t('progressLogging') : t('progressLogStats')}
           </button>
         </form>
       </div>
@@ -287,7 +289,7 @@ export default function Progress() {
             <span className="font-display text-[28px] leading-none text-ink1">
               {Number(latest.weight).toFixed(1)}
             </span>
-            <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">kg now</span>
+            <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">{t('progressKgNow')}</span>
           </div>
 
           {/* Change */}
@@ -297,7 +299,7 @@ export default function Progress() {
                 change === null
                   ? 'text-ink3'
                   : change > 0
-                  ? 'text-[#059669]'
+                  ? 'text-[#3D6B3D]'
                   : 'text-orange'
               }`}
             >
@@ -305,13 +307,13 @@ export default function Progress() {
                 ? '—'
                 : `${change > 0 ? '+' : ''}${change.toFixed(1)} kg`}
             </span>
-            <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">change</span>
+            <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">{t('progressChange')}</span>
           </div>
 
           {/* Total entries */}
           <div className="rounded-[14px] border border-border bg-white px-4 py-4 flex flex-col gap-1">
             <span className="font-display text-[28px] leading-none text-ink1">{entries.length}</span>
-            <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">entries</span>
+            <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">{t('progressEntries')}</span>
           </div>
         </div>
       ) : null}
@@ -323,9 +325,9 @@ export default function Progress() {
         </div>
       ) : entries.length >= 2 ? (
         <div className="rounded-[14px] border border-border bg-white px-5 py-5 mb-6 flex flex-col gap-8">
-          <LineChart entries={entries} valueKey="weight" label="Weight trend (kg)" />
+          <LineChart entries={entries} valueKey="weight" label={t('progressWeightTrend')} />
           {hasBodyFat && (
-            <LineChart entries={entries} valueKey="bodyFat" label="Body fat trend (%)" />
+            <LineChart entries={entries} valueKey="bodyFat" label={t('progressBfTrend')} />
           )}
         </div>
       ) : null}
@@ -333,7 +335,7 @@ export default function Progress() {
       {/* ── Entries list ── */}
       <div className="rounded-[14px] border border-border bg-white overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <p className="text-[13px] font-semibold text-ink1">All entries</p>
+          <p className="text-[13px] font-semibold text-ink1">{t('progressAllEntries')}</p>
         </div>
 
         {loading ? (
@@ -344,8 +346,8 @@ export default function Progress() {
           </div>
         ) : entries.length === 0 ? (
           <div className="px-5 py-10 text-center">
-            <p className="text-[14px] text-ink2 font-medium mb-1">No stats yet — log your first measurement</p>
-            <p className="text-[13px] text-ink3">Use the form above to get started.</p>
+            <p className="text-[14px] text-ink2 font-medium mb-1">{t('progressEmpty')}</p>
+            <p className="text-[13px] text-ink3">{t('progressEmptySub')}</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -360,7 +362,7 @@ export default function Progress() {
                   </span>
                   {entry.bodyFat != null && entry.bodyFat !== '' && (
                     <span className="text-[13px] text-ink2">
-                      {Number(entry.bodyFat).toFixed(1)}% body fat
+                      {Number(entry.bodyFat).toFixed(1)}{t('progressBodyFatLabel')}
                     </span>
                   )}
                   {entry.notes && (

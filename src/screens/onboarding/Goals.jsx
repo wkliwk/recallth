@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import Wave from '../../components/Wave'
+import { useLanguage } from '../../context/LanguageContext'
 
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`
 
 const GOAL_OPTIONS = [
-  { id: 'muscle', emoji: '💪', label: 'Muscle & strength' },
-  { id: 'recovery', emoji: '🔄', label: 'Recovery' },
-  { id: 'sleep', emoji: '😴', label: 'Better sleep' },
-  { id: 'energy', emoji: '⚡', label: 'More energy' },
-  { id: 'health', emoji: '🌿', label: 'General health' },
-  { id: 'weight', emoji: '⚖️', label: 'Weight management' },
+  { id: 'muscle', emoji: '💪', labelKey: 'onboardingGoalMuscle' },
+  { id: 'recovery', emoji: '🔄', labelKey: 'onboardingGoalRecovery' },
+  { id: 'sleep', emoji: '😴', labelKey: 'onboardingGoalSleep' },
+  { id: 'energy', emoji: '⚡', labelKey: 'onboardingGoalEnergy' },
+  { id: 'health', emoji: '🌿', labelKey: 'onboardingGoalHealth' },
+  { id: 'weight', emoji: '⚖️', labelKey: 'onboardingGoalWeight' },
 ]
 
 export default function Goals({ onNext, stepIndex, totalSteps }) {
+  const { t } = useLanguage()
   const [selected, setSelected] = useState([])
 
   function toggleGoal(id) {
@@ -54,16 +56,16 @@ export default function Goals({ onNext, stepIndex, totalSteps }) {
             ))}
           </div>
           <span className="text-white/60 text-[12px] font-medium">
-            Step {stepIndex + 1} of {totalSteps}
+            {t('onboardingStep', stepIndex + 1, totalSteps)}
           </span>
         </div>
 
         <div className="relative z-10 text-center pb-12">
           <h1 className="font-display text-white text-[28px] leading-tight">
-            What are your goals?
+            {t('onboardingGoalsTitle')}
           </h1>
           <p className="text-white/60 text-[14px] mt-2 font-light">
-            Select all that apply
+            {t('onboardingGoalsSub')}
           </p>
         </div>
 
@@ -93,7 +95,7 @@ export default function Goals({ onNext, stepIndex, totalSteps }) {
                     className="text-[14px] font-medium leading-tight"
                     style={{ color: isSelected ? '#C05A28' : '#2A221A' }}
                   >
-                    {goal.label}
+                    {t(goal.labelKey)}
                   </span>
                 </button>
               )
@@ -106,7 +108,7 @@ export default function Goals({ onNext, stepIndex, totalSteps }) {
             className="mt-6 w-full rounded-pill text-white text-[15px] font-medium py-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: selected.length > 0 ? '#E07B4A' : '#E07B4A' }}
           >
-            Continue
+            {t('onboardingContinue')}
           </button>
         </div>
       </div>

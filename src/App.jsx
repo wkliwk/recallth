@@ -1,3 +1,4 @@
+// Recallth — supplement tracking SPA
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
@@ -20,6 +21,7 @@ import Journal from './screens/Journal'
 import Progress from './screens/Progress'
 import Goals from './screens/Goals'
 import Notifications from './screens/Notifications'
+import Bloodwork from './screens/Bloodwork'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -74,7 +76,9 @@ function AppRoutes() {
       <Route path="/side-effects"  element={<ProtectedRoute><SideEffects /></ProtectedRoute>} />
       <Route path="/journal"       element={<ProtectedRoute><Journal /></ProtectedRoute>} />
       <Route path="/progress"      element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-      <Route path="/goals"         element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+      <Route path="/goals"          element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+      <Route path="/bloodwork"     element={<ProtectedRoute><Bloodwork /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
