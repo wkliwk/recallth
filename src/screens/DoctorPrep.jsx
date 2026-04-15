@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Skeleton row ────────────────────────────────────────────────────────────
 function SkeletonRow() {
   return (
     <div className="flex items-center gap-3 py-[10px]">
-      <div className="animate-pulse rounded-[10px] bg-gray-100 w-5 h-5 shrink-0" aria-hidden="true" />
-      <div className="animate-pulse rounded-[10px] bg-gray-100 h-4 flex-1" aria-hidden="true" />
+      <div className="animate-pulse rounded-[10px] bg-sand w-5 h-5 shrink-0" aria-hidden="true" />
+      <div className="animate-pulse rounded-[10px] bg-sand h-4 flex-1" aria-hidden="true" />
     </div>
   )
 }
@@ -218,6 +219,7 @@ function buildFlatFallback(text) {
 
 // ── Main screen ─────────────────────────────────────────────────────────────
 export default function DoctorPrep() {
+  const { t } = useLanguage()
   const [status, setStatus] = useState('loading')
   const [groups, setGroups] = useState([])
   const [checkedIds, setCheckedIds] = useState(new Set())
@@ -234,10 +236,10 @@ export default function DoctorPrep() {
         api.cabinet.interactions().catch(() => []),
       ])
 
-      const cabinetItems = Array.isArray(cabinet) ? cabinet : (cabinet?.items ?? [])
-      const interactions = Array.isArray(interactionsRes)
-        ? interactionsRes
-        : (interactionsRes?.interactions ?? [])
+      const cabinetItems = Array.isArray(cabinet?.data) ? cabinet.data : (cabinet?.data?.items ?? [])
+      const interactions = Array.isArray(interactionsRes?.data)
+        ? interactionsRes.data
+        : (interactionsRes?.data?.interactions ?? [])
 
       const prompt = buildDoctorPrepPrompt(profile, cabinetItems, interactions)
       const chatRes = await api.doctorPrep.generate(prompt)
@@ -245,7 +247,7 @@ export default function DoctorPrep() {
       const aiText =
         typeof chatRes === 'string'
           ? chatRes
-          : chatRes?.data?.message ?? chatRes?.message ?? JSON.stringify(chatRes)
+          : chatRes?.data?.message?.content ?? chatRes?.data?.message ?? JSON.stringify(chatRes)
 
       const parsed = parseAIResponse(aiText)
       setGroups(parsed ? parsed.groups : buildFlatFallback(aiText))
@@ -286,8 +288,8 @@ export default function DoctorPrep() {
   return (
     <>
       <OrangeHeader
-        title="Doctor Prep"
-        subtitle="Questions to ask at your next appointment"
+        title={t('doctorPrepTitle')}
+        subtitle={t('doctorPrepSub')}
       />
       <Wave />
 
@@ -296,11 +298,11 @@ export default function DoctorPrep() {
           <div>
             <div className="flex items-center gap-3 mb-6">
               <DotsIndicator />
-              <span className="text-[14px] text-ink2">Generating your questions…</span>
+              <span className="text-[14px] text-ink2">{t('doctorPrepGenerating')}</span>
             </div>
             {[1, 2, 3, 4].map((g) => (
               <div key={g} className="mb-6">
-                <div className="animate-pulse rounded-[10px] bg-gray-100 h-4 w-40 mb-3" aria-hidden="true" />
+                <div className="animate-pulse rounded-[10px] bg-sand h-4 w-40 mb-3" aria-hidden="true" />
                 <div className="h-px bg-border mb-1" />
                 {[1, 2, 3].map((r) => <SkeletonRow key={r} />)}
               </div>
@@ -312,25 +314,25 @@ export default function DoctorPrep() {
           <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center px-4">
             <div
               className="w-[52px] h-[52px] rounded-full flex items-center justify-center"
-              style={{ background: '#FFF1F2' }}
+              style={{ background: '#FDE8DE' }}
               aria-hidden="true"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E11D48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C05A28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <p className="text-[15px] font-medium text-ink1">Couldn't generate questions</p>
+            <p className="text-[15px] font-medium text-ink1">{t('doctorPrepFailed')}</p>
             <p className="text-[13px] text-ink3 max-w-[280px]">
-              Make sure your cabinet and profile have some data, then try again.
+              {t('doctorPrepFailedSub')}
             </p>
             <button
               type="button"
               onClick={generate}
               className="mt-1 px-5 py-[10px] rounded-full bg-orange text-white text-[13px] font-medium cursor-pointer"
             >
-              Retry
+              {t('doctorPrepRetry')}
             </button>
           </div>
         )}
@@ -339,7 +341,7 @@ export default function DoctorPrep() {
           <>
             <div className="flex items-center justify-between mb-5">
               <p className="text-[13px] text-ink3">
-                {totalQuestions} question{totalQuestions !== 1 ? 's' : ''} ready
+                {t('doctorPrepReady', totalQuestions)}
               </p>
               <button
                 type="button"
@@ -348,7 +350,7 @@ export default function DoctorPrep() {
                 aria-label="Copy all questions to clipboard"
               >
                 <CopyIcon />
-                {copied ? 'Copied!' : 'Copy all'}
+                {copied ? t('doctorPrepCopied') : t('doctorPrepCopyAll')}
               </button>
             </div>
             {groups.map((group) => (

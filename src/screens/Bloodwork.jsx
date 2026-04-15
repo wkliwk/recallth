@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 const COMMON_MARKERS = [
   { name: 'Vitamin D', unit: 'ng/mL', refLow: 30, refHigh: 100 },
@@ -32,23 +33,25 @@ function getStatus(value, refLow, refHigh) {
 }
 
 function StatusBadge({ status }) {
+  const { t } = useLanguage()
   if (status === 'normal') return (
-    <span className="px-2 py-[2px] rounded-full text-[10px] font-medium bg-green-100 text-green-700">In range</span>
+    <span className="px-2 py-[2px] rounded-full text-[10px] font-medium bg-[#E8F0E8] text-[#3D6B3D]">{t('bloodworkInRange')}</span>
   )
   if (status === 'low') return (
-    <span className="px-2 py-[2px] rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">Below range</span>
+    <span className="px-2 py-[2px] rounded-full text-[10px] font-medium bg-[#FDE8DE] text-[#C05A28]">{t('bloodworkBelow')}</span>
   )
   if (status === 'high') return (
-    <span className="px-2 py-[2px] rounded-full text-[10px] font-medium bg-red-100 text-red-600">Above range</span>
+    <span className="px-2 py-[2px] rounded-full text-[10px] font-medium bg-[#FDE8DE] text-[#C05A28]">{t('bloodworkAbove')}</span>
   )
   return null
 }
 
 function Skeleton({ className = '' }) {
-  return <div className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`} aria-hidden />
+  return <div className={`animate-pulse rounded-[10px] bg-sand ${className}`} aria-hidden />
 }
 
 export default function Bloodwork() {
+  const { t } = useLanguage()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -163,16 +166,16 @@ export default function Bloodwork() {
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[760px]">
 
       {/* Header */}
-      <h1 className="font-display text-[28px] text-ink1 mb-1">Bloodwork</h1>
-      <p className="text-[14px] text-ink3 mb-7">Track your lab results over time</p>
+      <h1 className="font-display text-[28px] text-ink1 mb-1">{t('bloodworkTitle')}</h1>
+      <p className="text-[14px] text-ink3 mb-7">{t('bloodworkSub')}</p>
 
       {/* ── Log form ── */}
       <div className="rounded-[14px] border border-border bg-white px-5 py-5 mb-5">
-        <p className="text-[14px] font-semibold text-ink1 mb-4">Log new results</p>
+        <p className="text-[14px] font-semibold text-ink1 mb-4">{t('bloodworkLogNew')}</p>
 
         {/* Date */}
         <div className="mb-4">
-          <label className="block text-[12px] font-medium text-ink3 mb-1">Test date</label>
+          <label className="block text-[12px] font-medium text-ink3 mb-1">{t('bloodworkTestDate')}</label>
           <input
             type="date"
             value={formDate}
@@ -183,7 +186,7 @@ export default function Bloodwork() {
 
         {/* Common markers */}
         <div className="mb-4">
-          <p className="text-[12px] font-medium text-ink3 mb-2">Quick add</p>
+          <p className="text-[12px] font-medium text-ink3 mb-2">{t('bloodworkQuickAdd')}</p>
           <div className="flex flex-wrap gap-2">
             {COMMON_MARKERS.map((m) => {
               const added = pendingMarkers.some((p) => p.name === m.name)
@@ -211,14 +214,14 @@ export default function Bloodwork() {
             type="text"
             value={customMarker}
             onChange={(e) => setCustomMarker(e.target.value)}
-            placeholder="Custom marker"
+            placeholder={t('bloodworkCustomMarker')}
             className="flex-1 border border-border rounded-[8px] px-3 py-[8px] text-[13px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50"
           />
           <input
             type="text"
             value={customUnit}
             onChange={(e) => setCustomUnit(e.target.value)}
-            placeholder="Unit"
+            placeholder={t('bloodworkUnit')}
             className="w-[80px] border border-border rounded-[8px] px-3 py-[8px] text-[13px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50"
           />
           <button
@@ -226,7 +229,7 @@ export default function Bloodwork() {
             onClick={addCustomMarker}
             className="px-3 py-[8px] rounded-[8px] bg-sand text-ink2 text-[13px] font-medium hover:bg-orange/10 hover:text-orange transition-colors focus:outline-none"
           >
-            Add
+            {t('bloodworkAdd')}
           </button>
         </div>
 
@@ -248,7 +251,7 @@ export default function Bloodwork() {
                     step="any"
                     value={m.value}
                     onChange={(e) => updatePending(m.name, e.target.value)}
-                    placeholder="Value"
+                    placeholder={t('bloodworkValue')}
                     className="w-[90px] border border-border rounded-[8px] px-3 py-[6px] text-[13px] text-ink1 text-right focus:outline-none focus:ring-2 focus:ring-orange/50"
                   />
                   {m.value !== '' && (
@@ -258,7 +261,7 @@ export default function Bloodwork() {
                     type="button"
                     onClick={() => removePending(m.name)}
                     aria-label={`Remove ${m.name}`}
-                    className="w-7 h-7 flex items-center justify-center rounded-[6px] text-ink3 hover:bg-red-50 hover:text-red-400 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-[6px] text-ink3 hover:bg-[#FDE8DE] hover:text-[#C05A28] transition-colors"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -272,7 +275,7 @@ export default function Bloodwork() {
               disabled={submitting || pendingMarkers.every((p) => p.value === '')}
               className="px-5 py-[9px] rounded-[10px] bg-orange text-white text-[13px] font-medium hover:bg-orange/90 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
             >
-              {submitting ? 'Saving…' : 'Log Results'}
+              {submitting ? t('bloodworkSaving') : t('bloodworkLogResults')}
             </button>
           </form>
         )}
@@ -289,7 +292,7 @@ export default function Bloodwork() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
             </svg>
-            {interpreting ? 'Analysing…' : 'Get AI interpretation'}
+            {interpreting ? t('bloodworkAnalysing') : t('bloodworkGetAI')}
           </button>
 
           {interpretation && !interpretation.error && (
@@ -303,9 +306,9 @@ export default function Bloodwork() {
                     <span className="text-[13px] font-semibold text-ink1">{item.marker}</span>
                     {item.status && (
                       <span className={`px-2 py-[2px] rounded-full text-[10px] font-medium ${
-                        item.status === 'normal' ? 'bg-green-100 text-green-700' :
-                        item.status === 'low' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-600'
+                        item.status === 'normal' ? 'bg-[#E8F0E8] text-[#3D6B3D]' :
+                        item.status === 'low' ? 'bg-[#FDE8DE] text-[#C05A28]' :
+                        'bg-[#FDE8DE] text-[#C05A28]'
                       }`}>{item.status}</span>
                     )}
                   </div>
@@ -316,7 +319,7 @@ export default function Bloodwork() {
             </div>
           )}
           {interpretation?.error && (
-            <p className="mt-2 text-[13px] text-red-500">Interpretation failed — try again</p>
+            <p className="mt-2 text-[13px] text-[#C05A28]">{t('bloodworkInterpretFailed')}</p>
           )}
         </div>
       )}
@@ -330,15 +333,15 @@ export default function Bloodwork() {
           </>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-[15px] text-ink2 font-medium mb-1">No bloodwork logged</p>
-            <p className="text-[13px] text-ink3">Add markers above to track your lab results</p>
+            <p className="text-[15px] text-ink2 font-medium mb-1">{t('bloodworkEmpty')}</p>
+            <p className="text-[13px] text-ink3">{t('bloodworkEmptySub')}</p>
           </div>
         ) : (
           sortedDates.map((date) => (
             <div key={date} className="rounded-[14px] border border-border bg-white overflow-hidden">
               <div className="px-5 py-3 border-b border-border bg-sand">
                 <p className="text-[13px] font-semibold text-ink1">{date}</p>
-                <p className="text-[11px] text-ink3">{grouped[date].length} marker{grouped[date].length !== 1 ? 's' : ''}</p>
+                <p className="text-[11px] text-ink3">{grouped[date].length} {grouped[date].length !== 1 ? t('bloodworkMarkers') : t('bloodworkMarker')}</p>
               </div>
               <div className="divide-y divide-border">
                 {grouped[date].map((entry) => {

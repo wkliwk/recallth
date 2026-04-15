@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Wave from '../../components/Wave'
 import { api } from '../../services/api'
+import { useLanguage } from '../../context/LanguageContext'
 
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`
 
@@ -8,18 +9,19 @@ const SCHEDULE_OPTIONS = [
   {
     value: 'morning',
     emoji: '☀️',
-    title: 'Morning-heavy',
-    description: 'Front-load your supplements before midday',
+    titleKey: 'onboardingSchedMorning',
+    descriptionKey: 'onboardingSchedMorningSub',
   },
   {
     value: 'evening',
     emoji: '🌙',
-    title: 'Evening-heavy',
-    description: 'Take most supplements in the afternoon and evening',
+    titleKey: 'onboardingSchedEvening',
+    descriptionKey: 'onboardingSchedEveningSub',
   },
 ]
 
 export default function Schedule({ onFinish, onBack, stepIndex, totalSteps }) {
+  const { t } = useLanguage()
   const [selected, setSelected] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -68,16 +70,16 @@ export default function Schedule({ onFinish, onBack, stepIndex, totalSteps }) {
             ))}
           </div>
           <span className="text-white/60 text-[12px] font-medium">
-            Step {stepIndex + 1} of {totalSteps}
+            {t('onboardingStep', stepIndex + 1, totalSteps)}
           </span>
         </div>
 
         <div className="relative z-10 text-center pb-12">
           <h1 className="font-display text-white text-[28px] leading-tight">
-            When do you prefer to dose?
+            {t('onboardingSchedTitle')}
           </h1>
           <p className="text-white/60 text-[14px] mt-2 font-light">
-            We will optimise your schedule around this
+            {t('onboardingSchedSub')}
           </p>
         </div>
 
@@ -97,7 +99,7 @@ export default function Schedule({ onFinish, onBack, stepIndex, totalSteps }) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back
+            {t('onboardingBack')}
           </button>
 
           <div className="flex flex-col gap-3 flex-1">
@@ -119,13 +121,13 @@ export default function Schedule({ onFinish, onBack, stepIndex, totalSteps }) {
                       className="text-[16px] font-medium leading-tight"
                       style={{ color: isSelected ? '#C05A28' : '#2A221A' }}
                     >
-                      {option.title}
+                      {t(option.titleKey)}
                     </p>
                     <p
                       className="text-[13px] mt-1 leading-snug"
                       style={{ color: isSelected ? '#C05A28' : '#7A6A5A' }}
                     >
-                      {option.description}
+                      {t(option.descriptionKey)}
                     </p>
                   </div>
                   {isSelected && (
@@ -143,7 +145,7 @@ export default function Schedule({ onFinish, onBack, stepIndex, totalSteps }) {
             })}
 
             {error && (
-              <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-[10px] px-4 py-3">
+              <p className="text-[13px] text-[#C05A28] bg-[#FDE8DE] border border-[#E8C4B0] rounded-[10px] px-4 py-3">
                 {error}
               </p>
             )}
@@ -154,7 +156,7 @@ export default function Schedule({ onFinish, onBack, stepIndex, totalSteps }) {
             disabled={!selected || loading}
             className="mt-6 w-full rounded-pill bg-orange text-white text-[15px] font-medium py-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-dk"
           >
-            {loading ? 'Saving…' : 'Finish setup'}
+            {loading ? 'Saving…' : t('onboardingFinish')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,24 +22,24 @@ function relativeDate(dateStr) {
 const SEVERITY_CONFIG = {
   mild: {
     label: 'Mild',
-    badgeClass: 'bg-green-50 text-green-700 border border-green-200',
-    borderColor: '#16a34a',
-    buttonClass: 'bg-green-500 text-white border-green-500',
-    idleClass: 'bg-white text-green-700 border-green-200',
+    badgeClass: 'bg-[#E8F0E8] text-[#3D6B3D] border border-[#C5D8C5]',
+    borderColor: '#3D6B3D',
+    buttonClass: 'bg-[#3D6B3D] text-white border-[#3D6B3D]',
+    idleClass: 'bg-white text-[#3D6B3D] border-[#C5D8C5]',
   },
   moderate: {
     label: 'Moderate',
-    badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200',
-    borderColor: '#d97706',
-    buttonClass: 'bg-amber-500 text-white border-amber-500',
-    idleClass: 'bg-white text-amber-700 border-amber-200',
+    badgeClass: 'bg-[#FDE8DE] text-[#C05A28] border border-[#E8C4B0]',
+    borderColor: '#C05A28',
+    buttonClass: 'bg-[#E07B4A] text-white border-[#E07B4A]',
+    idleClass: 'bg-white text-[#C05A28] border-[#E8C4B0]',
   },
   severe: {
     label: 'Severe',
-    badgeClass: 'bg-red-50 text-red-700 border border-red-200',
-    borderColor: '#dc2626',
-    buttonClass: 'bg-red-500 text-white border-red-500',
-    idleClass: 'bg-white text-red-700 border-red-200',
+    badgeClass: 'bg-[#FDE8DE] text-[#C05A28] border border-[#E8C4B0]',
+    borderColor: '#C05A28',
+    buttonClass: 'bg-[#C05A28] text-white border-[#C05A28]',
+    idleClass: 'bg-white text-[#C05A28] border-[#E8C4B0]',
   },
 }
 
@@ -47,7 +48,7 @@ const SEVERITY_CONFIG = {
 function Skeleton({ className = '' }) {
   return (
     <div
-      className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-sand ${className}`}
       aria-hidden="true"
     />
   )
@@ -55,18 +56,19 @@ function Skeleton({ className = '' }) {
 
 // ── Severity badge ────────────────────────────────────────────────────────────
 
-function SeverityBadge({ severity }) {
+function SeverityBadge({ severity, t }) {
   const cfg = SEVERITY_CONFIG[severity] ?? SEVERITY_CONFIG.mild
+  const label = t ? { mild: t('sideEffectsMild'), moderate: t('sideEffectsModerate'), severe: t('sideEffectsSevere') }[severity] ?? cfg.label : cfg.label
   return (
     <span className={`inline-flex items-center px-2 py-[2px] rounded-full text-[11px] font-medium capitalize ${cfg.badgeClass}`}>
-      {cfg.label}
+      {label}
     </span>
   )
 }
 
 // ── Timeline card ─────────────────────────────────────────────────────────────
 
-function EntryCard({ entry, onDelete }) {
+function EntryCard({ entry, onDelete, t }) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const cfg = SEVERITY_CONFIG[entry.severity] ?? SEVERITY_CONFIG.mild
@@ -94,7 +96,7 @@ function EntryCard({ entry, onDelete }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className="text-[12px] text-ink3">{relativeDate(entry.date)}</span>
-              <SeverityBadge severity={entry.severity} />
+              <SeverityBadge severity={entry.severity} t={t} />
             </div>
             <p className="text-[14px] font-semibold text-ink1 truncate">{entry.supplementName}</p>
             <p className="text-[13px] text-ink2 mt-[2px]">{entry.effect}</p>
@@ -104,25 +106,25 @@ function EntryCard({ entry, onDelete }) {
           <div className="shrink-0">
             {confirming ? (
               <div className="flex items-center gap-2">
-                <span className="text-[12px] text-ink2">Are you sure?</span>
+                <span className="text-[12px] text-ink2">{t('sideEffectsDeleteConfirm')}</span>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="text-[12px] font-medium text-red-600 hover:underline disabled:opacity-50 cursor-pointer"
+                  className="text-[12px] font-medium text-[#C05A28] hover:underline disabled:opacity-50 cursor-pointer"
                 >
-                  {deleting ? '…' : 'Yes'}
+                  {deleting ? '…' : t('sideEffectsYes')}
                 </button>
                 <button
                   onClick={() => setConfirming(false)}
                   className="text-[12px] font-medium text-ink3 hover:underline cursor-pointer"
                 >
-                  No
+                  {t('sideEffectsNo')}
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setConfirming(true)}
-                className="text-ink4 hover:text-red-500 transition-colors cursor-pointer"
+                className="text-ink4 hover:text-[#C05A28] transition-colors cursor-pointer"
                 aria-label="Delete entry"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -144,6 +146,8 @@ function EntryCard({ entry, onDelete }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function SideEffects() {
+  const { t } = useLanguage()
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [entries, setEntries] = useState([])
   const [cabinet, setCabinet] = useState([])
@@ -236,8 +240,8 @@ export default function SideEffects() {
 
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="font-display text-[28px] text-ink1 leading-none mb-1">Side Effects</h1>
-        <p className="text-[14px] text-ink2">Track how supplements affect you over time</p>
+        <h1 className="font-display text-[28px] text-ink1 leading-none mb-1">{t('sideEffectsTitle')}</h1>
+        <p className="text-[14px] text-ink2">{t('sideEffectsSub')}</p>
       </div>
 
       {/* ── Log form card ── */}
@@ -245,7 +249,7 @@ export default function SideEffects() {
         onSubmit={handleSubmit}
         className="rounded-[14px] border border-border bg-white px-5 py-5 mb-7"
       >
-        <p className="text-[14px] font-semibold text-ink1 mb-4">Log a side effect</p>
+        <p className="text-[14px] font-semibold text-ink1 mb-4">{t('sideEffectsLog')}</p>
 
         <div className="flex flex-col gap-4">
 
@@ -253,7 +257,7 @@ export default function SideEffects() {
           {cabinet.length > 0 ? (
             <div className="flex flex-col gap-1">
               <label className="text-[12px] font-medium text-ink2" htmlFor="se-supplement">
-                Supplement
+                {t('sideEffectsSupplement')}
               </label>
               <select
                 id="se-supplement"
@@ -262,7 +266,7 @@ export default function SideEffects() {
                 required
                 className="w-full rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] text-ink1 outline-none focus:border-orange transition-colors appearance-none cursor-pointer"
               >
-                <option value="" disabled>Select supplement…</option>
+                <option value="" disabled>{t('sideEffectsSelectSupp')}</option>
                 {cabinet.map((item) => (
                   <option key={item._id ?? item.id} value={item._id ?? item.id}>
                     {item.name}
@@ -273,14 +277,14 @@ export default function SideEffects() {
           ) : (
             <div className="flex flex-col gap-1">
               <label className="text-[12px] font-medium text-ink2" htmlFor="se-supplement-name">
-                Supplement
+                {t('sideEffectsSupplement')}
               </label>
               <input
                 id="se-supplement-name"
                 type="text"
                 value={supplementName}
                 onChange={(e) => setSupplementName(e.target.value)}
-                placeholder="Supplement name"
+                placeholder={t('sideEffectsSuppPlaceholder')}
                 required
                 className="w-full rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors"
               />
@@ -290,14 +294,14 @@ export default function SideEffects() {
           {/* Effect description */}
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-medium text-ink2" htmlFor="se-effect">
-              What did you notice?
+              {t('sideEffectsWhat')}
             </label>
             <input
               id="se-effect"
               type="text"
               value={effect}
               onChange={(e) => setEffect(e.target.value)}
-              placeholder="What did you notice?"
+              placeholder={t('sideEffectsWhatPlaceholder')}
               required
               className="w-full rounded-[10px] border border-border bg-white px-3 py-[9px] text-[13px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors"
             />
@@ -305,11 +309,12 @@ export default function SideEffects() {
 
           {/* Severity picker */}
           <div className="flex flex-col gap-2">
-            <span className="text-[12px] font-medium text-ink2">Severity</span>
+            <span className="text-[12px] font-medium text-ink2">{t('sideEffectsSeverity')}</span>
             <div className="flex gap-2" role="radiogroup" aria-label="Severity">
               {(['mild', 'moderate', 'severe']).map((s) => {
                 const cfg = SEVERITY_CONFIG[s]
                 const selected = severity === s
+                const severityLabel = { mild: t('sideEffectsMild'), moderate: t('sideEffectsModerate'), severe: t('sideEffectsSevere') }[s]
                 return (
                   <button
                     key={s}
@@ -321,7 +326,7 @@ export default function SideEffects() {
                       selected ? cfg.buttonClass : cfg.idleClass + ' border'
                     }`}
                   >
-                    {cfg.label}
+                    {severityLabel}
                   </button>
                 )
               })}
@@ -331,7 +336,7 @@ export default function SideEffects() {
           {/* Date */}
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-medium text-ink2" htmlFor="se-date">
-              Date
+              {t('sideEffectsDate')}
             </label>
             <input
               id="se-date"
@@ -346,7 +351,7 @@ export default function SideEffects() {
 
           {/* Error */}
           {error && (
-            <p className="text-[13px] text-red-600" role="alert">{error}</p>
+            <p className="text-[13px] text-[#C05A28]" role="alert">{error}</p>
           )}
 
           {/* Submit */}
@@ -355,14 +360,14 @@ export default function SideEffects() {
             disabled={submitting}
             className="w-full py-[10px] rounded-[10px] bg-orange text-white text-[14px] font-semibold transition-opacity disabled:opacity-60 cursor-pointer hover:opacity-90"
           >
-            {submitting ? 'Logging…' : 'Log Effect'}
+            {submitting ? t('sideEffectsLogging') : t('sideEffectsSubmit')}
           </button>
         </div>
       </form>
 
       {/* ── Timeline ── */}
       <div>
-        <h2 className="text-[15px] font-semibold text-ink1 mb-4">History</h2>
+        <h2 className="text-[15px] font-semibold text-ink1 mb-4">{t('sideEffectsHistory')}</h2>
 
         {loading ? (
           <div className="flex flex-col gap-3" aria-label="Loading">
@@ -373,7 +378,7 @@ export default function SideEffects() {
         ) : entries.length === 0 ? (
           <div className="rounded-[14px] border border-border bg-white px-6 py-10 text-center">
             <p className="text-[13px] text-ink2">
-              No side effects logged — track how supplements affect you
+              {t('sideEffectsEmpty')}
             </p>
           </div>
         ) : (
@@ -383,6 +388,7 @@ export default function SideEffects() {
                 key={entry._id ?? entry.id}
                 entry={entry}
                 onDelete={handleDelete}
+                t={t}
               />
             ))}
           </div>

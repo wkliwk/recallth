@@ -10,37 +10,19 @@ import { useLanguage } from '../context/LanguageContext'
 /* ------------------------------------------------------------------ */
 /*  Evidence badge                                                     */
 /* ------------------------------------------------------------------ */
-const EVIDENCE_COLORS = {
-  A: { bg: '#D4ECD8', text: '#2C5A38' },
-  B: { bg: '#DAE8F8', text: '#1A3A6A' },
-  C: { bg: '#FAE8D0', text: '#7A4A1A' },
-  D: { bg: '#FDE8DE', text: '#7A2A1A' },
-}
-
-function EvidenceBadge({ level }) {
-  const colors = EVIDENCE_COLORS[level] || EVIDENCE_COLORS.C
-  return (
-    <span
-      className="rounded-pill px-[8px] py-[2px] text-[10px] font-semibold shrink-0"
-      style={{ background: colors.bg, color: colors.text }}
-    >
-      {level}
-    </span>
-  )
-}
 
 /* ------------------------------------------------------------------ */
 /*  Skeleton card                                                      */
 /* ------------------------------------------------------------------ */
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-card border border-border px-5 py-[14px] flex items-center gap-[14px] animate-pulse">
-      <div className="w-[40px] h-[40px] rounded-full bg-sand shrink-0" />
-      <div className="flex-1 min-w-0 flex flex-col gap-2">
-        <div className="h-[14px] w-3/4 bg-sand rounded-pill" />
-        <div className="h-[12px] w-1/2 bg-sand rounded-pill" />
+    <div className="bg-white rounded-card border border-border overflow-hidden animate-pulse">
+      <div className="w-full aspect-[4/3] bg-sand" />
+      <div className="px-3 py-3 flex flex-col gap-2">
+        <div className="h-[13px] w-3/4 bg-sand rounded-pill" />
+        <div className="h-[11px] w-1/2 bg-sand rounded-pill" />
+        <div className="h-[18px] w-[48px] bg-sand rounded-pill mt-1" />
       </div>
-      <div className="h-[24px] w-[48px] bg-sand rounded-pill shrink-0" />
     </div>
   )
 }
@@ -75,6 +57,8 @@ export default function Cabinet() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
+  const [sortBy, setSortBy] = useState('name') // 'name' | 'brand' | 'type' | 'recent'
 
   useEffect(() => {
     async function fetchData() {
@@ -94,14 +78,16 @@ export default function Cabinet() {
         }
 
         if (interactRes.status === 'fulfilled') {
-          setInteractions(interactRes.value.data || [])
+          const ixData = interactRes.value.data
+          setInteractions(Array.isArray(ixData) ? ixData : ixData?.interactions ?? [])
         }
 
         if (evidenceRes.status === 'fulfilled') {
-          const scores = evidenceRes.value.data || []
+          const scoresData = evidenceRes.value.data
+          const scores = Array.isArray(scoresData) ? scoresData : scoresData?.scores ?? []
           const map = {}
           scores.forEach((s) => {
-            if (s.name) map[s.name] = s.evidenceScore
+            if (s.name) map[s.name] = s
           })
           setEvidenceMap(map)
         }
@@ -115,21 +101,33 @@ export default function Cabinet() {
     fetchData()
   }, [])
 
-  const filtered = supplements.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = supplements
+    .filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'brand') return (a.brand || '').localeCompare(b.brand || '')
+      if (sortBy === 'type') return (a.type || '').localeCompare(b.type || '')
+      if (sortBy === 'recent') return (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || '')
+      return a.name.localeCompare(b.name)
+    })
+
+  const SORT_OPTIONS = [
+    { key: 'name', label: 'A-Z' },
+    { key: 'brand', label: t('fieldBrand') || 'Brand' },
+    { key: 'type', label: t('fieldType') || 'Type' },
+    { key: 'recent', label: t('recent') || 'Recent' },
+  ]
 
   const stats = [
-    { value: String(supplements.length), label: 'Active' },
-    { value: String(interactions.length), label: 'Conflicts' },
+    { value: String(supplements.length), label: t('active') },
+    { value: String(interactions.length), label: t('conflicts') },
   ]
 
   return (
     <div className="min-h-screen bg-page">
-      {/* Header */}
+      {/* Mobile header */}
       <OrangeHeader
         title={t('cabinetTitle')}
-        subtitle={`${supplements.length} supplement${supplements.length !== 1 ? 's' : ''}`}
+        subtitle={`${supplements.length} ${t('statsSupplements').toLowerCase()}`}
         hasStats={!loading}
         stats={stats}
       />
@@ -139,17 +137,33 @@ export default function Cabinet() {
         <Wave />
       </div>
 
+      {/* Desktop header */}
+      <div className="hidden md:block px-8 pt-7 pb-2 max-w-[960px]">
+        <h1 className="font-display text-[28px] text-ink1">{t('cabinetTitle')}</h1>
+        <p className="text-[14px] text-ink3 mt-1">{supplements.length} {t('statsSupplements').toLowerCase()}</p>
+        {!loading && (
+          <div className="flex gap-4 mt-4">
+            {stats.map((s) => (
+              <div key={s.label} className="bg-white border border-border rounded-[14px] px-6 py-3 flex flex-col items-center">
+                <span className="text-[22px] font-bold text-orange">{s.value}</span>
+                <span className="text-[11px] text-ink3 mt-1">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Interaction warning banner */}
       {interactions.length > 0 && (
         <div
-          className="mx-5 mb-3 px-4 py-3 rounded-card flex items-start gap-3"
-          style={{ background: '#FEF3C7', border: '1px solid #FCD34D' }}
+          className="mx-5 md:mx-8 mb-3 px-4 py-3 rounded-card flex items-start gap-3 max-w-[960px]"
+          style={{ background: '#FDE8DE', border: '1px solid #E8C4B0' }}
         >
           <svg
             className="w-[18px] h-[18px] shrink-0 mt-[1px]"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#D97706"
+            stroke="#C05A28"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -158,14 +172,62 @@ export default function Cabinet() {
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <p className="text-[13px] font-medium" style={{ color: '#92400E' }}>
+          <p className="text-[13px] font-medium" style={{ color: '#C05A28' }}>
             {t('interactionWarning', interactions.length)}
           </p>
         </div>
       )}
 
-      {/* Search input */}
-      <div className="px-5 py-4">
+      {/* Desktop toolbar (search + sort in one row) */}
+      {!loading && supplements.length > 0 && (
+        <div className="hidden md:flex items-center justify-between px-8 py-4 max-w-[960px]">
+          <div className="flex items-center gap-1.5">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setSortBy(opt.key)}
+                className={`rounded-pill px-3 py-[5px] text-[11px] font-medium whitespace-nowrap cursor-pointer transition-colors ${
+                  sortBy === opt.key
+                    ? 'bg-orange text-white'
+                    : 'bg-white border border-border text-ink3 hover:border-ink3/40'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('searchPlaceholder')}
+              className="bg-white border-[1.5px] border-border-md rounded-[12px] py-[9px] px-4 text-[13px] text-ink1 placeholder:text-ink4 outline-none w-[260px]"
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-[8px] cursor-pointer transition-colors ${viewMode === 'grid' ? 'bg-orange/10 text-orange' : 'text-ink3 hover:text-ink2'}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-[8px] cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-orange/10 text-orange' : 'text-ink3 hover:text-ink2'}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile search input */}
+      <div className="md:hidden px-5 py-4">
         <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-[16px] h-[16px] text-ink3"
@@ -181,26 +243,66 @@ export default function Cabinet() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search supplements..."
+            placeholder={t('searchPlaceholder')}
             className="w-full bg-white border-[1.5px] border-border-md rounded-pill py-[10px] pr-4 pl-10 text-[11px] text-ink1 placeholder:text-ink4 outline-none"
           />
         </div>
       </div>
 
-      {/* Supplement card list */}
-      <div className="flex flex-col gap-3 px-5 pb-[100px]">
+      {/* Mobile sort + view toggle */}
+      {!loading && supplements.length > 0 && (
+        <div className="md:hidden px-5 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setSortBy(opt.key)}
+                className={`rounded-pill px-3 py-[5px] text-[11px] font-medium whitespace-nowrap cursor-pointer transition-colors ${
+                  sortBy === opt.key
+                    ? 'bg-orange text-white'
+                    : 'bg-white border border-border text-ink3 hover:border-ink3/40'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 ml-3 shrink-0">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-[8px] cursor-pointer transition-colors ${viewMode === 'grid' ? 'bg-orange/10 text-orange' : 'text-ink3 hover:text-ink2'}`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-[8px] cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-orange/10 text-orange' : 'text-ink3 hover:text-ink2'}`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Supplement card grid/list */}
+      <div className={`${viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col'} gap-3 px-5 md:px-8 pb-[100px] md:pb-10 max-w-[960px]`}>
         {loading ? (
           <>
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
+            <SkeletonCard />
           </>
         ) : error ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 col-span-2">
             <p className="text-ink3 text-[14px]">{error}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 col-span-2">
             {supplements.length === 0 ? (
               <>
                 <div className="w-[56px] h-[56px] rounded-full bg-orange-lt flex items-center justify-center mx-auto mb-4">
@@ -221,7 +323,7 @@ export default function Cabinet() {
                 <p className="text-ink3 text-[13px] mt-1">{t('cabinetEmptySub')}</p>
               </>
             ) : (
-              <p className="text-ink3 text-[14px]">No supplements match your search.</p>
+              <p className="text-ink3 text-[14px]">{t('noResults')}</p>
             )}
           </div>
         ) : (
@@ -234,21 +336,20 @@ export default function Cabinet() {
             return (
               <div
                 key={supp._id}
-                className="relative cursor-pointer"
+                className="cursor-pointer"
                 onClick={() => navigate(`/cabinet/${supp._id}`)}
               >
                 <SuppCard
                   letter={letter}
                   name={supp.name}
+                  brand={supp.brand}
                   meta={supp.timing || supp.frequency}
                   dose={supp.dosage}
                   colors={colors}
+                  evidenceLevel={evidenceLevel}
+                  imageUrl={supp.imageUrl}
+                  variant={viewMode}
                 />
-                {evidenceLevel && (
-                  <div className="absolute right-[60px] top-1/2 -translate-y-1/2 pointer-events-none">
-                    <EvidenceBadge level={evidenceLevel} />
-                  </div>
-                )}
               </div>
             )
           })

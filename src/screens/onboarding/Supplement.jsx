@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Wave from '../../components/Wave'
 import { api } from '../../services/api'
+import { useLanguage } from '../../context/LanguageContext'
 
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`
 
@@ -32,6 +33,7 @@ function InputField({ label, type = 'text', placeholder, value, onChange, requir
 }
 
 export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSteps }) {
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [dose, setDose] = useState('')
   const [timing, setTiming] = useState('morning')
@@ -45,7 +47,7 @@ export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSte
     setError('')
     setLoading(true)
     try {
-      await api.cabinet.add({
+      await api.cabinet.create({
         name: name.trim(),
         type: 'supplement',
         dosage: dose.trim(),
@@ -88,16 +90,16 @@ export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSte
             ))}
           </div>
           <span className="text-white/60 text-[12px] font-medium">
-            Step {stepIndex + 1} of {totalSteps}
+            {t('onboardingStep', stepIndex + 1, totalSteps)}
           </span>
         </div>
 
         <div className="relative z-10 text-center pb-12">
           <h1 className="font-display text-white text-[28px] leading-tight">
-            Add your first supplement
+            {t('onboardingSuppTitle')}
           </h1>
           <p className="text-white/60 text-[14px] mt-2 font-light">
-            You can add more from your cabinet later
+            {t('onboardingSuppSub')}
           </p>
         </div>
 
@@ -117,28 +119,28 @@ export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSte
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back
+            {t('onboardingBack')}
           </button>
 
           <div className="flex flex-col gap-4 flex-1">
             <InputField
-              label="Supplement name"
-              placeholder="e.g. Creatine, Omega-3, Vitamin D"
+              label={t('onboardingSuppName')}
+              placeholder={t('onboardingSuppNamePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
 
             <InputField
-              label="Dose"
-              placeholder="e.g. 5g, 1000mg, 2 capsules"
+              label={t('onboardingSuppDose')}
+              placeholder={t('onboardingSuppDosePlaceholder')}
               value={dose}
               onChange={(e) => setDose(e.target.value)}
               required
             />
 
             <div className="flex flex-col gap-[6px]">
-              <label className="text-[13px] font-medium text-ink2">Timing</label>
+              <label className="text-[13px] font-medium text-ink2">{t('onboardingSuppTiming')}</label>
               <select
                 value={timing}
                 onChange={(e) => setTiming(e.target.value)}
@@ -153,7 +155,7 @@ export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSte
             </div>
 
             {error && (
-              <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-[10px] px-4 py-3">
+              <p className="text-[13px] text-[#C05A28] bg-[#FDE8DE] border border-[#E8C4B0] rounded-[10px] px-4 py-3">
                 {error}
               </p>
             )}
@@ -165,13 +167,13 @@ export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSte
               disabled={!canSubmit || loading}
               className="w-full rounded-pill bg-orange text-white text-[15px] font-medium py-[15px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-dk"
             >
-              {loading ? 'Saving…' : 'Continue'}
+              {loading ? t('savingEllipsis') : t('onboardingContinue')}
             </button>
             <button
               onClick={onSkip}
               className="w-full text-center text-[14px] text-ink3 hover:text-ink2 transition-colors cursor-pointer py-2"
             >
-              Skip for now
+              {t('onboardingSuppSkip')}
             </button>
           </div>
         </div>

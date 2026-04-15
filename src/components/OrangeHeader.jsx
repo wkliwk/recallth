@@ -2,7 +2,7 @@ import StatStrip from './StatStrip'
 
 export default function OrangeHeader({ title, subtitle, pill, onPillClick, hasStats, avatar, stats = [], onBack }) {
   return (
-    <div className="bg-orange px-5 pt-6 pb-4">
+    <div className={`md:hidden bg-orange px-5 pt-6 ${hasStats && stats.length > 0 ? 'pb-14' : 'pb-4'}`}>
       {/* Safe-area spacer: only on mobile, clears status bar / notch */}
       <div className="md:hidden" style={{ height: 'max(1.5rem, env(safe-area-inset-top, 1.5rem))' }} />
       {/* Back button — rendered after safe-area clearance so it is not hidden by status bar */}

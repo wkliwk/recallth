@@ -73,7 +73,7 @@ function EditActions({ saving, error, onSave, onCancel }) {
   const { t } = useLanguage()
   return (
     <>
-      {error && <p className="text-[12px] text-red-500">{error}</p>}
+      {error && <p className="text-[12px] text-[#C05A28]">{error}</p>}
       <div className="flex gap-2 mt-1">
         <button
           onClick={onSave}
@@ -464,6 +464,7 @@ export default function Profile() {
   const [profileData, setProfileData] = useState(null)
   const [suppCount, setSuppCount]     = useState('—')
   const [conflictCount, setConflictCount] = useState('—')
+  const [streakDays, setStreakDays]   = useState('—')
   const [loadError, setLoadError]     = useState(null)
 
   const displayName   = email ? email.split('@')[0] : 'You'
@@ -472,10 +473,11 @@ export default function Profile() {
   useEffect(() => {
     async function load() {
       try {
-        const [profileRes, cabinetRes, interactionsRes] = await Promise.allSettled([
+        const [profileRes, cabinetRes, interactionsRes, streakRes] = await Promise.allSettled([
           api.profile.get(),
           api.cabinet.list(),
           api.cabinet.interactions(),
+          api.intake.streak(),
         ])
 
         if (profileRes.status === 'fulfilled') {
@@ -492,6 +494,10 @@ export default function Profile() {
         if (interactionsRes.status === 'fulfilled') {
           const items = interactionsRes.value.data ?? interactionsRes.value
           setConflictCount(Array.isArray(items) ? String(items.length) : '0')
+        }
+
+        if (streakRes.status === 'fulfilled') {
+          setStreakDays(`${streakRes.value?.currentStreak ?? 0}d`)
         }
       } catch {
         setLoadError('Could not load profile data')
@@ -513,7 +519,7 @@ export default function Profile() {
   const stats = [
     { value: suppCount,     label: 'Supps' },
     { value: conflictCount, label: 'Conflicts' },
-    { value: '14d',         label: 'Streak' },
+    { value: streakDays,    label: 'Streak' },
   ]
 
   const quickActions = [
@@ -559,7 +565,7 @@ export default function Profile() {
 
       {/* Load error */}
       {loadError && (
-        <p className="text-[12px] text-red-500 px-5 mb-3">{loadError}</p>
+        <p className="text-[12px] text-[#C05A28] px-5 mb-3">{loadError}</p>
       )}
 
       {/* Accordion sections */}

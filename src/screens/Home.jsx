@@ -6,11 +6,11 @@ import { useLanguage } from '../context/LanguageContext'
 
 // ── Colour palette for schedule time slots ──────────────────────────────────
 const SLOT_COLOURS = [
-  { bg: '#FFFBEB', border: '#FEF3C7', dot: '#D97706' },
-  { bg: '#EFF6FF', border: '#BFDBFE', dot: '#2563EB' },
-  { bg: '#F5F3FF', border: '#DDD6FE', dot: '#7C3AED' },
-  { bg: '#ECFDF5', border: '#A7F3D0', dot: '#059669' },
-  { bg: '#FFF1F2', border: '#FECDD3', dot: '#E11D48' },
+  { bg: '#FDE8DE', border: '#E8C4B0', dot: '#E07B4A' },  // orange
+  { bg: '#F2EDE4', border: '#D8D0C4', dot: '#7A6A5A' },  // sand/ink2
+  { bg: '#E8E0D4', border: '#C8BCA8', dot: '#2A221A' },  // warm dark
+  { bg: '#E8F0E8', border: '#C5D8C5', dot: '#3D6B3D' },  // sage
+  { bg: '#FBF9F5', border: '#E8C4B0', dot: '#C05A28' },  // orange-dk
 ]
 
 // QUICK_PROMPTS are generated inside component to use t()
@@ -19,7 +19,7 @@ const SLOT_COLOURS = [
 function Skeleton({ className = '' }) {
   return (
     <div
-      className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-sand ${className}`}
       aria-hidden="true"
     />
   )
@@ -51,19 +51,7 @@ function ScheduleBlock({ block }) {
   )
 }
 
-// ── Relative-time helper ─────────────────────────────────────────────────────
-function relativeTime(dateStr) {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 60) return `${diffMin || 1} min ago`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`
-  const diffDay = Math.floor(diffHr / 24)
-  if (diffDay === 1) return 'Yesterday'
-  return `${diffDay} days ago`
-}
+// relativeTime is now inside the component to access t()
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Home() {
@@ -71,6 +59,16 @@ export default function Home() {
   const { email } = useAuth()
   const { t } = useLanguage()
   const inputRef = useRef(null)
+
+  function relativeTime(dateStr) {
+    const diffMin = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
+    if (diffMin < 60) return t('timeMinAgo', diffMin || 1)
+    const diffHr = Math.floor(diffMin / 60)
+    if (diffHr < 24) return t('timeHrAgo', diffHr)
+    const diffDay = Math.floor(diffHr / 24)
+    if (diffDay === 1) return t('timeYesterday')
+    return t('timeDaysAgo', diffDay)
+  }
 
   const hour = new Date().getHours()
   const greetingWord = hour < 12 ? t('goodMorning') : hour < 18 ? t('goodAfternoon') : t('goodEvening')
@@ -92,6 +90,7 @@ export default function Home() {
 
   const [supplementCount, setSupplementCount] = useState(0)
   const [conflictCount, setConflictCount] = useState(0)
+  const [streakDays, setStreakDays] = useState(0)
   const [schedule, setSchedule] = useState([])
   const [conversations, setConversations] = useState([])
 
@@ -103,9 +102,10 @@ export default function Home() {
 
     async function fetchStats() {
       try {
-        const [cabinetRes, interactionsRes] = await Promise.allSettled([
+        const [cabinetRes, interactionsRes, streakRes] = await Promise.allSettled([
           api.cabinet.list(),
           api.cabinet.interactions(),
+          api.intake.streak(),
         ])
 
         if (cancelled) return
@@ -116,10 +116,13 @@ export default function Home() {
         }
 
         if (interactionsRes.status === 'fulfilled') {
-          const warnings = interactionsRes.value?.data ?? []
+          const ixData = interactionsRes.value?.data
+          const warnings = Array.isArray(ixData) ? ixData : ixData?.interactions ?? []
           setConflictCount(Array.isArray(warnings) ? warnings.length : 0)
         }
-        // If interactions endpoint unavailable, conflictCount stays 0 (default)
+        if (streakRes.status === 'fulfilled') {
+          setStreakDays(streakRes.value?.currentStreak ?? 0)
+        }
       } catch {
         // silently degrade
       } finally {
@@ -140,28 +143,31 @@ export default function Home() {
         const res = await api.cabinet.schedule()
         if (cancelled) return
 
-        const raw = res?.data ?? []
+        const raw = res?.data ?? {}
 
-        if (Array.isArray(raw) && raw.length > 0) {
-          // Backend may return grouped blocks or flat items — normalise both
-          const blocks = raw.map((block, idx) => {
+        // Backend returns { schedule: { morning: [...], ... } } or flat array
+        const scheduleObj = raw.schedule ?? raw
+        const SLOT_LABELS = { morning: t('slotMorning'), afternoon: t('slotAfternoon'), evening: t('slotEvening'), night: t('slotNight'), anytime: t('slotAnytime') }
+
+        if (scheduleObj && typeof scheduleObj === 'object' && !Array.isArray(scheduleObj)) {
+          const blocks = Object.entries(SLOT_LABELS)
+            .filter(([key]) => Array.isArray(scheduleObj[key]) && scheduleObj[key].length > 0)
+            .map(([key, label], idx) => {
+              const colours = SLOT_COLOURS[idx % SLOT_COLOURS.length]
+              const items = scheduleObj[key].map((it) => ({
+                name: it.name ?? t('unknown'),
+                dose: it.dosage ?? it.dose ?? '',
+              }))
+              return { label, time: '', bg: colours.bg, border: colours.border, dot: colours.dot, items }
+            })
+          setSchedule(blocks)
+        } else if (Array.isArray(scheduleObj) && scheduleObj.length > 0) {
+          const blocks = scheduleObj.map((block, idx) => {
             const colours = SLOT_COLOURS[idx % SLOT_COLOURS.length]
-            // If items are nested under a key, extract them
             const items = Array.isArray(block.items)
-              ? block.items.map((it) => ({
-                  name: it.name ?? it.supplementName ?? 'Unknown',
-                  dose: it.dose ?? it.dosage ?? '',
-                }))
-              : [{ name: block.name ?? block.supplementName ?? 'Unknown', dose: block.dose ?? block.dosage ?? '' }]
-
-            return {
-              label: block.label ?? block.timing ?? block.slot ?? 'Schedule',
-              time: block.time ?? block.scheduledTime ?? '',
-              bg: colours.bg,
-              border: colours.border,
-              dot: colours.dot,
-              items,
-            }
+              ? block.items.map((it) => ({ name: it.name ?? t('unknown'), dose: it.dosage ?? '' }))
+              : [{ name: block.name ?? t('unknown'), dose: block.dosage ?? '' }]
+            return { label: block.label ?? block.timing ?? t('schedule'), time: block.time ?? '', bg: colours.bg, border: colours.border, dot: colours.dot, items }
           })
           setSchedule(blocks)
         } else {
@@ -186,7 +192,7 @@ export default function Home() {
       try {
         const res = await api.chat.history()
         if (cancelled) return
-        const items = res?.data ?? res ?? []
+        const items = res?.data?.conversations ?? res?.data ?? []
         setConversations(Array.isArray(items) ? items.slice(0, 3) : [])
       } catch {
         setConversations([])
@@ -219,9 +225,9 @@ export default function Home() {
 
   const STATS = [
     { value: String(supplementCount), label: t('statsSupplements'), color: 'text-ink1' },
-    { value: String(conflictCount), label: t('statsConflicts'), color: 'text-[#059669]' },
-    { value: '14d', label: t('statsStreak'), color: 'text-orange' },
-    { value: 'AI', label: t('statsPowered'), color: 'text-[#7C3AED]' },
+    { value: String(conflictCount), label: t('statsConflicts'), color: 'text-ink2' },
+    { value: `${streakDays}d`, label: t('statsStreak'), color: 'text-orange' },
+    { value: 'AI', label: t('statsPowered'), color: 'text-orange' },
   ]
 
   return (
@@ -232,7 +238,7 @@ export default function Home() {
           <div>
             <p className="text-[14px] text-ink2 mb-1">{greetingWord}</p>
             <h1 className="font-display text-[32px] text-ink1 leading-none">
-              {greetingWord}{displayName ? `, ${displayName}` : ''}
+              {displayName || 'there'}
             </h1>
           </div>
           <div className="bg-white border border-border rounded-[10px] px-4 py-2">
@@ -289,11 +295,11 @@ export default function Home() {
           <div className="flex flex-col gap-4">
 
             {/* Ask AI card */}
-            <div className="rounded-[14px] border p-5" style={{ background: '#F5F3FF', borderColor: '#DDD6FE' }}>
+            <div className="rounded-[14px] border p-5" style={{ background: '#FDE8DE', borderColor: '#E8C4B0' }}>
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0"
-                  style={{ background: '#7C3AED' }}
+                  style={{ background: '#E07B4A' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
@@ -318,7 +324,7 @@ export default function Home() {
                 <button
                   onClick={() => navigateToChat(quickInput.trim() || undefined)}
                   className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer"
-                  style={{ background: '#7C3AED' }}
+                  style={{ background: '#E07B4A' }}
                   aria-label="Send"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -334,7 +340,7 @@ export default function Home() {
                   <button
                     key={p}
                     onClick={() => navigateToChat(p)}
-                    className="w-full text-left text-[12px] text-ink2 bg-white border border-[#DDD6FE] rounded-[8px] px-3 py-[8px] hover:bg-white/80 transition-colors cursor-pointer"
+                    className="w-full text-left text-[12px] text-ink2 bg-white border border-border rounded-[8px] px-3 py-[8px] hover:bg-white/80 transition-colors cursor-pointer"
                   >
                     {p}
                   </button>
@@ -374,9 +380,9 @@ export default function Home() {
                     >
                       <div
                         className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
-                        style={{ background: '#F5F3FF' }}
+                        style={{ background: '#FDE8DE' }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
                         </svg>
                       </div>
@@ -384,7 +390,7 @@ export default function Home() {
                         <p className="text-[13px] font-medium text-ink1 truncate">{item.title ?? t('conversationFallback')}</p>
                         <p className="text-[11px] text-ink3">
                           {item.createdAt ? relativeTime(item.createdAt) : ''}
-                          {item.messageCount != null ? ` · ${item.messageCount} message${item.messageCount !== 1 ? 's' : ''}` : ''}
+                          {item.messageCount != null ? ` · ${item.messageCount} ${t('msgs')}` : ''}
                         </p>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-ink4 shrink-0">

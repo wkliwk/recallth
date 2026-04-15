@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`
 
@@ -25,6 +26,7 @@ export default function Auth() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { setAuth } = useAuth()
+  const { t } = useLanguage()
 
   const initialMode = searchParams.get('mode') === 'login' ? 'login' : 'signup'
   const [mode, setMode] = useState(initialMode)
@@ -43,7 +45,7 @@ export default function Auth() {
     try {
       const res = isLogin
         ? await api.auth.login(email, password)
-        : await api.auth.register(email, password)
+        : await api.auth.register(name, email, password)
       setAuth(res.data.token, res.data.email)
       navigate(isLogin ? '/home' : '/onboarding')
     } catch (err) {
@@ -78,10 +80,10 @@ export default function Auth() {
         <div className="relative z-10 text-center pb-12">
           <span className="text-white/80 text-[13px] font-medium tracking-[0.1em] uppercase block mb-3">recallth</span>
           <h1 className="font-display text-white text-[32px] leading-tight">
-            {isLogin ? 'Welcome back' : 'Get started'}
+            {isLogin ? t('authWelcome') : t('authGetStarted')}
           </h1>
           <p className="text-white/60 text-[14px] mt-2 font-light">
-            {isLogin ? 'Sign in to your account' : 'Create your free account'}
+            {isLogin ? t('authSignInSub') : t('authCreateSub')}
           </p>
         </div>
 
@@ -99,13 +101,13 @@ export default function Auth() {
               onClick={() => { setMode('signup'); setError('') }}
               className={`flex-1 rounded-[12px] py-[10px] text-[14px] font-medium transition-all ${!isLogin ? 'bg-white text-ink1 shadow-sm' : 'text-ink3'}`}
             >
-              Sign up
+              {t('authSignUp')}
             </button>
             <button
               onClick={() => { setMode('login'); setError('') }}
               className={`flex-1 rounded-[12px] py-[10px] text-[14px] font-medium transition-all ${isLogin ? 'bg-white text-ink1 shadow-sm' : 'text-ink3'}`}
             >
-              Log in
+              {t('authLogIn')}
             </button>
           </div>
 
@@ -114,7 +116,7 @@ export default function Auth() {
             type="button"
             disabled
             className="w-full flex items-center justify-center gap-3 border border-border rounded-[14px] py-[13px] bg-white text-[15px] font-medium text-ink1 hover:bg-sand transition-colors cursor-pointer mb-5 disabled:opacity-60"
-            title="Coming soon"
+            title={t('authComingSoon')}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
@@ -122,32 +124,32 @@ export default function Auth() {
               <path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
               <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
             </svg>
-            Continue with Google
+            {t('authContinueGoogle')}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-[12px] text-ink4 font-medium">or</span>
+            <span className="text-[12px] text-ink4 font-medium">{t('authOr')}</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
           {/* Form fields */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {!isLogin && (
-              <InputField label="Name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+              <InputField label={t('authName')} placeholder={t('authNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
             )}
-            <InputField label="Email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <InputField label={t('authEmail')} type="email" placeholder={t('authEmailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} />
             <InputField
-              label="Password"
+              label={t('authPassword')}
               type="password"
-              placeholder={isLogin ? 'Your password' : 'Min. 8 characters'}
+              placeholder={isLogin ? t('authPasswordPlaceholderLogin') : t('authPasswordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
 
             {error && (
-              <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-[10px] px-4 py-3">
+              <p className="text-[13px] text-[#C05A28] bg-[#FDE8DE] border border-[#E8C4B0] rounded-[10px] px-4 py-3">
                 {error}
               </p>
             )}
@@ -157,17 +159,17 @@ export default function Auth() {
               disabled={loading}
               className="mt-2 rounded-pill bg-orange text-white text-[15px] font-medium py-[15px] hover:bg-orange-dk transition-colors cursor-pointer disabled:opacity-60"
             >
-              {loading ? 'Please wait…' : isLogin ? 'Log in' : 'Create account'}
+              {loading ? t('authPleaseWait') : isLogin ? t('authLogIn') : t('authCreateAccount')}
             </button>
           </form>
 
           <p className="text-center text-[13px] text-ink3 mt-6">
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
+            {isLogin ? t('authNoAccount') : t('authHaveAccount')}
             <button
               onClick={() => { setMode(isLogin ? 'signup' : 'login'); setError('') }}
               className="text-orange font-medium cursor-pointer"
             >
-              {isLogin ? 'Sign up' : 'Log in'}
+              {isLogin ? t('authSignUp') : t('authLogIn')}
             </button>
           </p>
         </div>

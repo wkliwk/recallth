@@ -1,25 +1,28 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../services/api'
 import { chatService } from '../services/chat'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Skeleton card ────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="animate-pulse rounded-[10px] bg-gray-100 h-[90px]" aria-hidden="true" />
+    <div className="animate-pulse rounded-[10px] bg-sand h-[90px]" aria-hidden="true" />
   )
 }
 
 // ── "In your stack" badge ────────────────────────────────────────────────────
 function InStackBadge() {
+  const { t } = useLanguage()
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-[10px] py-[3px] text-[11px] font-semibold text-green-700 shrink-0">
-      In your stack
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F0E8] border border-[#C5D8C5] px-[10px] py-[3px] text-[11px] font-semibold text-[#3D6B3D] shrink-0">
+      {t('stackBuilderInStack')}
     </span>
   )
 }
 
 // ── Recommendation card ──────────────────────────────────────────────────────
 function RecommendCard({ item, cabinetNames, onAdd }) {
+  const { t } = useLanguage()
   const [addState, setAddState] = useState('idle') // idle | adding | added
 
   const inCabinet = cabinetNames.has(item.name.toLowerCase())
@@ -41,8 +44,8 @@ function RecommendCard({ item, cabinetNames, onAdd }) {
         {inCabinet ? (
           <InStackBadge />
         ) : addState === 'added' ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-[10px] py-[3px] text-[11px] font-semibold text-green-700 shrink-0">
-            Added
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F0E8] border border-[#C5D8C5] px-[10px] py-[3px] text-[11px] font-semibold text-[#3D6B3D] shrink-0">
+            {t('stackBuilderAdded')}
           </span>
         ) : (
           <button
@@ -51,7 +54,7 @@ function RecommendCard({ item, cabinetNames, onAdd }) {
             className="rounded-full bg-orange px-[12px] py-[4px] text-[12px] font-semibold text-white shrink-0 disabled:opacity-50 active:opacity-80 transition-opacity"
             aria-label={`Add ${item.name} to stack`}
           >
-            {addState === 'adding' ? 'Adding…' : 'Add to stack'}
+            {addState === 'adding' ? t('stackBuilderAdding') : t('stackBuilderAddToStack')}
           </button>
         )}
       </div>
@@ -68,34 +71,36 @@ function RecommendCard({ item, cabinetNames, onAdd }) {
 // ── Tier section ─────────────────────────────────────────────────────────────
 const TIER_STYLES = {
   essential: {
-    label: 'Essential',
+    labelKey: 'stackBuilderEssential',
     headerClass: 'bg-orange/10 border border-orange/20',
     dotClass: 'bg-orange',
     textClass: 'text-orange',
   },
   beneficial: {
-    label: 'Beneficial',
-    headerClass: 'bg-[#FFFBEB] border border-[#FEF3C7]',
-    dotClass: 'bg-[#D97706]',
-    textClass: 'text-[#92400E]',
+    labelKey: 'stackBuilderBeneficial',
+    headerClass: 'bg-orange-lt border border-orange-md',
+    dotClass: 'bg-orange',
+    textClass: 'text-orange-dk',
   },
   optional: {
-    label: 'Optional',
-    headerClass: 'bg-gray-50 border border-gray-100',
-    dotClass: 'bg-gray-400',
+    labelKey: 'stackBuilderOptional',
+    headerClass: 'bg-sand border border-border',
+    dotClass: 'bg-ink3',
     textClass: 'text-ink3',
   },
 }
 
 function TierSection({ tier, items, cabinetNames, onAdd }) {
+  const { t } = useLanguage()
   const style = TIER_STYLES[tier]
   if (!items || items.length === 0) return null
 
+  const label = t(style.labelKey)
   return (
-    <section aria-label={`${style.label} supplements`}>
+    <section aria-label={`${label} supplements`}>
       <div className={`flex items-center gap-2 rounded-[10px] px-4 py-[10px] mb-3 ${style.headerClass}`}>
         <span className={`w-[8px] h-[8px] rounded-full shrink-0 ${style.dotClass}`} />
-        <h2 className={`text-[13px] font-semibold ${style.textClass}`}>{style.label}</h2>
+        <h2 className={`text-[13px] font-semibold ${style.textClass}`}>{label}</h2>
         <span className="ml-auto text-[11px] text-ink3">{items.length} supplement{items.length !== 1 ? 's' : ''}</span>
       </div>
       <div className="flex flex-col gap-2">
@@ -186,6 +191,7 @@ Return ONLY valid JSON (no markdown, no extra text) in this exact structure:
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 export default function StackBuilder() {
+  const { t } = useLanguage()
   const [goal, setGoal] = useState('')
   const [status, setStatus] = useState('idle') // idle | loading | success | error
   const [tiers, setTiers] = useState(null)
@@ -223,7 +229,7 @@ export default function StackBuilder() {
       try {
         const message = buildPrompt(goal.trim(), profile, cabinetItems)
         const res = await chatService.send(message)
-        const text = res?.data?.message ?? ''
+        const text = res?.data?.message?.content ?? ''
         const parsed = parseStackResponse(text)
 
         if (!parsed) {
@@ -251,9 +257,9 @@ export default function StackBuilder() {
   return (
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[960px]">
       {/* Page header */}
-      <h1 className="font-display text-[28px] text-ink1 mb-1">Stack Builder</h1>
+      <h1 className="font-display text-[28px] text-ink1 mb-1">{t('stackBuilderTitle')}</h1>
       <p className="text-[14px] text-ink3 mb-6">
-        Enter a health goal and get personalised supplement recommendations in seconds.
+        {t('stackBuilderSub')}
       </p>
 
       {/* Goal input */}
@@ -262,7 +268,7 @@ export default function StackBuilder() {
           type="text"
           value={goal}
           onChange={(e) => setGoal(e.target.value)}
-          placeholder="e.g. better sleep, muscle building…"
+          placeholder={t('stackBuilderPlaceholder')}
           className="flex-1 rounded-[12px] border border-border bg-white px-4 py-[11px] text-[14px] text-ink1 placeholder-ink4 outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 transition-colors"
           aria-label="Health goal"
           disabled={status === 'loading'}
@@ -273,7 +279,7 @@ export default function StackBuilder() {
           className="rounded-[12px] bg-orange px-5 py-[11px] text-[14px] font-semibold text-white disabled:opacity-40 active:opacity-80 transition-opacity"
           aria-label="Generate stack recommendations"
         >
-          {status === 'loading' ? 'Generating…' : 'Build Stack'}
+          {status === 'loading' ? t('stackBuilderGenerating') : t('stackBuilderGenerate')}
         </button>
       </form>
 
@@ -285,9 +291,9 @@ export default function StackBuilder() {
               <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <p className="text-[15px] font-medium text-ink1">Build your personalised stack</p>
+          <p className="text-[15px] font-medium text-ink1">{t('stackBuilderEmpty')}</p>
           <p className="text-[13px] text-ink3 max-w-[280px]">
-            Type a health goal above — sleep, energy, performance, immunity — and we'll recommend the right supplements for you.
+            {t('stackBuilderEmptySub')}
           </p>
         </div>
       )}
@@ -295,7 +301,7 @@ export default function StackBuilder() {
       {/* Loading state */}
       {status === 'loading' && (
         <div aria-live="polite" aria-label="Generating recommendations">
-          <p className="text-[14px] text-ink3 mb-4">Generating your stack…</p>
+          <p className="text-[14px] text-ink3 mb-4">{t('stackBuilderLoading')}</p>
           <div className="flex flex-col gap-3">
             <SkeletonCard />
             <SkeletonCard />
@@ -307,12 +313,12 @@ export default function StackBuilder() {
       {/* Error state */}
       {status === 'error' && (
         <div className="flex flex-col items-center gap-3 py-12 text-center" role="alert">
-          <p className="text-[14px] font-medium text-ink1">Couldn't generate recommendations — try again</p>
+          <p className="text-[14px] font-medium text-ink1">{t('stackBuilderFailed')}</p>
           <button
             onClick={handleSubmit}
             className="rounded-[12px] border border-border bg-white px-5 py-[10px] text-[13px] font-semibold text-ink1 active:bg-sand transition-colors"
           >
-            Retry
+            {t('stackBuilderRetry')}
           </button>
         </div>
       )}

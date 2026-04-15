@@ -8,13 +8,13 @@ import { useLanguage } from '../context/LanguageContext'
 /* ------------------------------------------------------------------ */
 /*  Relative time helper                                               */
 /* ------------------------------------------------------------------ */
-function relativeTime(dateStr) {
+function relativeTime(dateStr, t) {
   const diffMin = Math.floor((Date.now() - new Date(dateStr)) / 60000)
-  if (diffMin < 60) return `${diffMin || 1}m ago`
+  if (diffMin < 60) return t('timeMinAgo', diffMin || 1)
   const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
+  if (diffHr < 24) return t('timeHrAgo', diffHr)
   const diffDay = Math.floor(diffHr / 24)
-  return diffDay === 1 ? 'Yesterday' : `${diffDay}d ago`
+  return diffDay === 1 ? t('timeYesterday') : t('timeDaysAgo', diffDay)
 }
 
 /* ------------------------------------------------------------------ */
@@ -24,14 +24,14 @@ function SparkleIcon() {
   return (
     <div
       className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0"
-      style={{ background: '#F5F3FF' }}
+      style={{ background: '#FDE8DE' }}
     >
       <svg
         width="18"
         height="18"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#7C3AED"
+        stroke="#E07B4A"
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -82,15 +82,15 @@ function SkeletonRow() {
 /* ------------------------------------------------------------------ */
 /*  Conversation row                                                   */
 /* ------------------------------------------------------------------ */
-function ConversationRow({ item, fallback, onClick }) {
+function ConversationRow({ item, fallback, onClick, t }) {
   const title =
     item.title ||
     item.messages?.[0]?.content?.slice(0, 40) ||
     fallback
 
-  const time = item.createdAt ? relativeTime(item.createdAt) : ''
+  const time = item.createdAt ? relativeTime(item.createdAt, t) : ''
   const countLabel =
-    item.messageCount != null ? ` · ${item.messageCount} messages` : ''
+    item.messageCount != null ? ` · ${item.messageCount} ${t('msgs')}` : ''
 
   return (
     <button
@@ -131,9 +131,10 @@ export default function History() {
       setError(null)
       try {
         const data = await api.history.list()
-        setConversations(Array.isArray(data) ? data : data.data ?? [])
+        const convos = data?.data?.conversations ?? data?.data ?? []
+        setConversations(Array.isArray(convos) ? convos : [])
       } catch (err) {
-        setError(err.message || 'Failed to load history')
+        setError(err.message || t('failedToLoadHistory'))
       } finally {
         setLoading(false)
       }
@@ -203,14 +204,14 @@ export default function History() {
               <>
                 <div
                   className="w-[56px] h-[56px] rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ background: '#F5F3FF' }}
+                  style={{ background: '#FDE8DE' }}
                 >
                   <svg
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#7C3AED"
+                    stroke="#E07B4A"
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -236,6 +237,7 @@ export default function History() {
               item={item}
               fallback={t('conversationFallback')}
               onClick={() => navigate('/chat?id=' + item._id)}
+              t={t}
             />
           ))
         )}

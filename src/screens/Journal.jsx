@@ -26,7 +26,7 @@ function relativeTime(dateStr) {
 function Skeleton({ className = '' }) {
   return (
     <div
-      className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-sand ${className}`}
       aria-hidden="true"
     />
   )
@@ -42,7 +42,7 @@ function EnergyDots({ value, onChange }) {
           onClick={() => onChange && onChange(dot)}
           aria-label={`Energy ${dot}`}
           className={`w-4 h-4 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
-            dot <= value ? 'bg-orange' : 'bg-gray-200'
+            dot <= value ? 'bg-orange' : 'bg-sand'
           } ${onChange ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
         />
       ))}
@@ -50,7 +50,7 @@ function EnergyDots({ value, onChange }) {
   )
 }
 
-function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel }) {
+function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel, t }) {
   const [mood, setMood] = useState(initial?.mood ?? 3)
   const [energy, setEnergy] = useState(initial?.energy ?? 3)
   const [notes, setNotes] = useState(initial?.notes ?? '')
@@ -64,7 +64,7 @@ function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel }) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Mood */}
       <div>
-        <p className="text-[13px] font-medium text-ink2 mb-2">Mood</p>
+        <p className="text-[13px] font-medium text-ink2 mb-2">{t('journalMood')}</p>
         <div className="flex items-center gap-3" role="group" aria-label="Mood">
           {MOODS.map(({ value, emoji }) => (
             <button
@@ -87,7 +87,7 @@ function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel }) {
 
       {/* Energy */}
       <div>
-        <p className="text-[13px] font-medium text-ink2 mb-2">Energy</p>
+        <p className="text-[13px] font-medium text-ink2 mb-2">{t('journalEnergy')}</p>
         <EnergyDots value={energy} onChange={setEnergy} />
       </div>
 
@@ -95,7 +95,7 @@ function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel }) {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="How are you feeling?"
+        placeholder={t('journalNotesPlaceholder')}
         rows={3}
         className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50"
       />
@@ -107,7 +107,7 @@ function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel }) {
           disabled={submitting}
           className="px-5 py-[9px] rounded-[10px] bg-orange text-white text-[13px] font-medium hover:bg-orange/90 transition-colors disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
         >
-          {submitting ? 'Saving…' : submitLabel}
+          {submitting ? `${t('journalSave')}…` : submitLabel}
         </button>
         {onCancel && (
           <button
@@ -203,17 +203,18 @@ export default function Journal() {
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[760px]">
 
       {/* ── Page header ── */}
-      <h1 className="font-display text-[28px] text-ink1 mb-1">Journal</h1>
-      <p className="text-[14px] text-ink3 mb-7">Track how you feel each day</p>
+      <h1 className="font-display text-[28px] text-ink1 mb-1">{t('journalTitle')}</h1>
+      <p className="text-[14px] text-ink3 mb-7">{t('journalSub')}</p>
 
       {/* ── Log-today form ── */}
       <div className="rounded-[14px] border border-border bg-white px-5 py-5 mb-7">
-        <p className="text-[14px] font-semibold text-ink1 mb-4">Log today</p>
+        <p className="text-[14px] font-semibold text-ink1 mb-4">{t('journalLogToday')}</p>
         <EntryForm
           initial={null}
           submitting={submitting}
           onSubmit={handleCreate}
-          submitLabel="Log Entry"
+          submitLabel={t('journalSubmit')}
+          t={t}
         />
       </div>
 
@@ -227,8 +228,8 @@ export default function Journal() {
           </>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-[15px] text-ink2 font-medium mb-1">No entries yet</p>
-            <p className="text-[13px] text-ink3">Log your first entry above to get started</p>
+            <p className="text-[15px] text-ink2 font-medium mb-1">{t('journalNoEntries')}</p>
+            <p className="text-[13px] text-ink3">{t('journalNoEntriesSub')}</p>
           </div>
         ) : (
           entries.map((entry) => (
@@ -241,7 +242,8 @@ export default function Journal() {
                     submitting={submitting}
                     onSubmit={(data) => handleUpdate(entry._id, data)}
                     onCancel={() => setEditingId(null)}
-                    submitLabel="Save"
+                    submitLabel={t('journalSave')}
+                    t={t}
                   />
                 </div>
               ) : (
@@ -273,7 +275,7 @@ export default function Journal() {
                       <button
                         onClick={() => setConfirmDeleteId(entry._id)}
                         aria-label="Delete entry"
-                        className="w-8 h-8 flex items-center justify-center rounded-[8px] text-ink3 hover:bg-red-50 hover:text-red-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                        className="w-8 h-8 flex items-center justify-center rounded-[8px] text-ink3 hover:bg-[#FDE8DE] hover:text-[#C05A28] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C05A28]"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="3 6 5 6 21 6" />
@@ -294,12 +296,12 @@ export default function Journal() {
                   {/* Inline delete confirm */}
                   {confirmDeleteId === entry._id && (
                     <div className="mt-3 flex items-center gap-3 pt-3 border-t border-border">
-                      <p className="text-[13px] text-ink2 flex-1">Delete this entry?</p>
+                      <p className="text-[13px] text-ink2 flex-1">{t('journalDeleteConfirm')}</p>
                       <button
                         onClick={() => handleDelete(entry._id)}
-                        className="px-4 py-[6px] rounded-[8px] bg-red-500 text-white text-[12px] font-medium hover:bg-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                        className="px-4 py-[6px] rounded-[8px] bg-[#C05A28] text-white text-[12px] font-medium hover:bg-[#A04820] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C05A28]"
                       >
-                        Delete
+                        {t('journalDelete')}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}

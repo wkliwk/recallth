@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../services/api'
+import { useLanguage } from '../context/LanguageContext'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAY_LABEL_KEYS = ['notificationsMon', 'notificationsTue', 'notificationsWed', 'notificationsThu', 'notificationsFri', 'notificationsSat', 'notificationsSun']
 
 const TIMEZONES = [
   'Asia/Hong_Kong',
@@ -36,7 +37,7 @@ const TIMEZONES = [
 function Skeleton({ className = '' }) {
   return (
     <div
-      className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-sand ${className}`}
       aria-hidden="true"
     />
   )
@@ -91,7 +92,7 @@ function Toggle({ checked, onChange, id }) {
       />
       <div
         className={`w-10 h-6 rounded-full transition-colors duration-200 ${
-          checked ? 'bg-orange' : 'bg-gray-200'
+          checked ? 'bg-orange' : 'bg-sand'
         }`}
       />
       <div
@@ -114,12 +115,13 @@ function Card({ children }) {
 }
 
 function CardHeader({ title, saved }) {
+  const { t } = useLanguage()
   return (
     <div className="flex items-center justify-between px-5 py-4 border-b border-border">
       <h2 className="text-[14px] font-semibold text-ink1">{title}</h2>
       {saved && (
-        <span className="text-[12px] text-[#059669] font-medium" role="status" aria-live="polite">
-          Saved
+        <span className="text-[12px] text-[#3D6B3D] font-medium" role="status" aria-live="polite">
+          {t('notificationsSaved')}
         </span>
       )}
     </div>
@@ -129,6 +131,7 @@ function CardHeader({ title, saved }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Notifications() {
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -269,24 +272,24 @@ export default function Notifications() {
 
   return (
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[760px]">
-      <h1 className="font-display text-[28px] text-ink1 mb-1">Notifications</h1>
-      <p className="text-[14px] text-ink2 mb-7">Manage reminders, digests and your timezone.</p>
+      <h1 className="font-display text-[28px] text-ink1 mb-1">{t('notificationsTitle')}</h1>
+      <p className="text-[14px] text-ink2 mb-7">{t('notificationsSub')}</p>
 
       {loading ? (
         <SkeletonCards />
       ) : error ? (
         <div className="rounded-[14px] border border-border bg-white px-6 py-8 text-center">
-          <p className="text-[14px] text-ink2">Could not load settings — try refreshing</p>
+          <p className="text-[14px] text-ink2">{t('notificationsLoadError')}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-5">
 
           {/* ── Section 1: Daily supplement reminders ── */}
           <Card>
-            <CardHeader title="Daily supplement reminders" saved={savedReminders} />
+            <CardHeader title={t('notificationsReminders')} saved={savedReminders} />
             <div className="px-5 py-4 flex flex-col gap-3">
               {reminderTimes.length === 0 && (
-                <p className="text-[13px] text-ink3">No reminders set. Add one below.</p>
+                <p className="text-[13px] text-ink3">{t('notificationsNoReminders')}</p>
               )}
               {reminderTimes.map((time, index) => (
                 <div key={index} className="flex items-center gap-3">
@@ -302,7 +305,7 @@ export default function Notifications() {
                   />
                   <button
                     onClick={() => handleRemoveReminder(index)}
-                    className="w-9 h-9 flex items-center justify-center rounded-[10px] text-ink3 hover:text-[#E11D48] hover:bg-red-50 transition-colors cursor-pointer"
+                    className="w-9 h-9 flex items-center justify-center rounded-[10px] text-ink3 hover:text-[#C05A28] hover:bg-[#FDE8DE] transition-colors cursor-pointer"
                     aria-label={`Remove reminder ${index + 1}`}
                   >
                     <TrashIcon />
@@ -320,7 +323,7 @@ export default function Notifications() {
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  Add reminder
+                  {t('notificationsAddReminder')}
                 </button>
               )}
             </div>
@@ -328,12 +331,12 @@ export default function Notifications() {
 
           {/* ── Section 2: Weekly digest ── */}
           <Card>
-            <CardHeader title="Weekly digest email" saved={savedDigest} />
+            <CardHeader title={t('notificationsDigestTitle')} saved={savedDigest} />
             <div className="px-5 py-4 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[14px] text-ink1 font-medium">Email digest</p>
-                  <p className="text-[12px] text-ink3">Receive a weekly summary of your supplement activity</p>
+                  <p className="text-[14px] text-ink1 font-medium">{t('notificationsDigestToggle')}</p>
+                  <p className="text-[12px] text-ink3">{t('notificationsDigestSub')}</p>
                 </div>
                 <Toggle
                   id="digest-toggle"
@@ -344,7 +347,7 @@ export default function Notifications() {
 
               {digestEnabled && (
                 <div>
-                  <p className="text-[12px] font-medium text-ink2 mb-2">Send on</p>
+                  <p className="text-[12px] font-medium text-ink2 mb-2">{t('notificationsDigestDay')}</p>
                   <div className="flex flex-wrap gap-2" role="group" aria-label="Select digest day">
                     {DAYS.map((day, i) => (
                       <button
@@ -357,7 +360,7 @@ export default function Notifications() {
                         }`}
                         aria-pressed={digestDay === day}
                       >
-                        {DAY_LABELS[i]}
+                        {t(DAY_LABEL_KEYS[i])}
                       </button>
                     ))}
                   </div>
@@ -368,7 +371,7 @@ export default function Notifications() {
 
           {/* ── Section 3: Timezone ── */}
           <Card>
-            <CardHeader title="Timezone" saved={savedTimezone} />
+            <CardHeader title={t('notificationsTimezone')} saved={savedTimezone} />
             <div className="px-5 py-4">
               <label htmlFor="timezone-select" className="sr-only">
                 Select timezone
