@@ -36,6 +36,18 @@ const NAV_KEYS = [
     ),
   },
   {
+    to: '/nutrition',
+    key: 'nutrition',
+    icon: () => (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9z"/>
+        <path d="M3 11h18"/>
+        <path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/>
+        <path d="M12 2v9"/>
+      </svg>
+    ),
+  },
+  {
     to: '/schedule',
     key: 'schedule',
     icon: () => (
