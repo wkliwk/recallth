@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext'
 function Skeleton({ className = '' }) {
   return (
     <div
-      className={`animate-pulse rounded-[10px] bg-gray-100 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-sand ${className}`}
       aria-hidden="true"
     />
   )
@@ -94,12 +94,12 @@ function TrendBadge({ checkIns }) {
   if (diff === 0) return <span className="text-[12px] text-ink3">—</span>
   if (diff > 0)
     return (
-      <span className="text-[12px] font-semibold text-[#059669]">
+      <span className="text-[12px] font-semibold text-[#3D6B3D]">
         +{diff}
       </span>
     )
   return (
-    <span className="text-[12px] font-semibold text-[#E11D48]">
+    <span className="text-[12px] font-semibold text-[#C05A28]">
       {diff}
     </span>
   )
@@ -266,7 +266,7 @@ export default function Goals() {
 
         {/* Error message */}
         {formError && (
-          <p className="text-[12px] text-[#E11D48] mb-3" role="alert">
+          <p className="text-[12px] text-[#C05A28] mb-3" role="alert">
             {formError}
           </p>
         )}
@@ -284,11 +284,11 @@ export default function Goals() {
       {/* ── AI nudge success card ── */}
       {aiNudge && (
         <div
-          className="rounded-[14px] border border-[#A7F3D0] bg-[#ECFDF5] px-5 py-4 mb-6"
+          className="rounded-[14px] border border-[#C5D8C5] bg-[#E8F0E8] px-5 py-4 mb-6"
           role="status"
           aria-live="polite"
         >
-          <p className="text-[13px] font-semibold text-[#059669] mb-1">{t('goalsNudgeTitle')}</p>
+          <p className="text-[13px] font-semibold text-[#3D6B3D] mb-1">{t('goalsNudgeTitle')}</p>
           <p className="text-[13px] text-ink1">{aiNudge}</p>
         </div>
       )}

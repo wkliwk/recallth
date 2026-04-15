@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recallth — Web-Friendly Redesign Wireframe</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #f5f3ef; color: #2A221A; }
+
+  /* Toggle bar */
+  .toggle-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #2A221A; color: #fff; display: flex; align-items: center;
+    justify-content: center; gap: 24px; padding: 12px 24px; font-size: 14px;
+  }
+  .toggle-bar button {
+    background: none; border: 2px solid rgba(255,255,255,0.3); color: #fff;
+    padding: 6px 16px; border-radius: 50px; cursor: pointer; font-size: 13px;
+    font-family: inherit; transition: all 0.2s;
+  }
+  .toggle-bar button.active { background: #E07B4A; border-color: #E07B4A; }
+  .toggle-bar .label { font-weight: 600; opacity: 0.6; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Layout */
+  .frame { margin-top: 52px; }
+
+  /* ============================================ */
+  /*  CURRENT (Mobile-like) Design                */
+  /* ============================================ */
+  .current { display: block; }
+  .current .page { max-width: 100%; }
+
+  /* Sidebar placeholder */
+  .sidebar {
+    width: 220px; background: #fff; border-right: 1px solid #EDE8E0;
+    position: fixed; top: 52px; left: 0; bottom: 0; padding: 24px 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sidebar .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: #E07B4A; margin-bottom: 20px; }
+  .sidebar a {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: 10px; font-size: 13px; color: #7A6A5A; text-decoration: none;
+    transition: all 0.15s;
+  }
+  .sidebar a:hover { background: #FBF9F5; color: #2A221A; }
+  .sidebar a.active { background: #FDE8DE; color: #E07B4A; font-weight: 600; }
+  .sidebar .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.4; }
+  .sidebar a.active .dot { opacity: 1; }
+
+  .content-area {
+    margin-left: 220px; min-height: calc(100vh - 52px); background: #FBF9F5;
+  }
+
+  /* Orange header (current) */
+  .orange-header {
+    background: #E07B4A; padding: 24px 20px 56px; color: #fff;
+  }
+  .orange-header h1 { font-family: 'DM Serif Display', serif; font-size: 24px; }
+  .orange-header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  .orange-header .stats { display: flex; gap: 12px; margin-top: 16px; }
+  .orange-header .stat-card {
+    background: rgba(0,0,0,0.18); backdrop-filter: blur(8px);
+    border-radius: 12px; padding: 10px 16px; flex: 1; text-align: center;
+  }
+  .orange-header .stat-card .val { font-size: 20px; font-weight: 700; }
+  .orange-header .stat-card .lbl { font-size: 10px; opacity: 0.8; margin-top: 2px; }
+
+  /* Wave */
+  .wave {
+    height: 80px; background: #FBF9F5; margin-top: -40px;
+    clip-path: ellipse(55% 100% at 50% 100%);
+  }
+
+  /* Content */
+  .page-content { padding: 0 20px 40px; }
+
+  /* Cards */
+  .card {
+    background: #fff; border: 1px solid #EDE8E0; border-radius: 20px;
+    overflow: hidden;
+  }
+  .card-body { padding: 16px; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  /* Supp card placeholder */
+  .supp-card .img-area {
+    aspect-ratio: 4/3; background: #F2EDE4; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 600; color: rgba(224,123,74,0.15);
+  }
+  .supp-card .info { padding: 12px; }
+  .supp-card .info .name { font-size: 13px; font-weight: 600; }
+  .supp-card .info .brand { font-size: 11px; color: #7A6A5A; margin-top: 2px; }
+  .supp-card .info .badge {
+    display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 500;
+    background: #FDE8DE; color: #E07B4A; padding: 2px 8px; border-radius: 50px;
+  }
+
+  /* Detail hero (current) */
+  .detail-hero .img-area {
+    aspect-ratio: 3/1; background: #F2EDE4; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 40px; font-weight: 600; color: rgba(224,123,74,0.12);
+  }
+  .detail-hero .hero-info { padding: 16px 20px; }
+  .detail-hero .hero-info h2 { font-size: 18px; font-weight: 700; }
+  .detail-hero .hero-info .brand-txt { font-size: 13px; color: #7A6A5A; margin-top: 2px; }
+  .detail-hero .hero-info .pills { display: flex; gap: 8px; margin-top: 10px; }
+  .detail-hero .hero-info .pill {
+    font-size: 11px; padding: 3px 10px; border-radius: 50px; font-weight: 500;
+  }
+  .pill-orange { background: rgba(224,123,74,0.1); color: #E07B4A; }
+  .pill-sand { background: #F2EDE4; color: #7A6A5A; }
+
+  /* Search bar */
+  .search-bar {
+    background: #fff; border: 1.5px solid #E8E2D8; border-radius: 50px;
+    padding: 10px 16px 10px 40px; font-size: 13px; width: 100%;
+    outline: none; color: #2A221A; position: relative;
+  }
+  .search-wrap { position: relative; margin-bottom: 16px; }
+  .search-wrap::before {
+    content: ''; position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; border: 2px solid #B0A898; border-radius: 50%;
+    z-index: 1;
+  }
+
+  /* Sort chips */
+  .sort-chips { display: flex; gap: 6px; margin-bottom: 16px; }
+  .chip {
+    padding: 5px 12px; border-radius: 50px; font-size: 11px; font-weight: 500;
+    border: 1px solid #EDE8E0; background: #fff; color: #B0A898; cursor: pointer;
+  }
+  .chip.active { background: #E07B4A; color: #fff; border-color: #E07B4A; }
+
+  /* Info rows */
+  .info-row {
+    display: flex; justify-content: space-between; padding: 10px 0;
+    border-bottom: 1px solid #EDE8E0; font-size: 13px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .lbl { color: #B0A898; font-size: 12px; }
+
+  /* Buttons */
+  .btn {
+    padding: 12px 20px; border-radius: 50px; font-size: 14px; font-weight: 500;
+    border: none; cursor: pointer; text-align: center; font-family: inherit;
+  }
+  .btn-orange { background: #E07B4A; color: #fff; }
+  .btn-outline { background: none; border: 1.5px solid #E8C4B0; color: #C05A28; }
+
+  /* ============================================ */
+  /*  PROPOSED (Web-Friendly) Design              */
+  /* ============================================ */
+  .proposed { display: none; }
+
+  .proposed .content-area-new {
+    margin-left: 220px; min-height: calc(100vh - 52px); background: #FBF9F5;
+    padding: 32px 40px;
+  }
+
+  /* Clean header (no orange banner) */
+  .clean-header {
+    margin-bottom: 28px;
+  }
+  .clean-header .breadcrumb { font-size: 12px; color: #B0A898; margin-bottom: 8px; }
+  .clean-header .breadcrumb a { color: #E07B4A; text-decoration: none; }
+  .clean-header h1 {
+    font-family: 'DM Serif Display', serif; font-size: 28px; color: #2A221A;
+  }
+  .clean-header p { font-size: 14px; color: #7A6A5A; margin-top: 4px; }
+  .clean-header .stat-row { display: flex; gap: 16px; margin-top: 16px; }
+  .clean-header .stat-item {
+    background: #fff; border: 1px solid #EDE8E0; border-radius: 14px;
+    padding: 14px 24px; display: flex; flex-direction: column; align-items: center;
+  }
+  .clean-header .stat-item .val { font-size: 22px; font-weight: 700; color: #E07B4A; }
+  .clean-header .stat-item .lbl { font-size: 11px; color: #7A6A5A; margin-top: 2px; }
+
+  /* Max-width container */
+  .container { max-width: 960px; }
+
+  /* Responsive grid */
+  .grid-responsive {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  }
+
+  /* Toolbar row */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .toolbar .search-bar-web {
+    background: #fff; border: 1.5px solid #E8E2D8; border-radius: 12px;
+    padding: 9px 16px; font-size: 13px; width: 280px; outline: none;
+    color: #2A221A;
+  }
+  .toolbar .right { display: flex; align-items: center; gap: 8px; }
+
+  /* Detail — side-by-side layout */
+  .detail-layout {
+    display: grid; grid-template-columns: 320px 1fr; gap: 24px;
+    max-width: 860px;
+  }
+  .detail-sidebar-img {
+    background: #F2EDE4; border-radius: 20px; aspect-ratio: 1/1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px; font-weight: 600; color: rgba(224,123,74,0.12);
+    overflow: hidden; position: sticky; top: 84px;
+  }
+  .detail-main { display: flex; flex-direction: column; gap: 16px; }
+  .detail-main .name-section h2 { font-size: 22px; font-weight: 700; }
+  .detail-main .name-section .brand-txt { font-size: 14px; color: #7A6A5A; margin-top: 4px; }
+  .detail-main .name-section .pills { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* Annotation overlays */
+  .annotation {
+    position: absolute; font-size: 11px; font-weight: 600; color: #E07B4A;
+    background: #FDE8DE; padding: 3px 10px; border-radius: 50px;
+    pointer-events: none; white-space: nowrap; z-index: 10;
+    border: 1.5px solid #E07B4A;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  /* Page selector */
+  .page-tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+  .page-tab {
+    padding: 5px 14px; border-radius: 50px; font-size: 12px; font-weight: 500;
+    border: 1.5px solid #EDE8E0; background: #fff; color: #7A6A5A;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .page-tab.active { background: #2A221A; color: #fff; border-color: #2A221A; }
+
+  /* VS divider */
+  .vs-label {
+    text-align: center; font-size: 11px; font-weight: 700; color: #B0A898;
+    letter-spacing: 2px; padding: 20px 0 12px;
+  }
+
+  /* Hide/show */
+  .hidden { display: none !important; }
+
+  /* Responsive note */
+  .note {
+    background: #fff; border: 1px solid #EDE8E0; border-radius: 14px;
+    padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: #7A6A5A;
+    line-height: 1.6;
+  }
+  .note strong { color: #2A221A; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Toggle bar -->
+<div class="toggle-bar">
+  <span class="label">View</span>
+  <button id="btn-current" class="active" onclick="showView('current')">Current (Mobile-like)</button>
+  <button id="btn-proposed" onclick="showView('proposed')">Proposed (Web-Friendly)</button>
+  <span style="opacity:0.4; font-size:12px; margin-left:12px;">|</span>
+  <span class="label" style="margin-left:8px;">Page</span>
+  <button class="page-sel active" data-page="cabinet" onclick="showPage('cabinet')">Cabinet</button>
+  <button class="page-sel" data-page="detail" onclick="showPage('detail')">Detail</button>
+  <button class="page-sel" data-page="home" onclick="showPage('home')">Home</button>
+</div>
+
+<!-- ============================================ -->
+<!--  CURRENT Design                              -->
+<!-- ============================================ -->
+<div class="frame current" id="view-current">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">Recallth</div>
+    <a href="#"><span class="dot"></span> Home</a>
+    <a href="#"><span class="dot"></span> Chat</a>
+    <a href="#" class="active" id="nav-current-cabinet"><span class="dot"></span> Cabinet</a>
+    <a href="#"><span class="dot"></span> Schedule</a>
+    <a href="#"><span class="dot"></span> Journal</a>
+    <a href="#"><span class="dot"></span> Profile</a>
+  </div>
+
+  <div class="content-area">
+    <!-- CABINET page (current) -->
+    <div id="current-cabinet">
+      <div class="orange-header">
+        <h1>My Cabinet</h1>
+        <p>6 supplements</p>
+        <div class="stats">
+          <div class="stat-card"><div class="val">6</div><div class="lbl">Active</div></div>
+          <div class="stat-card"><div class="val">1</div><div class="lbl">Conflicts</div></div>
+        </div>
+      </div>
+      <div class="wave"></div>
+      <div class="page-content" style="margin-top:-20px;">
+        <div class="search-wrap"><input class="search-bar" placeholder="Search supplements..." /></div>
+        <div class="sort-chips">
+          <span class="chip active">A-Z</span>
+          <span class="chip">Brand</span>
+          <span class="chip">Type</span>
+          <span class="chip">Recent</span>
+        </div>
+        <div class="grid-2">
+          <div class="card supp-card"><div class="img-area">C</div><div class="info"><div class="name">Creatine Monohydrate</div><div class="brand">Optimum Nutrition</div><div class="badge">5g</div></div></div>
+          <div class="card supp-card"><div class="img-area">V</div><div class="info"><div class="name">Vitamin D3</div><div class="brand">NOW Foods</div><div class="badge">2000 IU</div></div></div>
+          <div class="card supp-card"><div class="img-area">O</div><div class="info"><div class="name">Omega-3 Fish Oil</div><div class="brand">Nordic Naturals</div><div class="badge">1000mg</div></div></div>
+          <div class="card supp-card"><div class="img-area">M</div><div class="info"><div class="name">Magnesium Glycinate</div><div class="brand">Doctor's Best</div><div class="badge">400mg</div></div></div>
+          <div class="card supp-card"><div class="img-area">Z</div><div class="info"><div class="name">Zinc Picolinate</div><div class="brand">Thorne</div><div class="badge">30mg</div></div></div>
+          <div class="card supp-card"><div class="img-area">A</div><div class="info"><div class="name">Ashwagandha KSM-66</div><div class="brand">Jarrow Formulas</div><div class="badge">600mg</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL page (current) -->
+    <div id="current-detail" class="hidden">
+      <div class="orange-header">
+        <p style="opacity:0.8; font-size:13px; cursor:pointer;">&larr; Back</p>
+        <h1 style="margin-top:8px;">Creatine Monohydrate</h1>
+        <p>supplement</p>
+      </div>
+      <div class="wave"></div>
+      <div class="page-content" style="margin-top:-20px;">
+        <div class="card detail-hero" style="margin-bottom:16px;">
+          <div class="img-area">C</div>
+          <div class="hero-info">
+            <h2>Creatine Monohydrate</h2>
+            <div class="brand-txt">Optimum Nutrition</div>
+            <div class="pills">
+              <span class="pill pill-sand">supplement</span>
+              <span class="pill pill-orange">5g</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-body">
+            <div class="info-row"><span class="lbl">Frequency</span><span>Daily</span></div>
+            <div class="info-row"><span class="lbl">Timing</span><span>Pre-workout</span></div>
+            <div class="info-row"><span class="lbl">Notes</span><span>Take with water</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-body">
+            <div style="font-size:11px; text-transform:uppercase; color:#B0A898; letter-spacing:1px; font-weight:500; margin-bottom:8px;">Description</div>
+            <p style="font-size:13px; line-height:1.6; color:#2A221A;">Creatine monohydrate is one of the most well-researched supplements for improving strength, power output, and lean muscle mass.</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <button class="btn btn-orange" style="flex:1;">Edit</button>
+          <button class="btn btn-outline">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOME page (current) -->
+    <div id="current-home" class="hidden">
+      <div class="orange-header">
+        <h1>Good morning</h1>
+        <p>Here's your supplement plan for today</p>
+      </div>
+      <div class="wave"></div>
+      <div class="page-content" style="margin-top:-20px;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-body">
+            <div style="font-size:12px; text-transform:uppercase; color:#B0A898; font-weight:600; letter-spacing:0.5px; margin-bottom:12px;">Today's Schedule</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#FBF9F5;border-radius:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#FDE8DE;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#E07B4A;">C</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Creatine</div><div style="font-size:11px;color:#7A6A5A;">5g &middot; Pre-workout</div></div>
+                <div style="width:20px;height:20px;border:2px solid #EDE8E0;border-radius:6px;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#FBF9F5;border-radius:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#DAE8F8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#1A3A6A;">V</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Vitamin D3</div><div style="font-size:11px;color:#7A6A5A;">2000 IU &middot; Morning</div></div>
+                <div style="width:20px;height:20px;border:2px solid #EDE8E0;border-radius:6px;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#FBF9F5;border-radius:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#E8F4D8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#3A5A1A;">O</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Omega-3</div><div style="font-size:11px;color:#7A6A5A;">1000mg &middot; With meals</div></div>
+                <div style="width:20px;height:20px;border:2px solid #EDE8E0;border-radius:6px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div style="font-size:12px; text-transform:uppercase; color:#B0A898; font-weight:600; letter-spacing:0.5px; margin-bottom:12px;">Quick Actions</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="padding:16px;background:#FBF9F5;border-radius:14px;text-align:center;">
+                <div style="font-size:20px;margin-bottom:6px;">💊</div>
+                <div style="font-size:12px;font-weight:500;">Add Supplement</div>
+              </div>
+              <div style="padding:16px;background:#FBF9F5;border-radius:14px;text-align:center;">
+                <div style="font-size:20px;margin-bottom:6px;">🤖</div>
+                <div style="font-size:12px;font-weight:500;">Ask AI</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!--  PROPOSED Design                             -->
+<!-- ============================================ -->
+<div class="frame proposed" id="view-proposed">
+  <!-- Sidebar (same) -->
+  <div class="sidebar">
+    <div class="logo">Recallth</div>
+    <a href="#"><span class="dot"></span> Home</a>
+    <a href="#"><span class="dot"></span> Chat</a>
+    <a href="#" class="active" id="nav-proposed-cabinet"><span class="dot"></span> Cabinet</a>
+    <a href="#"><span class="dot"></span> Schedule</a>
+    <a href="#"><span class="dot"></span> Journal</a>
+    <a href="#"><span class="dot"></span> Profile</a>
+  </div>
+
+  <div class="content-area-new">
+    <!-- CABINET page (proposed) -->
+    <div id="proposed-cabinet" class="container">
+      <div class="note">
+        <strong>What changed:</strong> Orange banner + wave removed on desktop. Clean title + stat cards. 4-column grid. Search in toolbar row. Content has max-width for readability.
+      </div>
+      <div class="clean-header">
+        <h1>My Cabinet</h1>
+        <p>6 supplements in your collection</p>
+        <div class="stat-row">
+          <div class="stat-item"><div class="val">6</div><div class="lbl">Active</div></div>
+          <div class="stat-item"><div class="val">1</div><div class="lbl">Conflicts</div></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="sort-chips" style="margin-bottom:0;">
+          <span class="chip active">A-Z</span>
+          <span class="chip">Brand</span>
+          <span class="chip">Type</span>
+          <span class="chip">Recent</span>
+        </div>
+        <div class="right">
+          <input class="search-bar-web" placeholder="Search supplements..." />
+        </div>
+      </div>
+      <div class="grid-responsive">
+        <div class="card supp-card"><div class="img-area">C</div><div class="info"><div class="name">Creatine Monohydrate</div><div class="brand">Optimum Nutrition</div><div class="badge">5g</div></div></div>
+        <div class="card supp-card"><div class="img-area">V</div><div class="info"><div class="name">Vitamin D3</div><div class="brand">NOW Foods</div><div class="badge">2000 IU</div></div></div>
+        <div class="card supp-card"><div class="img-area">O</div><div class="info"><div class="name">Omega-3 Fish Oil</div><div class="brand">Nordic Naturals</div><div class="badge">1000mg</div></div></div>
+        <div class="card supp-card"><div class="img-area">M</div><div class="info"><div class="name">Magnesium Glycinate</div><div class="brand">Doctor's Best</div><div class="badge">400mg</div></div></div>
+        <div class="card supp-card"><div class="img-area">Z</div><div class="info"><div class="name">Zinc Picolinate</div><div class="brand">Thorne</div><div class="badge">30mg</div></div></div>
+        <div class="card supp-card"><div class="img-area">A</div><div class="info"><div class="name">Ashwagandha KSM-66</div><div class="brand">Jarrow Formulas</div><div class="badge">600mg</div></div></div>
+      </div>
+    </div>
+
+    <!-- DETAIL page (proposed) -->
+    <div id="proposed-detail" class="container hidden">
+      <div class="note">
+        <strong>What changed:</strong> No orange banner. Breadcrumb navigation. Side-by-side layout: square image on left (sticky), info on right. Better use of horizontal space.
+      </div>
+      <div class="clean-header" style="margin-bottom:20px;">
+        <div class="breadcrumb"><a href="#">Cabinet</a> &rsaquo; Creatine Monohydrate</div>
+      </div>
+      <div class="detail-layout">
+        <div>
+          <div class="detail-sidebar-img">C</div>
+          <label style="display:block; text-align:center; margin-top:12px; font-size:12px; color:#E07B4A; font-weight:500; cursor:pointer;">Upload photo</label>
+        </div>
+        <div class="detail-main">
+          <div class="name-section">
+            <h2>Creatine Monohydrate</h2>
+            <div class="brand-txt">Optimum Nutrition</div>
+            <div class="pills">
+              <span class="pill pill-sand" style="padding:3px 10px;border-radius:50px;font-size:11px;font-weight:500;">supplement</span>
+              <span class="pill pill-orange" style="padding:3px 10px;border-radius:50px;font-size:11px;font-weight:500;">5g</span>
+              <span style="padding:3px 10px;border-radius:50px;font-size:11px;font-weight:500;background:#D4ECD8;color:#2C5A38;">Grade A</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="info-row"><span class="lbl">Frequency</span><span>Daily</span></div>
+              <div class="info-row"><span class="lbl">Timing</span><span>Pre-workout</span></div>
+              <div class="info-row"><span class="lbl">Notes</span><span>Take with water</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div style="font-size:11px; text-transform:uppercase; color:#B0A898; letter-spacing:1px; font-weight:500; margin-bottom:8px;">Description</div>
+              <p style="font-size:13px; line-height:1.7; color:#2A221A;">Creatine monohydrate is one of the most well-researched supplements for improving strength, power output, and lean muscle mass. It works by increasing phosphocreatine stores in muscles.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div style="font-size:11px; text-transform:uppercase; color:#B0A898; letter-spacing:1px; font-weight:500; margin-bottom:8px;">AI Lookup</div>
+              <div style="display:flex;align-items:center;gap:8px;color:#E07B4A;font-size:13px;font-weight:500;cursor:pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>
+                Search for product info with AI
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button class="btn btn-orange" style="flex:1;">Edit</button>
+            <button class="btn btn-outline">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOME page (proposed) -->
+    <div id="proposed-home" class="container hidden">
+      <div class="note">
+        <strong>What changed:</strong> Clean greeting header. Cards use horizontal space better with side-by-side layout. No orange banner — feels like a dashboard, not a mobile app.
+      </div>
+      <div class="clean-header" style="margin-bottom:24px;">
+        <h1>Good morning</h1>
+        <p>Here's your supplement plan for today</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        <div class="card">
+          <div class="card-body">
+            <div style="font-size:12px; text-transform:uppercase; color:#B0A898; font-weight:600; letter-spacing:0.5px; margin-bottom:14px;">Today's Schedule</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#FBF9F5;border-radius:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#FDE8DE;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#E07B4A;">C</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Creatine</div><div style="font-size:11px;color:#7A6A5A;">5g &middot; Pre-workout</div></div>
+                <div style="width:20px;height:20px;border:2px solid #EDE8E0;border-radius:6px;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#FBF9F5;border-radius:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#DAE8F8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#1A3A6A;">V</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Vitamin D3</div><div style="font-size:11px;color:#7A6A5A;">2000 IU &middot; Morning</div></div>
+                <div style="width:20px;height:20px;border:2px solid #EDE8E0;border-radius:6px;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#FBF9F5;border-radius:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#E8F4D8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#3A5A1A;">O</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Omega-3</div><div style="font-size:11px;color:#7A6A5A;">1000mg &middot; With meals</div></div>
+                <div style="width:20px;height:20px;border:2px solid #EDE8E0;border-radius:6px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div class="card">
+            <div class="card-body">
+              <div style="font-size:12px; text-transform:uppercase; color:#B0A898; font-weight:600; letter-spacing:0.5px; margin-bottom:14px;">Quick Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="text-align:center;padding:14px;background:#FBF9F5;border-radius:14px;">
+                  <div style="font-size:24px;font-weight:700;color:#E07B4A;">6</div>
+                  <div style="font-size:11px;color:#7A6A5A;margin-top:2px;">Supplements</div>
+                </div>
+                <div style="text-align:center;padding:14px;background:#FBF9F5;border-radius:14px;">
+                  <div style="font-size:24px;font-weight:700;color:#2C5A38;">3/6</div>
+                  <div style="font-size:11px;color:#7A6A5A;margin-top:2px;">Taken today</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div style="font-size:12px; text-transform:uppercase; color:#B0A898; font-weight:600; letter-spacing:0.5px; margin-bottom:14px;">Quick Actions</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FBF9F5;border-radius:12px;cursor:pointer;">
+                  <span style="font-size:16px;">💊</span>
+                  <span style="font-size:13px;font-weight:500;">Add Supplement</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FBF9F5;border-radius:12px;cursor:pointer;">
+                  <span style="font-size:16px;">🤖</span>
+                  <span style="font-size:13px;font-weight:500;">Ask AI</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showView(view) {
+    document.getElementById('view-current').style.display = view === 'current' ? 'block' : 'none';
+    document.getElementById('view-proposed').style.display = view === 'proposed' ? 'block' : 'none';
+    document.getElementById('btn-current').className = view === 'current' ? 'active' : '';
+    document.getElementById('btn-proposed').className = view === 'proposed' ? 'active' : '';
+  }
+
+  function showPage(page) {
+    // Update page selector buttons
+    document.querySelectorAll('.page-sel').forEach(b => {
+      b.className = b.dataset.page === page ? 'page-sel active' : 'page-sel';
+    });
+
+    // Update sidebar active states
+    const pages = ['cabinet', 'detail', 'home'];
+    const navMap = { cabinet: 'Cabinet', detail: 'Cabinet', home: 'Home' };
+
+    document.querySelectorAll('.sidebar a').forEach(a => {
+      a.classList.remove('active');
+      if (a.textContent.trim() === navMap[page]) a.classList.add('active');
+    });
+
+    // Toggle page visibility
+    pages.forEach(p => {
+      const cur = document.getElementById('current-' + p);
+      const pro = document.getElementById('proposed-' + p);
+      if (cur) cur.className = p === page ? '' : 'hidden';
+      if (pro) pro.className = p === page ? 'container' : 'container hidden';
+    });
+  }
+</script>
+</body>
+</html>
