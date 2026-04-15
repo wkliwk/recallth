@@ -20,6 +20,7 @@ import Journal from './screens/Journal'
 import Progress from './screens/Progress'
 import Goals from './screens/Goals'
 import Notifications from './screens/Notifications'
+import NutritionDetail from './screens/NutritionDetail'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -75,6 +76,7 @@ function AppRoutes() {
       <Route path="/journal"       element={<ProtectedRoute><Journal /></ProtectedRoute>} />
       <Route path="/progress"      element={<ProtectedRoute><Progress /></ProtectedRoute>} />
       <Route path="/goals"         element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+      <Route path="/nutrition/:id" element={<ProtectedRoute><NutritionDetail /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
