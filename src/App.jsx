@@ -22,6 +22,9 @@ import Progress from './screens/Progress'
 import Goals from './screens/Goals'
 import Notifications from './screens/Notifications'
 import Bloodwork from './screens/Bloodwork'
+import NutritionTracker from './screens/NutritionTracker'
+import NutritionAdd from './screens/NutritionAdd'
+import NutritionDetail from './screens/NutritionDetail'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -79,6 +82,9 @@ function AppRoutes() {
       <Route path="/goals"          element={<ProtectedRoute><Goals /></ProtectedRoute>} />
       <Route path="/bloodwork"     element={<ProtectedRoute><Bloodwork /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/nutrition"     element={<ProtectedRoute><NutritionTracker /></ProtectedRoute>} />
+      <Route path="/nutrition/add" element={<ProtectedRoute><NutritionAdd /></ProtectedRoute>} />
+      <Route path="/nutrition/:id" element={<ProtectedRoute><NutritionDetail /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
