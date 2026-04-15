@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
@@ -30,18 +30,35 @@ const selectClass =
 
 export default function CabinetAdd() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useLanguage()
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
 
-  const [form, setForm] = useState({
-    name: '',
-    type: 'Supplement',
-    dosage: '',
-    frequency: 'Daily',
-    timing: 'Morning',
-    brand: '',
-    notes: '',
+  const prefilled = location.state?.aiResult
+  const [aiFilled] = useState(!!prefilled)
+
+  const [form, setForm] = useState(() => {
+    if (prefilled) {
+      return {
+        name: prefilled.name || '',
+        type: prefilled.type || 'Supplement',
+        dosage: prefilled.dosage || '',
+        frequency: prefilled.frequency || 'Daily',
+        timing: prefilled.timing || 'Morning',
+        brand: prefilled.brand || '',
+        notes: prefilled.notes || '',
+      }
+    }
+    return {
+      name: '',
+      type: 'Supplement',
+      dosage: '',
+      frequency: 'Daily',
+      timing: 'Morning',
+      brand: '',
+      notes: '',
+    }
   })
 
   function handleChange(field, value) {
@@ -98,7 +115,15 @@ export default function CabinetAdd() {
         <Wave />
       </div>
 
-      <form onSubmit={handleSubmit} className="px-5 pt-2 pb-[100px]">
+      <form onSubmit={handleSubmit} className="px-5 pt-2 pb-[100px] flex flex-col gap-3">
+        {aiFilled && (
+          <div className="rounded-card px-4 py-3 flex items-center gap-2" style={{ background: '#DAE8F8', border: '1px solid #B0C8E8' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A3A6A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="text-[12px] text-[#1A3A6A]">{t('aiLookupFilled')} — review and confirm.</span>
+          </div>
+        )}
         <div className="bg-white rounded-card border border-border p-5 flex flex-col gap-4">
 
           <Field label={t('fieldName')} required error={errors.name}>
