@@ -181,14 +181,26 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function MealGroup({ mealType, entries, t }) {
+function MealGroup({ mealType, entries, t, onDelete }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   const totalCal = entries.reduce((sum, e) => {
     const c = e.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? e.calories ?? 0
     return sum + c
   }, 0)
+
+  async function handleDelete(entryId) {
+    setDeletingId(entryId)
+    try {
+      await api.nutrition.remove(entryId)
+      setExpandedId(null)
+      onDelete?.()
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <div className="rounded-[14px] border border-border bg-white overflow-hidden">
@@ -201,6 +213,7 @@ function MealGroup({ mealType, entries, t }) {
         const cal =
           entry.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? entry.calories ?? 0
         const isExpanded = expandedId === entry._id
+        const isDeleting = deletingId === entry._id
         return (
           <div key={entry._id} className="border-b border-border last:border-0">
             {/* Entry row — tap to expand/collapse */}
@@ -223,9 +236,9 @@ function MealGroup({ mealType, entries, t }) {
             </button>
 
             {/* Expanded food details */}
-            {isExpanded && entry.foods?.length > 0 && (
+            {isExpanded && (
               <div className="px-4 pb-3 flex flex-col gap-[6px] bg-sand/20">
-                {entry.foods.map((food, idx) => {
+                {entry.foods?.length > 0 ? entry.foods.map((food, idx) => {
                   const kcal = food.nutrients?.calories ?? food.calories
                   const protein = food.nutrients?.protein ?? food.protein
                   const carbs = food.nutrients?.carbs ?? food.carbs
@@ -236,7 +249,7 @@ function MealGroup({ mealType, entries, t }) {
                     fat != null && `F ${fat}g`,
                   ].filter(Boolean).join('  ')
                   return (
-                    <div key={idx} className="flex items-start justify-between gap-3 py-[6px] border-b border-border/50 last:border-0">
+                    <div key={food.name ?? idx} className="flex items-start justify-between gap-3 py-[6px] border-b border-border/50 last:border-0">
                       <div className="min-w-0">
                         <p className="text-[13px] text-ink1 font-medium leading-snug">
                           {food.name}
@@ -251,7 +264,29 @@ function MealGroup({ mealType, entries, t }) {
                       )}
                     </div>
                   )
-                })}
+                }) : (
+                  <p className="text-[12px] text-ink3 py-2">No food details available</p>
+                )}
+
+                {/* Delete button */}
+                <button
+                  type="button"
+                  onClick={() => handleDelete(entry._id)}
+                  disabled={isDeleting}
+                  className="mt-2 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                >
+                  {isDeleting ? (
+                    <span className="w-[12px] h-[12px] border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                  )}
+                  {isDeleting ? 'Deleting…' : 'Delete record'}
+                </button>
               </div>
             )}
           </div>
@@ -580,6 +615,7 @@ export default function NutritionTracker() {
                 mealType={mt}
                 entries={mealGroups[mt]}
                 t={t}
+                onDelete={() => Promise.all([fetchEntries(), fetchSummary()])}
               />
             ))}
           </div>
