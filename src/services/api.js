@@ -33,6 +33,17 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ idToken }),
       }),
+    me: () => request('/auth/me'),
+    setPassword: (password) =>
+      request('/auth/set-password', {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      }),
+    linkGoogle: (googleToken) =>
+      request('/auth/link-google', {
+        method: 'POST',
+        body: JSON.stringify({ googleToken }),
+      }),
   },
   cabinet: {
     list: () => request('/cabinet'),
