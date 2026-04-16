@@ -4,6 +4,7 @@ import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useAiUsage } from '../context/AiUsageContext'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 const FREQUENCY_OPTIONS = ['Daily', 'Twice daily', 'As needed']
@@ -32,6 +33,7 @@ export default function CabinetAdd() {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const { showUsage } = useAiUsage()
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
   const [showAiLookup, setShowAiLookup] = useState(false)
@@ -127,6 +129,7 @@ export default function CabinetAdd() {
         const results = Array.isArray(res.data) ? res.data : [res.data]
         setAiResults(results)
         setAiSelected(0)
+        if (res.aiUsage) showUsage(res.aiUsage, 'ai-lookup')
       }
     } catch (err) {
       setErrors({ submit: err.message || 'AI lookup failed' })

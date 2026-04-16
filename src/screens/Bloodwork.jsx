@@ -148,7 +148,7 @@ export default function Bloodwork() {
       const res = await api.bloodwork.interpret({})
       const d = res?.data ?? res
       setInterpretation(d)
-      if (d?.aiUsage) showUsage(d.aiUsage)
+      if (d?.aiUsage) showUsage(d.aiUsage, 'bloodwork-interpret')
     } catch {
       setInterpretation({ error: true })
     } finally {

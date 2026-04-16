@@ -96,8 +96,7 @@ function AppRoutes() {
 }
 
 function GlobalAiUsageBadge() {
-  const { usage, clearUsage } = useAiUsage()
-  return <AiUsageBadge usage={usage} onDismiss={clearUsage} />
+  return <AiUsageBadge />
 }
 
 export default function App() {

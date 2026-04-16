@@ -180,7 +180,7 @@ export default function Goals() {
 
     try {
       const res = await api.goals.checkIn({ goal: goalName.trim(), rating })
-      if (res?.data?.aiUsage) showUsage(res.data.aiUsage)
+      if (res?.data?.aiUsage) showUsage(res.data.aiUsage, 'goal-check-in')
       const nudge = res?.data?.aiResponse ?? ''
       if (nudge) {
         setAiNudge(nudge)
