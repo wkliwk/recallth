@@ -1058,6 +1058,7 @@ export default function NutritionTracker() {
   async function handleSaveCustomConfig(newConfig) {
     const res = await api.nutrition.setCustomConfig(newConfig)
     if (res?.data) setCustomConfig(res.data)
+    await fetchSummary()
   }
 
   // ── Compute calorie subtitle ──────────────────────────────────────────────
