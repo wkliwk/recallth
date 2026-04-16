@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
@@ -59,6 +59,9 @@ export default function Cabinet() {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
   const [sortBy, setSortBy] = useState('name') // 'name' | 'brand' | 'type' | 'recent'
+  const [aiSuggestion, setAiSuggestion] = useState(null)
+  const [aiSuggesting, setAiSuggesting] = useState(false)
+  const aiDebounceRef = useRef(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -116,6 +119,28 @@ export default function Cabinet() {
     { key: 'type', label: t('fieldType') || 'Type' },
     { key: 'recent', label: t('recent') || 'Recent' },
   ]
+  // Debounced AI lookup when search has no cabinet match
+  useEffect(() => {
+    if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current)
+    setAiSuggestion(null)
+    if (!search.trim()) return
+    const query = search.trim()
+    aiDebounceRef.current = setTimeout(async () => {
+      setAiSuggesting(true)
+      try {
+        const res = await api.cabinet.aiLookup(query)
+        if (res.success && res.data) {
+          const results = Array.isArray(res.data) ? res.data : [res.data]
+          setAiSuggestion(results[0] || null)
+        }
+      } catch {
+        setAiSuggestion(null)
+      } finally {
+        setAiSuggesting(false)
+      }
+    }, 700)
+    return () => { if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current) }
+  }, [search])
 
   const stats = [
     { value: String(supplements.length), label: t('active') },
@@ -302,28 +327,78 @@ export default function Cabinet() {
             <p className="text-ink3 text-[14px]">{error}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 col-span-2">
+          <div className={supplements.length > 0 && search.trim() ? 'col-span-2 pt-1 pb-8' : 'col-span-2 text-center py-12'}>
             {supplements.length === 0 ? (
-              <>
+              <div className="text-center">
                 <div className="w-[56px] h-[56px] rounded-full bg-orange-lt flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#E07B4A"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                   </svg>
                 </div>
                 <p className="text-ink2 text-[14px] font-medium">{t('cabinetEmpty')}</p>
                 <p className="text-ink3 text-[13px] mt-1">{t('cabinetEmptySub')}</p>
-              </>
+              </div>
+            ) : search.trim() ? (
+              <div className="bg-white rounded-card border border-border overflow-hidden">
+                <div className="px-4 pt-4 pb-3 border-b border-border flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+                  </svg>
+                  <span className="text-[12px] font-medium text-ink2">{t('cabinetNotInCabinet')}</span>
+                </div>
+                {aiSuggesting ? (
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-orange animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-orange animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-orange animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <p className="text-[12px] text-ink3">{t('aiLookupSearching')}</p>
+                  </div>
+                ) : aiSuggestion ? (
+                  <div className="p-4 flex flex-col gap-3">
+                    <p className="text-[13px] font-semibold text-ink1">{t('isThisTheOne')}</p>
+                    <div className="rounded-[12px] border border-border bg-page flex gap-3 p-3 items-center">
+                      {aiSuggestion.imageUrl ? (
+                        <img src={aiSuggestion.imageUrl} alt={aiSuggestion.name || ''} className="w-[56px] h-[56px] object-contain rounded-[8px] shrink-0 bg-sand"
+                          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
+                      ) : null}
+                      <div className="w-[56px] h-[56px] rounded-[8px] bg-sand items-center justify-center text-[20px] font-semibold text-ink3/40 shrink-0"
+                        style={{ display: aiSuggestion.imageUrl ? 'none' : 'flex' }}>
+                        {(aiSuggestion.name || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-bold text-ink1 leading-snug truncate">{aiSuggestion.name}</p>
+                        {aiSuggestion.brand && <p className="text-[11px] text-ink3 mt-[1px]">{aiSuggestion.brand}</p>}
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          {aiSuggestion.dosage && <span className="rounded-pill px-[7px] py-[2px] text-[10px] font-medium bg-orange/10 text-orange">{aiSuggestion.dosage}</span>}
+                          {aiSuggestion.timing && <span className="rounded-pill px-[7px] py-[2px] text-[10px] font-medium bg-sand text-ink2">{aiSuggestion.timing}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => navigate('/cabinet/add', { state: { aiResult: aiSuggestion } })}
+                      className="w-full rounded-pill bg-orange text-white text-[14px] font-medium py-[11px] cursor-pointer hover:bg-orange-dk transition-colors">
+                      {t('addButton')}
+                    </button>
+                    <button type="button" onClick={() => navigate('/cabinet/add')}
+                      className="text-[12px] text-ink3 hover:text-ink2 cursor-pointer text-center">
+                      {t('notThisOne')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center flex flex-col items-center gap-3">
+                    <p className="text-[13px] text-ink3">{t('aiLookupNoMatch')}</p>
+                    <button type="button" onClick={() => navigate('/cabinet/add')}
+                      className="rounded-pill border border-orange text-orange text-[13px] font-medium px-5 py-[9px] cursor-pointer hover:bg-orange/5 transition-colors">
+                      {t('addButton')}
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
-              <p className="text-ink3 text-[14px]">{t('noResults')}</p>
+              <div className="text-center">
+                <p className="text-ink3 text-[14px]">{t('noResults')}</p>
+              </div>
             )}
           </div>
         ) : (

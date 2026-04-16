@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
@@ -30,6 +30,7 @@ const selectClass =
 
 export default function CabinetAdd() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useLanguage()
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
@@ -38,19 +39,37 @@ export default function CabinetAdd() {
   const [aiLooking, setAiLooking] = useState(false)
   const [aiResults, setAiResults] = useState([])
   const [aiSelected, setAiSelected] = useState(0)
-  const [aiFilled, setAiFilled] = useState(false)
 
-  const [form, setForm] = useState({
-    name: '',
-    type: 'supplement',
-    dosage: '',
-    frequency: 'Daily',
-    timing: 'Morning',
-    brand: '',
-    notes: '',
-    description: '',
-    ingredients: '',
-    imageUrl: '',
+  const prefilled = location.state?.aiResult
+  const [aiFilled, setAiFilled] = useState(!!prefilled)
+
+  const [form, setForm] = useState(() => {
+    if (prefilled) {
+      return {
+        name: prefilled.name || '',
+        type: prefilled.type || 'supplement',
+        dosage: prefilled.dosage || '',
+        frequency: prefilled.frequency || 'Daily',
+        timing: prefilled.timing || 'Morning',
+        brand: prefilled.brand || '',
+        notes: prefilled.notes || '',
+        description: prefilled.description || '',
+        ingredients: prefilled.ingredients || '',
+        imageUrl: prefilled.imageUrl || '',
+      }
+    }
+    return {
+      name: '',
+      type: 'supplement',
+      dosage: '',
+      frequency: 'Daily',
+      timing: 'Morning',
+      brand: '',
+      notes: '',
+      description: '',
+      ingredients: '',
+      imageUrl: '',
+    }
   })
 
   function handleChange(field, value) {
@@ -159,7 +178,6 @@ export default function CabinetAdd() {
         <h1 className="font-display text-[28px] text-ink1">{t('addTitle')}</h1>
         <p className="text-[14px] text-ink3 mt-1">{t('addSubtitle')}</p>
       </div>
-
       <form onSubmit={handleSubmit} className="px-5 md:px-8 pt-2 pb-[100px] md:pb-10 flex flex-col gap-3 max-w-[720px]">
         {/* AI Lookup — inline, same style as detail page */}
         <div className="bg-white rounded-card border border-border p-4">
