@@ -309,38 +309,43 @@ export default function Chat() {
 
   // ── Header ─────────────────────────────────────────────────────────────────
   const header = (
-    <div className="bg-orange px-4 pt-5 pb-14 shrink-0">
-      <div className="md:hidden" style={{ height: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }} />
-      <div className="flex items-center justify-between">
+    <div className="bg-white border-b border-border px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between max-w-[960px] mx-auto">
         <button
           onClick={() => setDrawerOpen(true)}
-          className="w-9 h-9 rounded-[12px] flex items-center justify-center cursor-pointer"
-          style={{ background: 'rgba(255,255,255,0.18)' }}
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center cursor-pointer text-ink2 hover:bg-sand transition-colors"
           aria-label={t('chatConversations')}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
 
-        <div className="flex-1 mx-3 text-center min-w-0">
-          {active && conversationTitle ? (
-            <p className="text-[14px] font-medium text-white truncate">{conversationTitle}</p>
-          ) : active ? (
-            <p className="text-[14px] font-medium text-white">{t('chatHeaderActive')}</p>
-          ) : (
-            <p className="text-[14px] font-medium text-white">{t('chatTitle')}</p>
-          )}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-full bg-orange flex items-center justify-center shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+            </svg>
+          </div>
+          <div className="flex-1 mx-2 text-center min-w-0">
+            {active && conversationTitle ? (
+              <p className="text-[14px] font-semibold text-ink1 truncate">{conversationTitle}</p>
+            ) : active ? (
+              <p className="text-[14px] font-semibold text-ink1">{t('chatHeaderActive')}</p>
+            ) : (
+              <p className="text-[14px] font-semibold text-ink1">{t('chatTitle')}</p>
+            )}
+          </div>
         </div>
 
         <button
           onClick={handleNewChat}
-          className="w-9 h-9 rounded-[12px] flex items-center justify-center cursor-pointer"
-          style={{ background: 'rgba(255,255,255,0.18)' }}
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center cursor-pointer text-ink2 hover:bg-sand transition-colors"
           aria-label={t('newChat')}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
@@ -487,7 +492,7 @@ export default function Chat() {
     <div className="min-h-screen flex flex-col bg-page">
       {header}
 
-      <div className="-mt-10 flex-1 flex flex-col rounded-t-[20px] bg-page overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {active ? chatMessages : emptyState}
       </div>
 

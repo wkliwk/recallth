@@ -237,6 +237,13 @@ export default function DoctorPrep() {
       ])
 
       const cabinetItems = Array.isArray(cabinet?.data) ? cabinet.data : (cabinet?.data?.items ?? [])
+
+      // If cabinet is empty, show a helpful message instead of trying to generate
+      if (cabinetItems.length === 0) {
+        setStatus('empty')
+        return
+      }
+
       const interactions = Array.isArray(interactionsRes?.data)
         ? interactionsRes.data
         : (interactionsRes?.data?.interactions ?? [])
@@ -307,6 +314,24 @@ export default function DoctorPrep() {
                 {[1, 2, 3].map((r) => <SkeletonRow key={r} />)}
               </div>
             ))}
+          </div>
+        )}
+
+        {status === 'empty' && (
+          <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center px-4">
+            <div
+              className="w-[52px] h-[52px] rounded-full flex items-center justify-center"
+              style={{ background: '#FDE8DE' }}
+              aria-hidden="true"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C05A28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              </svg>
+            </div>
+            <p className="text-[15px] font-medium text-ink1">{t('doctorPrepNoCabinet')}</p>
+            <p className="text-[13px] text-ink3 max-w-[280px]">
+              {t('doctorPrepNoCabinetSub')}
+            </p>
           </div>
         )}
 

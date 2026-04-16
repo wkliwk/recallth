@@ -285,16 +285,28 @@ export default function StackBuilder() {
 
       {/* Empty state */}
       {status === 'idle' && (
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-          <div className="w-[52px] h-[52px] rounded-full bg-orange/10 flex items-center justify-center mb-1">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <div className="rounded-[16px] border border-border bg-white px-8 py-12 flex flex-col items-center text-center">
+          <div className="w-[60px] h-[60px] rounded-[18px] bg-orange/10 flex items-center justify-center mb-5">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <p className="text-[15px] font-medium text-ink1">{t('stackBuilderEmpty')}</p>
-          <p className="text-[13px] text-ink3 max-w-[280px]">
+          <p className="text-[16px] font-semibold text-ink1 mb-2">{t('stackBuilderEmpty')}</p>
+          <p className="text-[13px] text-ink3 max-w-[340px] leading-[1.6]">
             {t('stackBuilderEmptySub')}
           </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {[t('stackBuilderExGoal1'), t('stackBuilderExGoal2'), t('stackBuilderExGoal3')].map((ex) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => setGoal(ex)}
+                className="rounded-full bg-sand border border-border text-[12px] text-ink2 px-4 py-[7px] hover:border-orange/40 hover:bg-orange/5 transition-colors cursor-pointer"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

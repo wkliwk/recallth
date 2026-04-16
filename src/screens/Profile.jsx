@@ -212,8 +212,8 @@ function AboutSection({ data, onSave }) {
           <Field label={t('fieldAge')} value={draft.age} onChange={(v) => set('age', v)} />
           <Field label={t('fieldHeight')} value={draft.height} onChange={(v) => set('height', v)} />
           <Field label={t('fieldWeight')} value={draft.weight} onChange={(v) => set('weight', v)} />
-          <SelectField label="Sex" value={draft.sex} onChange={(v) => set('sex', v)} options={SEX_OPTIONS} />
-          <SelectField label="Activity level" value={draft.activityLevel} onChange={(v) => set('activityLevel', v)} options={ACTIVITY_OPTIONS} />
+          <SelectField label={t('fieldGender')} value={draft.sex} onChange={(v) => set('sex', v)} options={SEX_OPTIONS} />
+          <SelectField label={t('fieldActivityLevel')} value={draft.activityLevel} onChange={(v) => set('activityLevel', v)} options={ACTIVITY_OPTIONS} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
@@ -221,8 +221,8 @@ function AboutSection({ data, onSave }) {
           <ReadRow label={t('fieldAge')} value={data.age} />
           <ReadRow label={t('fieldHeight')} value={data.height} />
           <ReadRow label={t('fieldWeight')} value={data.weight} />
-          <ReadRow label="Sex" value={SEX_OPTIONS.find((o) => o.value === data.sex)?.label ?? data.sex} />
-          <ReadRow label="Activity level" value={ACTIVITY_OPTIONS.find((o) => o.value === data.activityLevel)?.label ?? data.activityLevel} />
+          <ReadRow label={t('fieldGender')} value={SEX_OPTIONS.find((o) => o.value === data.sex)?.label ?? data.sex} />
+          <ReadRow label={t('fieldActivityLevel')} value={ACTIVITY_OPTIONS.find((o) => o.value === data.activityLevel)?.label ?? data.activityLevel} />
         </div>
       )}
     </ProfileSection>
@@ -501,6 +501,7 @@ function StatusBadge({ label }) {
 }
 
 function SetPasswordCard() {
+  const { t } = useLanguage()
   const [newPw, setNewPw]         = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [saving, setSaving]       = useState(false)
@@ -511,11 +512,11 @@ function SetPasswordCard() {
     e.preventDefault()
     setError(null)
     if (newPw.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError(t('securityPasswordTooShort'))
       return
     }
     if (newPw !== confirmPw) {
-      setError('Passwords do not match.')
+      setError(t('securityPasswordMismatch'))
       return
     }
     setSaving(true)
@@ -523,7 +524,7 @@ function SetPasswordCard() {
       await api.auth.setPassword(newPw)
       setDone(true)
     } catch (err) {
-      setError(err.message ?? 'Failed to set password.')
+      setError(err.message ?? t('securityPasswordFailed'))
     } finally {
       setSaving(false)
     }
@@ -532,32 +533,32 @@ function SetPasswordCard() {
   if (done) {
     return (
       <div className="bg-white border border-border rounded-[20px] p-5">
-        <p className="text-[13px] font-medium text-ink2 mb-3">Password</p>
-        <StatusBadge label="Password set" />
+        <p className="text-[13px] font-medium text-ink2 mb-3">{t('securityPassword')}</p>
+        <StatusBadge label={t('securityPasswordSet')} />
       </div>
     )
   }
 
   return (
     <div className="bg-white border border-border rounded-[20px] p-5">
-      <p className="text-[13px] font-medium text-ink2 mb-1">Set a password</p>
-      <p className="text-[11px] text-ink3 mb-4">Add a password so you can also sign in with email.</p>
+      <p className="text-[13px] font-medium text-ink2 mb-1">{t('securitySetPassword')}</p>
+      <p className="text-[11px] text-ink3 mb-4">{t('securitySetPasswordSub')}</p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="flex flex-col gap-[6px]">
-          <label className="text-[13px] font-medium text-ink2">New password</label>
+          <label className="text-[13px] font-medium text-ink2">{t('securityNewPassword')}</label>
           <input
             type="password"
-            placeholder="Min. 8 characters"
+            placeholder={t('securityPasswordHint')}
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
             className="border border-border rounded-[14px] px-4 py-[13px] text-[15px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors bg-white"
           />
         </div>
         <div className="flex flex-col gap-[6px]">
-          <label className="text-[13px] font-medium text-ink2">Confirm password</label>
+          <label className="text-[13px] font-medium text-ink2">{t('securityConfirmPassword')}</label>
           <input
             type="password"
-            placeholder="Repeat password"
+            placeholder={t('securityRepeatPassword')}
             value={confirmPw}
             onChange={(e) => setConfirmPw(e.target.value)}
             className="border border-border rounded-[14px] px-4 py-[13px] text-[15px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors bg-white"
@@ -573,7 +574,7 @@ function SetPasswordCard() {
           disabled={saving}
           className="rounded-pill bg-orange text-white py-[15px] text-[14px] font-medium disabled:opacity-60 cursor-pointer"
         >
-          {saving ? 'Saving…' : 'Set password'}
+          {saving ? t('savingEllipsis') : t('securitySetPassword')}
         </button>
       </form>
     </div>
@@ -581,6 +582,7 @@ function SetPasswordCard() {
 }
 
 function LinkGoogleCard() {
+  const { t } = useLanguage()
   const googleBtnRef  = useRef(null)
   const [linked, setLinked]   = useState(false)
   const [error, setError]     = useState(null)
@@ -633,16 +635,16 @@ function LinkGoogleCard() {
     return (
       <div className="bg-white border border-border rounded-[20px] p-5">
         <p className="text-[13px] font-medium text-ink2 mb-3">Google</p>
-        <StatusBadge label="Google linked" />
+        <StatusBadge label={t('securityGoogleLinked')} />
       </div>
     )
   }
 
   return (
     <div className="bg-white border border-border rounded-[20px] p-5">
-      <p className="text-[13px] font-medium text-ink2 mb-1">Link Google account</p>
-      <p className="text-[11px] text-ink3 mb-4">Sign in faster with Google on this device.</p>
-      {loading && <p className="text-[12px] text-ink3 mb-3">Linking…</p>}
+      <p className="text-[13px] font-medium text-ink2 mb-1">{t('securityLinkGoogle')}</p>
+      <p className="text-[11px] text-ink3 mb-4">{t('securityLinkGoogleSub')}</p>
+      {loading && <p className="text-[12px] text-ink3 mb-3">{t('securityLinking')}</p>}
       {error && (
         <p className="text-[13px] text-[#C05A28] bg-[#FDE8DE] border border-[#E8C4B0] rounded-[10px] px-4 py-3 mb-3">
           {error}
@@ -651,23 +653,24 @@ function LinkGoogleCard() {
       {googleClientId ? (
         <div ref={googleBtnRef} className="w-full flex justify-center min-h-[44px]" />
       ) : (
-        <p className="text-[12px] text-ink4">Google Sign-In is not configured.</p>
+        <p className="text-[12px] text-ink4">{t('securityGoogleNotConfigured')}</p>
       )}
     </div>
   )
 }
 
 function SecuritySection({ hasPassword, googleLinked }) {
+  const { t } = useLanguage()
   const bothSet = hasPassword && googleLinked
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[11px] uppercase tracking-[0.08em] text-ink3 font-medium px-1">Security</p>
+      <p className="text-[11px] uppercase tracking-[0.08em] text-ink3 font-medium px-1">{t('securitySection')}</p>
 
       {bothSet ? (
         <div className="bg-white border border-border rounded-[20px] p-5 flex gap-3 flex-wrap">
-          <StatusBadge label="Password set" />
-          <StatusBadge label="Google linked" />
+          <StatusBadge label={t('securityPasswordSet')} />
+          <StatusBadge label={t('securityGoogleLinked')} />
         </div>
       ) : (
         <>

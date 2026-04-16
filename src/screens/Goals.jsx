@@ -306,8 +306,16 @@ export default function Goals() {
           <Skeleton className="h-[120px]" />
         </div>
       ) : goalEntries.length === 0 ? (
-        <div className="rounded-[14px] border border-border bg-white px-6 py-10 text-center">
-          <p className="text-[13px] text-ink2">{t('goalsEmpty')}</p>
+        <div className="rounded-[14px] border border-border bg-white px-6 py-12 flex flex-col items-center text-center">
+          <div className="w-[52px] h-[52px] rounded-full bg-orange/10 flex items-center justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+          </div>
+          <p className="text-[14px] font-semibold text-ink1 mb-1">{t('goalsEmptyTitle')}</p>
+          <p className="text-[13px] text-ink3 max-w-[280px]">{t('goalsEmpty')}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">

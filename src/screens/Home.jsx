@@ -361,8 +361,13 @@ export default function Home() {
                   <Skeleton className="h-10" />
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="px-5 py-6 text-center">
-                  <p className="text-[13px] text-ink2 mb-2">{t('noConversationsYet')}</p>
+                <div className="px-5 py-8 flex flex-col items-center text-center">
+                  <div className="w-10 h-10 rounded-full bg-orange/10 flex items-center justify-center mb-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </div>
+                  <p className="text-[13px] text-ink2 font-medium mb-1">{t('noConversationsYet')}</p>
                   <Link
                     to="/chat"
                     className="text-[12px] text-orange font-medium hover:underline"

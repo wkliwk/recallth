@@ -8,17 +8,6 @@ function today() {
   return new Date().toISOString().split('T')[0]
 }
 
-function relativeDate(dateStr) {
-  if (!dateStr) return ''
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const diffDay = Math.floor(diffMs / 86400000)
-  if (diffDay === 0) return 'Today'
-  if (diffDay === 1) return 'Yesterday'
-  return `${diffDay} days ago`
-}
-
 const SEVERITY_CONFIG = {
   mild: {
     label: 'Mild',
@@ -68,7 +57,7 @@ function SeverityBadge({ severity, t }) {
 
 // ── Timeline card ─────────────────────────────────────────────────────────────
 
-function EntryCard({ entry, onDelete, t }) {
+function EntryCard({ entry, onDelete, t, relativeDate }) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const cfg = SEVERITY_CONFIG[entry.severity] ?? SEVERITY_CONFIG.mild
@@ -234,6 +223,18 @@ export default function SideEffects() {
     setEntries((prev) => prev.filter((e) => (e._id ?? e.id) !== id))
   }
 
+  // ── Localised relative date ────────────────────────────────────────────────
+  function relativeDate(dateStr) {
+    if (!dateStr) return ''
+    const now = Date.now()
+    const then = new Date(dateStr).getTime()
+    const diffMs = now - then
+    const diffDay = Math.floor(diffMs / 86400000)
+    if (diffDay === 0) return t('sideEffectsToday')
+    if (diffDay === 1) return t('timeYesterday')
+    return t('timeDaysAgo', diffDay)
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[760px]">
@@ -376,10 +377,14 @@ export default function SideEffects() {
             <Skeleton className="h-[88px]" />
           </div>
         ) : entries.length === 0 ? (
-          <div className="rounded-[14px] border border-border bg-white px-6 py-10 text-center">
-            <p className="text-[13px] text-ink2">
-              {t('sideEffectsEmpty')}
-            </p>
+          <div className="rounded-[14px] border border-border bg-white px-6 py-12 flex flex-col items-center text-center">
+            <div className="w-[52px] h-[52px] rounded-full bg-[#E8F0E8] flex items-center justify-center mb-4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3D6B3D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <p className="text-[14px] font-semibold text-ink1 mb-1">{t('sideEffectsEmptyTitle')}</p>
+            <p className="text-[13px] text-ink3">{t('sideEffectsEmpty')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3" role="list">
@@ -389,6 +394,7 @@ export default function SideEffects() {
                 entry={entry}
                 onDelete={handleDelete}
                 t={t}
+                relativeDate={relativeDate}
               />
             ))}
           </div>

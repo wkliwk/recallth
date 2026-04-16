@@ -322,6 +322,23 @@ export default function Cabinet() {
             <SkeletonCard />
             <SkeletonCard />
           </>
+        ) : !loading && supplements.length === 0 && !error ? (
+          <div className="col-span-2 md:col-span-3 lg:col-span-4 flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-[64px] h-[64px] rounded-full bg-orange-lt flex items-center justify-center mx-auto mb-5">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              </svg>
+            </div>
+            <p className="text-[15px] font-semibold text-ink1 mb-1">{t('cabinetEmpty')}</p>
+            <p className="text-[13px] text-ink3 mb-5">{t('cabinetEmptySub')}</p>
+            <button
+              type="button"
+              onClick={() => navigate('/cabinet/add')}
+              className="rounded-full bg-orange text-white text-[13px] font-semibold px-6 py-[10px] hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              {t('addSupplement')}
+            </button>
+          </div>
         ) : error ? (
           <div className="text-center py-12 col-span-2">
             <p className="text-ink3 text-[14px]">{error}</p>

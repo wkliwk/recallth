@@ -115,7 +115,7 @@ function EntryForm({ initial, submitting, onSubmit, onCancel, submitLabel, t }) 
             onClick={onCancel}
             className="px-5 py-[9px] rounded-[10px] border border-border text-ink2 text-[13px] font-medium hover:bg-sand transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
           >
-            Cancel
+            {t('cancelButton')}
           </button>
         )}
       </div>
@@ -227,8 +227,17 @@ export default function Journal() {
             <Skeleton className="h-[100px]" />
           </>
         ) : entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-[15px] text-ink2 font-medium mb-1">{t('journalNoEntries')}</p>
+          <div className="rounded-[14px] border border-border bg-white px-6 py-12 flex flex-col items-center text-center">
+            <div className="w-[52px] h-[52px] rounded-full bg-orange/10 flex items-center justify-center mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <p className="text-[15px] text-ink1 font-semibold mb-1">{t('journalNoEntries')}</p>
             <p className="text-[13px] text-ink3">{t('journalNoEntriesSub')}</p>
           </div>
         ) : (
@@ -307,7 +316,7 @@ export default function Journal() {
                         onClick={() => setConfirmDeleteId(null)}
                         className="px-4 py-[6px] rounded-[8px] border border-border text-ink2 text-[12px] font-medium hover:bg-sand transition-colors focus:outline-none"
                       >
-                        Cancel
+                        {t('cancelButton')}
                       </button>
                     </div>
                   )}
