@@ -299,7 +299,8 @@ export default function NutritionAdd() {
           {
             name: form.foodName.trim(),
             brand: form.brand.trim() || undefined,
-            quantity: form.quantity.trim(),
+            quantity: 1,
+            unit: form.quantity.trim() || 'serving',
             nutrients: {
               calories: form.calories === '' ? undefined : Number(form.calories),
               protein: form.protein === '' ? undefined : Number(form.protein),
