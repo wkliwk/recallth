@@ -82,7 +82,7 @@ export default function NutritionAdd() {
     setAiError(null)
     try {
       const res = await api.nutrition.aiParse(aiText.trim())
-      const items = res?.data ?? res ?? []
+      const items = res?.data?.foods ?? res?.data ?? res ?? []
       const parsed = Array.isArray(items) ? items : []
       setAiResults(parsed)
       if (parsed.length === 0) {
@@ -101,7 +101,7 @@ export default function NutritionAdd() {
     setForm((prev) => ({
       ...prev,
       foodName: item.name ?? prev.foodName,
-      quantity: item.quantity ?? item.serving ?? prev.quantity,
+      quantity: [item.quantity, item.unit].filter(Boolean).join(' ') || item.serving || prev.quantity,
       calories: item.nutrients?.calories ?? item.calories ?? prev.calories,
       protein: item.nutrients?.protein ?? item.protein ?? prev.protein,
       carbs: item.nutrients?.carbs ?? item.carbs ?? prev.carbs,
@@ -255,9 +255,9 @@ export default function NutritionAdd() {
                             </span>
                           )}
                         </div>
-                        {(item.quantity ?? item.serving) && (
+                        {(item.quantity != null || item.serving) && (
                           <span className="text-[12px] text-ink3">
-                            {item.quantity ?? item.serving}
+                            {[item.quantity, item.unit].filter(Boolean).join(' ') || item.serving}
                           </span>
                         )}
                         {(item.nutrients || item.protein !== undefined) && (
