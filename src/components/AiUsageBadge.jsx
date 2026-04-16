@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAiUsage } from '../context/AiUsageContext'
 
-const isDebugMode = () =>
-  import.meta.env.DEV ||
-  new URLSearchParams(window.location.search).get('debug') === '1'
+const DEBUG_KEY = 'recallth_debug_mode'
+
+const isDebugMode = () => {
+  if (import.meta.env.DEV) return true
+  if (new URLSearchParams(window.location.search).get('debug') === '1') {
+    localStorage.setItem(DEBUG_KEY, '1')
+    return true
+  }
+  return localStorage.getItem(DEBUG_KEY) === '1'
+}
 
 const fmt     = (n)   => n?.toLocaleString() ?? '0'
 const fmtCost = (usd) => (!usd || usd < 0.000001) ? '< $0.000001' : `$${usd.toFixed(6)}`
@@ -102,7 +109,6 @@ export default function AiUsageBadge() {
   }, [toggle])
 
   if (!isDebugMode()) return null
-  if (!usage && log.length === 0) return null
 
   const pos         = POSITIONS.find(p => p.id === posId) ?? POSITIONS[0]
   const nextPosId   = () => {
