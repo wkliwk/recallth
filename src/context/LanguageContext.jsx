@@ -471,6 +471,10 @@ const TRANSLATIONS = {
     nutritionEntryDeleted: 'Entry deleted',
     nutritionUndo: 'Undo',
     nutritionDragHandle: 'Drag to move',
+    nutritionCustomiseBtn: 'Customise',
+    nutritionCustomiseTitle: 'Customise Nutrients',
+    nutritionCustomiseSave: 'Save',
+    nutritionCustomiseGoalPlaceholder: 'Goal',
     // ── Common ───────────────────────────────────────────────────────────
     back: 'Back',
   },
@@ -934,6 +938,10 @@ const TRANSLATIONS = {
     nutritionEntryDeleted: '已刪除記錄',
     nutritionUndo: '復原',
     nutritionDragHandle: '拖移',
+    nutritionCustomiseBtn: '自訂',
+    nutritionCustomiseTitle: '自訂營養素',
+    nutritionCustomiseSave: '儲存',
+    nutritionCustomiseGoalPlaceholder: '目標',
     back: '返回',
   },
 
@@ -1396,6 +1404,10 @@ const TRANSLATIONS = {
     nutritionEntryDeleted: '已刪除記錄',
     nutritionUndo: '復原',
     nutritionDragHandle: '拖移',
+    nutritionCustomiseBtn: '自訂',
+    nutritionCustomiseTitle: '自訂營養素',
+    nutritionCustomiseSave: '儲存',
+    nutritionCustomiseGoalPlaceholder: '目標',
     back: '返回',
   },
 }

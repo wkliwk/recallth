@@ -117,6 +117,11 @@ export const api = {
     summary: (date) => request(`/nutrition/summary${date ? `?date=${date}` : ''}`),
     getCategory: () => request('/nutrition/category'),
     setCategory: (category) => request('/nutrition/category', { method: 'PUT', body: JSON.stringify({ category }) }),
+    getCustomConfig: () => request('/nutrition/custom-config'),
+    setCustomConfig: (config) => request('/nutrition/custom-config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    }),
     days: (year, month) => request(`/nutrition/days?year=${year}&month=${month}`),
     library: {
       list: () => request('/nutrition/library'),
