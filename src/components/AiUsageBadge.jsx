@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAiUsage } from '../context/AiUsageContext'
 
-const DEBUG_KEY = 'recallth_debug_mode'
+const DEBUG_KEY  = 'recallth_debug_mode'
+const POS_KEY    = 'recallth_ai_badge_pos'
+const HIDDEN_KEY = 'recallth_ai_badge_hidden'
 
 const isDebugMode = () => {
   if (import.meta.env.DEV) return true
@@ -12,23 +14,22 @@ const isDebugMode = () => {
   return localStorage.getItem(DEBUG_KEY) === '1'
 }
 
+function loadPos() {
+  try {
+    const saved = localStorage.getItem(POS_KEY)
+    if (saved) {
+      const p = JSON.parse(saved)
+      if (typeof p.x === 'number' && typeof p.y === 'number') return p
+    }
+  } catch {}
+  return { x: window.innerWidth - 316, y: window.innerHeight - 160 }
+}
+function loadHidden() { return localStorage.getItem(HIDDEN_KEY) === '1' }
+function savePos(p)   { localStorage.setItem(POS_KEY, JSON.stringify(p)) }
+
 const fmt     = (n)   => n?.toLocaleString() ?? '0'
 const fmtCost = (usd) => (!usd || usd < 0.000001) ? '< $0.000001' : `$${usd.toFixed(6)}`
 const fmtTime = (ts)  => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-
-// 4 corner positions
-const POSITIONS = [
-  { id: 'br', label: '↘', style: { bottom: 80, right: 16 } },
-  { id: 'bl', label: '↙', style: { bottom: 80, left:  16 } },
-  { id: 'tr', label: '↗', style: { top:    16, right: 16 } },
-  { id: 'tl', label: '↖', style: { top:    16, left:  16 } },
-]
-
-const POS_KEY     = 'recallth_ai_badge_pos'
-const HIDDEN_KEY  = 'recallth_ai_badge_hidden'
-
-function loadPos()    { return localStorage.getItem(POS_KEY)    ?? 'br' }
-function loadHidden() { return localStorage.getItem(HIDDEN_KEY) === '1' }
 
 const border      = '1px solid rgba(255,255,255,0.1)'
 const borderLight = '1px solid rgba(255,255,255,0.07)'
@@ -84,14 +85,55 @@ function LogEntry({ entry, isLast }) {
   )
 }
 
+function useDrag(posRef, setPos) {
+  const dragging   = useRef(false)
+  const dragOffset = useRef({ x: 0, y: 0 })
+  const didMove    = useRef(false)
+
+  const onMouseDown = useCallback((e) => {
+    if (e.button !== 0) return
+    dragging.current  = true
+    didMove.current   = false
+    dragOffset.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y }
+    e.preventDefault()
+  }, [posRef])
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragging.current) return
+      didMove.current = true
+      const x = Math.max(0, Math.min(window.innerWidth  - 300, e.clientX - dragOffset.current.x))
+      const y = Math.max(0, Math.min(window.innerHeight -  40, e.clientY - dragOffset.current.y))
+      setPos({ x, y })
+    }
+    const onUp = () => {
+      if (!dragging.current) return
+      dragging.current = false
+      setPos(p => { savePos(p); return p })
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup',   onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup',   onUp)
+    }
+  }, [setPos])
+
+  return { onMouseDown, didMove }
+}
+
 export default function AiUsageBadge() {
   const { usage, log, clearUsage, clearLog } = useAiUsage()
 
   const [hidden,      setHidden]      = useState(loadHidden)
-  const [posId,       setPosId]       = useState(loadPos)
+  const [pos,         setPos]         = useState(loadPos)
   const [showHistory, setShowHistory] = useState(false)
 
-  // Ctrl+Shift+D to toggle
+  const posRef = useRef(pos)
+  useEffect(() => { posRef.current = pos }, [pos])
+
+  const { onMouseDown, didMove } = useDrag(posRef, setPos)
+
   const toggle = useCallback(() => {
     setHidden(v => {
       const next = !v
@@ -100,6 +142,7 @@ export default function AiUsageBadge() {
     })
   }, [])
 
+  // Ctrl+Shift+D to toggle
   useEffect(() => {
     const handler = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); toggle() }
@@ -110,29 +153,21 @@ export default function AiUsageBadge() {
 
   if (!isDebugMode()) return null
 
-  const pos         = POSITIONS.find(p => p.id === posId) ?? POSITIONS[0]
-  const nextPosId   = () => {
-    const idx  = POSITIONS.findIndex(p => p.id === posId)
-    const next = POSITIONS[(idx + 1) % POSITIONS.length].id
-    localStorage.setItem(POS_KEY, next)
-    setPosId(next)
-  }
-
   const totalTokens = log.reduce((s, e) => s + (e.totalTokens ?? 0), 0)
   const totalCost   = log.reduce((s, e) => s + (e.estimatedCostUSD ?? 0), 0)
 
-  // ── Hidden state: just a small orange dot ──
+  // ── Hidden state: draggable orange dot ──
   if (hidden) {
     return (
-      <button
-        onClick={toggle}
+      <div
+        onMouseDown={onMouseDown}
+        onClick={() => { if (!didMove.current) toggle() }}
         title="Show AI Usage (Ctrl+Shift+D)"
         style={{
-          position: 'fixed', ...pos.style, zIndex: 9999,
+          position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
           width: 12, height: 12, borderRadius: '50%',
-          background: '#f97316', border: 'none', cursor: 'pointer',
+          background: '#f97316', border: 'none', cursor: 'grab',
           boxShadow: '0 0 6px rgba(249,115,22,0.7)',
-          padding: 0,
         }}
       />
     )
@@ -140,7 +175,7 @@ export default function AiUsageBadge() {
 
   return (
     <div style={{
-      position: 'fixed', ...pos.style, zIndex: 9999,
+      position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
       width: 300,
       background: 'rgba(18,18,18,0.92)',
       color: '#e0e0e0',
@@ -151,47 +186,49 @@ export default function AiUsageBadge() {
       overflow: 'hidden',
     }}>
 
-      {/* ── Current call ── */}
-      {usage && (
-        <div style={{ padding: '8px 10px', borderBottom: border }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: '#f97316', fontWeight: 700, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
-                AI Usage
-              </span>
-              {/* position switcher */}
-              <button
-                onClick={nextPosId}
-                title="Move panel"
-                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 11, padding: '0 2px', lineHeight: 1 }}
-              >
-                {pos.label}
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
-                onClick={toggle}
-                title="Hide (Ctrl+Shift+D)"
-                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 11, padding: '0 3px' }}
-              >
-                ▾
-              </button>
-              <button
-                onClick={clearUsage}
-                title="Close"
-                style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, padding: '0 2px' }}
-              >
-                ✕
-              </button>
-            </div>
+      {/* ── Header (drag handle) ── */}
+      <div
+        onMouseDown={onMouseDown}
+        style={{
+          padding: '8px 10px',
+          borderBottom: usage ? border : 'none',
+          cursor: 'grab',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: usage ? 5 : 0 }}>
+          <span style={{ color: '#f97316', fontWeight: 700, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
+            ⠿ AI Usage
+          </span>
+          <div style={{ display: 'flex', gap: 4 }} onMouseDown={e => e.stopPropagation()}>
+            <button
+              onClick={toggle}
+              title="Hide (Ctrl+Shift+D)"
+              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 11, padding: '0 3px' }}
+            >
+              ▾
+            </button>
+            <button
+              onClick={clearUsage}
+              title="Close"
+              style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, padding: '0 2px' }}
+            >
+              ✕
+            </button>
           </div>
-          <Row label="model" value={usage.model}                     color="#fff" />
-          <Row label="in"    value={fmt(usage.inputTokens)}          color="#34d399" />
-          <Row label="out"   value={fmt(usage.outputTokens)}         color="#60a5fa" />
-          <Row label="total" value={fmt(usage.totalTokens)}          color="#e5e7eb" />
-          <Row label="cost"  value={fmtCost(usage.estimatedCostUSD)} color="#fbbf24" bold />
         </div>
-      )}
+
+        {/* ── Current call ── */}
+        {usage && (
+          <>
+            <Row label="model" value={usage.model}                     color="#fff" />
+            <Row label="in"    value={fmt(usage.inputTokens)}          color="#34d399" />
+            <Row label="out"   value={fmt(usage.outputTokens)}         color="#60a5fa" />
+            <Row label="total" value={fmt(usage.totalTokens)}          color="#e5e7eb" />
+            <Row label="cost"  value={fmtCost(usage.estimatedCostUSD)} color="#fbbf24" bold />
+          </>
+        )}
+      </div>
 
       {/* ── Session totals + history toggle ── */}
       <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -209,7 +246,7 @@ export default function AiUsageBadge() {
         </button>
       </div>
 
-      {/* ── History panel — semi-transparent ── */}
+      {/* ── History panel ── */}
       {showHistory && (
         <div style={{ borderTop: border }}>
           <div style={{
