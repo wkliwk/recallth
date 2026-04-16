@@ -637,6 +637,9 @@ export default function NutritionAdd() {
                                   {[item.quantity, item.unit].filter(Boolean).join(' ') || item.serving}
                                 </span>
                               )}
+                              {item.estimated && (
+                                <span className="text-[11px] text-ink3 mt-0.5 block">按標準份量估計</span>
+                              )}
                               {(item.nutrients || item.protein !== undefined) && (
                                 <div className="flex gap-3 mt-1">
                                   {(item.nutrients?.protein ?? item.protein) !== undefined && (
