@@ -134,8 +134,8 @@ function SummaryCard({ category, loading, summary, t }) {
         <NutrientBar
           key={n.key}
           label={t(n.labelKey) !== n.labelKey ? t(n.labelKey) : n.key}
-          actual={summary?.[n.key] ?? 0}
-          target={summary?.targets?.[n.key] ?? 0}
+          actual={summary?.nutrients?.[n.key]?.actual ?? 0}
+          target={summary?.nutrients?.[n.key]?.target ?? 0}
           unit={n.unit}
         />
       ))}
@@ -184,7 +184,7 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 function MealGroup({ mealType, entries, t, onEntryClick }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const totalCal = entries.reduce((sum, e) => {
-    const c = e.foods?.reduce((s, f) => s + (f.calories ?? 0), 0) ?? e.calories ?? 0
+    const c = e.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? e.calories ?? 0
     return sum + c
   }, 0)
 
@@ -197,7 +197,7 @@ function MealGroup({ mealType, entries, t, onEntryClick }) {
       {entries.map((entry) => {
         const names = entry.foods?.map((f) => f.name).join(', ') ?? entry.rawText ?? '—'
         const cal =
-          entry.foods?.reduce((s, f) => s + (f.calories ?? 0), 0) ?? entry.calories ?? 0
+          entry.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? entry.calories ?? 0
         return (
           <button
             key={entry._id}
@@ -363,8 +363,8 @@ export default function NutritionTracker() {
   // ── Compute calorie subtitle ──────────────────────────────────────────────
   const calSub = (() => {
     if (summaryLoading || categoryLoading) return t('nutritionSub')
-    const actual = summary?.calories ?? 0
-    const target = summary?.targets?.calories ?? 0
+    const actual = summary?.nutrients?.calories?.actual ?? 0
+    const target = summary?.nutrients?.calories?.target ?? 0
     if (!target) return t('nutritionSub')
     return `${actual.toLocaleString()} / ${target.toLocaleString()} kcal`
   })()
