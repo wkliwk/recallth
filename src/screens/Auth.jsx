@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
@@ -37,6 +37,54 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
 
   const isLogin = mode === 'login'
+
+  const googleBtnRef = useRef(null)
+  const [googleReady, setGoogleReady] = useState(false)
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
+  const handleGoogleCredential = useCallback(async ({ credential }) => {
+    setError('')
+    setLoading(true)
+    try {
+      const res = await api.auth.googleSignIn(credential)
+      setAuth(res.data.token, res.data.email)
+      navigate('/home')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [setAuth, navigate])
+
+  useEffect(() => {
+    if (!googleClientId || !googleBtnRef.current) return
+
+    const renderBtn = () => {
+      if (!window.google?.accounts?.id) return
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential,
+      })
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        size: 'large',
+        text: 'continue_with',
+        width: googleBtnRef.current.offsetWidth || 400,
+      })
+      setGoogleReady(true)
+    }
+
+    if (window.google?.accounts?.id) {
+      renderBtn()
+    } else {
+      const script = document.createElement('script')
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      script.onload = renderBtn
+      document.head.appendChild(script)
+    }
+  }, [googleClientId, handleGoogleCredential])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -112,20 +160,27 @@ export default function Auth() {
           </div>
 
           {/* Google SSO */}
-          <button
-            type="button"
-            disabled
-            className="w-full flex items-center justify-center gap-3 border border-border rounded-[14px] py-[13px] bg-white text-[15px] font-medium text-ink1 hover:bg-sand transition-colors cursor-pointer mb-5 disabled:opacity-60"
-            title={t('authComingSoon')}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-              <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-              <path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
-              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-            </svg>
-            {t('authContinueGoogle')}
-          </button>
+          {googleClientId ? (
+            <div
+              ref={googleBtnRef}
+              className={`w-full mb-5 flex justify-center min-h-[44px] ${!googleReady ? 'animate-pulse bg-sand rounded-[14px]' : ''}`}
+            />
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="w-full flex items-center justify-center gap-3 border border-border rounded-[14px] py-[13px] bg-white text-[15px] font-medium text-ink1 mb-5 disabled:opacity-60"
+              title={t('authComingSoon')}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+                <path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+              </svg>
+              {t('authContinueGoogle')}
+            </button>
+          )}
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">

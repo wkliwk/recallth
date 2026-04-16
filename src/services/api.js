@@ -28,6 +28,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
+    googleSignIn: (idToken) =>
+      request('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      }),
   },
   cabinet: {
     list: () => request('/cabinet'),
