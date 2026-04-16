@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
@@ -68,6 +68,45 @@ function Field({ label, value, onChange }) {
     </div>
   )
 }
+
+function SelectField({ label, value, onChange, options }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] uppercase tracking-[0.08em] text-ink3 font-medium">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none bg-white border border-border-md rounded-[10px] px-3 py-[8px] text-[13px] text-ink1 outline-none focus:border-orange-md transition-colors cursor-pointer"
+        >
+          <option value="">—</option>
+          {options.map(({ value: v, label: l }) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+        <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+const SEX_OPTIONS = [
+  { value: 'male',   label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other',  label: 'Other' },
+]
+
+const ACTIVITY_OPTIONS = [
+  { value: 'sedentary',   label: 'Sedentary (little/no exercise)' },
+  { value: 'light',       label: 'Lightly active (1–3x/week)' },
+  { value: 'moderate',    label: 'Moderately active (3–5x/week)' },
+  { value: 'active',      label: 'Active (6–7x/week)' },
+  { value: 'very_active', label: 'Very active (2x/day)' },
+]
 
 function EditActions({ saving, error, onSave, onCancel }) {
   const { t } = useLanguage()
@@ -173,7 +212,8 @@ function AboutSection({ data, onSave }) {
           <Field label={t('fieldAge')} value={draft.age} onChange={(v) => set('age', v)} />
           <Field label={t('fieldHeight')} value={draft.height} onChange={(v) => set('height', v)} />
           <Field label={t('fieldWeight')} value={draft.weight} onChange={(v) => set('weight', v)} />
-          <Field label={t('fieldGender')} value={draft.gender} onChange={(v) => set('gender', v)} />
+          <SelectField label="Sex" value={draft.sex} onChange={(v) => set('sex', v)} options={SEX_OPTIONS} />
+          <SelectField label="Activity level" value={draft.activityLevel} onChange={(v) => set('activityLevel', v)} options={ACTIVITY_OPTIONS} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
@@ -181,7 +221,8 @@ function AboutSection({ data, onSave }) {
           <ReadRow label={t('fieldAge')} value={data.age} />
           <ReadRow label={t('fieldHeight')} value={data.height} />
           <ReadRow label={t('fieldWeight')} value={data.weight} />
-          <ReadRow label={t('fieldGender')} value={data.gender} />
+          <ReadRow label="Sex" value={SEX_OPTIONS.find((o) => o.value === data.sex)?.label ?? data.sex} />
+          <ReadRow label="Activity level" value={ACTIVITY_OPTIONS.find((o) => o.value === data.activityLevel)?.label ?? data.activityLevel} />
         </div>
       )}
     </ProfileSection>
@@ -447,8 +488,199 @@ function LifestyleSection({ data, onSave }) {
   )
 }
 
+// ── Security section ───────────────────────────────────────────────────────
+function StatusBadge({ label }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 bg-[#EAF7EE] text-[#2E7D4F] border border-[#B6DFC5] rounded-full px-3 py-[5px] text-[12px] font-medium">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      {label}
+    </span>
+  )
+}
+
+function SetPasswordCard() {
+  const [newPw, setNewPw]         = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState(null)
+  const [done, setDone]           = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    if (newPw.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    if (newPw !== confirmPw) {
+      setError('Passwords do not match.')
+      return
+    }
+    setSaving(true)
+    try {
+      await api.auth.setPassword(newPw)
+      setDone(true)
+    } catch (err) {
+      setError(err.message ?? 'Failed to set password.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="bg-white border border-border rounded-[20px] p-5">
+        <p className="text-[13px] font-medium text-ink2 mb-3">Password</p>
+        <StatusBadge label="Password set" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-border rounded-[20px] p-5">
+      <p className="text-[13px] font-medium text-ink2 mb-1">Set a password</p>
+      <p className="text-[11px] text-ink3 mb-4">Add a password so you can also sign in with email.</p>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-[6px]">
+          <label className="text-[13px] font-medium text-ink2">New password</label>
+          <input
+            type="password"
+            placeholder="Min. 8 characters"
+            value={newPw}
+            onChange={(e) => setNewPw(e.target.value)}
+            className="border border-border rounded-[14px] px-4 py-[13px] text-[15px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors bg-white"
+          />
+        </div>
+        <div className="flex flex-col gap-[6px]">
+          <label className="text-[13px] font-medium text-ink2">Confirm password</label>
+          <input
+            type="password"
+            placeholder="Repeat password"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            className="border border-border rounded-[14px] px-4 py-[13px] text-[15px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors bg-white"
+          />
+        </div>
+        {error && (
+          <p className="text-[13px] text-[#C05A28] bg-[#FDE8DE] border border-[#E8C4B0] rounded-[10px] px-4 py-3">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-pill bg-orange text-white py-[15px] text-[14px] font-medium disabled:opacity-60 cursor-pointer"
+        >
+          {saving ? 'Saving…' : 'Set password'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+function LinkGoogleCard() {
+  const googleBtnRef  = useRef(null)
+  const [linked, setLinked]   = useState(false)
+  const [error, setError]     = useState(null)
+  const [loading, setLoading] = useState(false)
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
+  const handleCredential = useCallback(async ({ credential }) => {
+    setError(null)
+    setLoading(true)
+    try {
+      await api.auth.linkGoogle(credential)
+      setLinked(true)
+    } catch (err) {
+      setError(err.message ?? 'Failed to link Google account.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (linked || !googleClientId || !googleBtnRef.current) return
+
+    const renderBtn = () => {
+      if (!window.google?.accounts?.id) return
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredential,
+      })
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        size: 'large',
+        text: 'signin_with',
+        width: googleBtnRef.current.offsetWidth || 400,
+      })
+    }
+
+    if (window.google?.accounts?.id) {
+      renderBtn()
+    } else {
+      const script = document.createElement('script')
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      script.onload = renderBtn
+      document.head.appendChild(script)
+    }
+  }, [linked, googleClientId, handleCredential])
+
+  if (linked) {
+    return (
+      <div className="bg-white border border-border rounded-[20px] p-5">
+        <p className="text-[13px] font-medium text-ink2 mb-3">Google</p>
+        <StatusBadge label="Google linked" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-border rounded-[20px] p-5">
+      <p className="text-[13px] font-medium text-ink2 mb-1">Link Google account</p>
+      <p className="text-[11px] text-ink3 mb-4">Sign in faster with Google on this device.</p>
+      {loading && <p className="text-[12px] text-ink3 mb-3">Linking…</p>}
+      {error && (
+        <p className="text-[13px] text-[#C05A28] bg-[#FDE8DE] border border-[#E8C4B0] rounded-[10px] px-4 py-3 mb-3">
+          {error}
+        </p>
+      )}
+      {googleClientId ? (
+        <div ref={googleBtnRef} className="w-full flex justify-center min-h-[44px]" />
+      ) : (
+        <p className="text-[12px] text-ink4">Google Sign-In is not configured.</p>
+      )}
+    </div>
+  )
+}
+
+function SecuritySection({ hasPassword, googleLinked }) {
+  const bothSet = hasPassword && googleLinked
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[11px] uppercase tracking-[0.08em] text-ink3 font-medium px-1">Security</p>
+
+      {bothSet ? (
+        <div className="bg-white border border-border rounded-[20px] p-5 flex gap-3 flex-wrap">
+          <StatusBadge label="Password set" />
+          <StatusBadge label="Google linked" />
+        </div>
+      ) : (
+        <>
+          {!hasPassword  && <SetPasswordCard />}
+          {!googleLinked && <LinkGoogleCard />}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Empty state fallbacks ──────────────────────────────────────────────────
-const EMPTY_BODY       = { weight: '', height: '', age: '', gender: '' }
+const EMPTY_BODY       = { weight: '', height: '', age: '', sex: '', activityLevel: '' }
 const EMPTY_GOALS      = { primary: [], primaryGoal: '' }
 const EMPTY_EXERCISE   = { frequency: '', type: '', fitnessLevel: '' }
 const EMPTY_DIET       = { restrictions: [], allergies: [] }
@@ -466,6 +698,8 @@ export default function Profile() {
   const [conflictCount, setConflictCount] = useState('—')
   const [streakDays, setStreakDays]   = useState('—')
   const [loadError, setLoadError]     = useState(null)
+  const [hasPassword, setHasPassword]   = useState(null)
+  const [googleLinked, setGoogleLinked] = useState(null)
 
   const displayName   = email ? email.split('@')[0] : 'You'
   const avatarLetter  = displayName.charAt(0).toUpperCase()
@@ -473,11 +707,12 @@ export default function Profile() {
   useEffect(() => {
     async function load() {
       try {
-        const [profileRes, cabinetRes, interactionsRes, streakRes] = await Promise.allSettled([
+        const [profileRes, cabinetRes, interactionsRes, streakRes, meRes] = await Promise.allSettled([
           api.profile.get(),
           api.cabinet.list(),
           api.cabinet.interactions(),
           api.intake.streak(),
+          api.auth.me(),
         ])
 
         if (profileRes.status === 'fulfilled') {
@@ -498,6 +733,12 @@ export default function Profile() {
 
         if (streakRes.status === 'fulfilled') {
           setStreakDays(`${streakRes.value?.currentStreak ?? 0}d`)
+        }
+
+        if (meRes.status === 'fulfilled') {
+          const meData = meRes.value?.data ?? meRes.value
+          setHasPassword(meData?.hasPassword ?? false)
+          setGoogleLinked(meData?.googleLinked ?? false)
         }
       } catch {
         setLoadError('Could not load profile data')
@@ -582,6 +823,13 @@ export default function Profile() {
       <div className="px-5 mt-6">
         <LanguageSelector />
       </div>
+
+      {/* Security */}
+      {hasPassword !== null && (
+        <div className="px-5 mt-6">
+          <SecuritySection hasPassword={hasPassword} googleLinked={googleLinked} />
+        </div>
+      )}
 
       {/* Logout */}
       <div className="px-5 mt-4">

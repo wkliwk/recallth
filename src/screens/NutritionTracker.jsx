@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+} from '@dnd-kit/core'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import FAB from '../components/FAB'
@@ -89,6 +99,21 @@ const CATEGORY_NUTRIENTS = {
 }
 
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack']
+
+const MEAL_TYPE_KEYWORDS = [
+  { type: 'breakfast', words: ['早餐', '早飯', '早午餐', 'breakfast', '早'] },
+  { type: 'lunch',     words: ['午餐', '午飯', 'lunch'] },
+  { type: 'dinner',    words: ['晚餐', '晚飯', 'dinner', '晚'] },
+  { type: 'snack',     words: ['下午茶', '茶餐', '小食', 'snack', '宵夜', '下午'] },
+]
+
+function detectMealType(text) {
+  const lower = text.toLowerCase()
+  for (const { type, words } of MEAL_TYPE_KEYWORDS) {
+    if (words.some((w) => lower.includes(w.toLowerCase()))) return type
+  }
+  return 'snack'
+}
 
 const LOG_METRICS = [
   { key: 'calories', label: 'kcal', unit: 'kcal' },
@@ -208,6 +233,68 @@ function ParsedFoodRow({ food, checked, onToggle }) {
   )
 }
 
+// ── Algorithm explanation card ────────────────────────────────────────────────
+function AlgorithmCard({ summary, navigate }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  const basis = summary?.targetBasis
+  const f = summary?.formula
+
+  return (
+    <div className="rounded-[14px] border border-border bg-white overflow-hidden shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 focus:outline-none"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
+            <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span className="text-[12px] font-semibold text-ink1">{t('nutritionAlgoTitle')}</span>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 border-t border-border text-[12px] leading-relaxed">
+          {basis === 'personalised' && f ? (
+            <div className="flex flex-col gap-[6px] pt-3">
+              <p className="text-[11px] font-semibold text-orange uppercase tracking-wide mb-1">{t('nutritionAlgoPersonalised')}</p>
+              <div className="bg-sand/60 rounded-[10px] p-3 flex flex-col gap-[5px] font-mono text-[11px] text-ink2">
+                <p>BMR = 10×{f.weightKg}kg + 6.25×{f.heightCm}cm − 5×{f.age} {f.sex === 'male' ? '+ 5' : '− 161'}</p>
+                <p className="font-semibold text-ink1">BMR = {f.bmr} kcal</p>
+                <p className="mt-1">TDEE = {f.bmr} × {f.activityMultiplier} ({f.activityLevel.replace('_', ' ')})</p>
+                <p className="font-semibold text-ink1">TDEE = {f.tdee} kcal</p>
+                <p className="mt-1">Calorie target = {f.tdee} {f.calorieAdjustmentLabel}</p>
+                <p className="font-semibold text-ink1">= {f.calorieTarget} kcal/day</p>
+                <p className="mt-1">Protein = {f.weightKg}kg × factor</p>
+                <p className="font-semibold text-ink1">= {f.proteinTarget}g/day</p>
+              </div>
+              <p className="text-[10px] text-ink3 mt-1">{t('nutritionAlgoUpdateProfile')}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 pt-3">
+              <p className="text-ink2"><strong>{t('nutritionAlgoDefault')}</strong></p>
+              <p className="text-ink3 text-[11px]">{t('nutritionAlgoDefaultSub')}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="mt-1 text-[12px] font-semibold text-orange hover:underline text-left focus:outline-none"
+              >
+                {t('nutritionAlgoCompleteProfile')}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Mobile collapsible calendar ───────────────────────────────────────────────
 function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
   const [open, setOpen] = useState(false)
@@ -256,6 +343,7 @@ function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKe
 const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
+  const { t } = useLanguage()
   const toMonthISO = (iso) => iso.slice(0, 7) + '-01'
   const [calMonth, setCalMonth] = useState(() => toMonthISO(viewDate))
   const [recordDays, setRecordDays] = useState(new Set())
@@ -374,11 +462,11 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
       <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border">
         <div className="flex items-center gap-1">
           <span className="w-[8px] h-[8px] rounded-full bg-orange inline-block" />
-          <span className="text-[10px] text-ink3">Has record</span>
+          <span className="text-[10px] text-ink3">{t('nutritionCalHasRecord')}</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-[8px] h-[8px] rounded-full bg-orange inline-block ring-[1.5px] ring-orange ring-offset-1" />
-          <span className="text-[10px] text-ink3">Today</span>
+          <span className="text-[10px] text-ink3">{t('nutritionCalToday')}</span>
         </div>
       </div>
     </div>
@@ -386,10 +474,22 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories' }) {
+function DraggableEntry({ entry, children }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: entry._id })
+  return (
+    <div ref={setNodeRef} style={{ opacity: isDragging ? 0.4 : 1 }}>
+      {/* Drag handle attached via listeners */}
+      {children({ dragHandleProps: { ...listeners, ...attributes } })}
+    </div>
+  )
+}
+
+function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories', isDropTarget = false }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
+
+  const { setNodeRef } = useDroppable({ id: mealType })
 
   const metricCfg = LOG_METRICS.find((m) => m.key === logMetric) ?? LOG_METRICS[0]
 
@@ -409,8 +509,11 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
   }
 
   return (
-    <div className="rounded-[14px] border border-border bg-white overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-[10px] border-b border-border bg-sand/40">
+    <div
+      ref={setNodeRef}
+      className={`rounded-[14px] border bg-white overflow-hidden transition-colors ${isDropTarget ? 'border-orange shadow-md' : 'border-border'}`}
+    >
+      <div className={`flex items-center justify-between px-4 py-[10px] border-b border-border transition-colors ${isDropTarget ? 'bg-orange/10' : 'bg-sand/40'}`}>
         <p className="text-[13px] font-semibold text-ink1">{label}</p>
         <p className="text-[12px] text-ink3">{totalMetric} {metricCfg.unit}</p>
       </div>
@@ -420,25 +523,46 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
         const isExpanded = expandedId === entry._id
         const isConfirming = confirmingId === entry._id
         return (
-          <div key={entry._id} className="border-b border-border last:border-0">
-            {/* Entry row — tap to expand/collapse */}
-            <button
-              type="button"
-              onClick={() => setExpandedId(isExpanded ? null : entry._id)}
-              className="w-full text-left flex items-center justify-between px-4 py-[11px] hover:bg-sand/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <svg
-                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  className={`shrink-0 text-ink3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                >
-                  <polyline points="6 9 12 15 18 9" />
+          <DraggableEntry key={entry._id} entry={entry}>
+            {({ dragHandleProps }) => (
+          <div className="border-b border-border last:border-0">
+            {/* Entry row — drag handle + tap to expand */}
+            <div className="flex items-center">
+              {/* Drag handle */}
+              <div
+                {...dragHandleProps}
+                className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink4 hover:text-ink3"
+                aria-label={t('nutritionDragHandle')}
+              >
+                <svg width="12" height="14" viewBox="0 0 10 14" fill="currentColor">
+                  <circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/>
+                  <circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/>
+                  <circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/>
                 </svg>
-                <p className="text-[13px] text-ink1 truncate">{names}</p>
               </div>
-              <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
-            </button>
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : entry._id)}
+                className="flex-1 text-left flex items-center justify-between pr-4 py-[11px] hover:bg-sand/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange min-w-0"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    className={`shrink-0 text-ink3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-[13px] text-ink1 truncate">{names}</p>
+                    {entry.rawText && (
+                      <p className="text-[11px] text-ink3 truncate mt-[1px]">{entry.rawText}</p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
+              </button>
+            </div>
 
             {/* Expanded food details */}
             {isExpanded && (
@@ -470,7 +594,7 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
                     </div>
                   )
                 }) : (
-                  <p className="text-[12px] text-ink3 py-2">No food details available</p>
+                  <p className="text-[12px] text-ink3 py-2">{t('nutritionNoFoodDetails')}</p>
                 )}
 
                 {/* Delete — confirm step */}
@@ -486,30 +610,32 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
                       <path d="M10 11v6M14 11v6" />
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
-                    Delete record
+                    {t('nutritionDeleteRecord')}
                   </button>
                 ) : (
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-[12px] text-ink2 flex-1">Delete this entry?</span>
+                    <span className="text-[12px] text-ink2 flex-1">{t('nutritionDeleteEntry')}</span>
                     <button
                       type="button"
                       onClick={() => setConfirmingId(null)}
                       className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-ink2 bg-sand hover:bg-border transition-colors focus:outline-none"
                     >
-                      Cancel
+                      {t('cancelButton')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleConfirmDelete(entry)}
                       className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-white bg-red-500 hover:bg-red-600 transition-colors focus:outline-none"
                     >
-                      Delete
+                      {t('journalDelete')}
                     </button>
                   </div>
                 )}
               </div>
             )}
           </div>
+        )}
+          </DraggableEntry>
         )
       })}
     </div>
@@ -546,17 +672,43 @@ export default function NutritionTracker() {
   const [entriesLoading, setEntriesLoading] = useState(true)
   const [entriesError, setEntriesError] = useState(null)
 
+  // ── Analyser tab: 'ai' | 'manual' ────────────────────────────────────────
+  const [analyserTab, setAnalyserTab] = useState('ai')
+
   // ── AI input state ────────────────────────────────────────────────────────
   const [aiText, setAiText] = useState('')
   const [aiParsing, setAiParsing] = useState(false)
   const [parsedFoods, setParsedFoods] = useState([])
+  const [parsedSuggestions, setParsedSuggestions] = useState([])
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
 
+  // ── Manual entry state ────────────────────────────────────────────────────
+  const [manualName, setManualName] = useState('')
+  const [manualQty, setManualQty] = useState('')
+  const [manualUnit, setManualUnit] = useState('')
+  const [manualMealType, setManualMealType] = useState(() => {
+    const h = new Date().getHours()
+    if (h >= 6 && h < 11) return 'breakfast'
+    if (h >= 11 && h < 15) return 'lunch'
+    if (h >= 17 && h < 22) return 'dinner'
+    return 'snack'
+  })
+  const [manualSaving, setManualSaving] = useState(false)
+  const [manualError, setManualError] = useState(null)
+
   // ── Calendar refresh key (incremented after add/delete to re-fetch dots) ─
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0)
   function bumpCalendar() { setCalendarRefreshKey((k) => k + 1) }
+
+  // ── DnD state ─────────────────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  )
+  const [activeEntryId, setActiveEntryId] = useState(null)
+  const [overMealType, setOverMealType] = useState(null)
 
   // ── Log metric preference (localStorage) ─────────────────────────────────
   const [logMetric, setLogMetric] = useState(
@@ -663,21 +815,83 @@ export default function NutritionTracker() {
     }
   }
 
+  // ── Manual add handler ────────────────────────────────────────────────────
+  async function handleManualAdd() {
+    const name = manualName.trim()
+    if (!name) return
+    setManualSaving(true)
+    setManualError(null)
+    const food = { name, ...(manualQty ? { quantity: Number(manualQty) || manualQty } : {}), ...(manualUnit.trim() ? { unit: manualUnit.trim() } : {}), nutrients: {} }
+    try {
+      await api.nutrition.create({ date: viewDate, mealType: manualMealType, foods: [food], rawText: name })
+      setManualName('')
+      setManualQty('')
+      setManualUnit('')
+      await Promise.all([fetchEntries(), fetchSummary()])
+      bumpCalendar()
+    } catch (err) {
+      setManualError(err?.message ?? 'Failed to save — please try again')
+    } finally {
+      setManualSaving(false)
+    }
+  }
+
+  // ── DnD handlers ──────────────────────────────────────────────────────────
+  function handleDragStart({ active }) {
+    setActiveEntryId(active.id)
+  }
+
+  function handleDragOver({ over }) {
+    setOverMealType(over ? over.id : null)
+  }
+
+  async function handleDragEnd({ active, over }) {
+    setActiveEntryId(null)
+    setOverMealType(null)
+    if (!over) return
+    const newMealType = over.id
+    const entry = entries.find((e) => e._id === active.id)
+    if (!entry || entry.mealType === newMealType) return
+
+    // Optimistic update — move entry immediately in local state
+    const originalMealType = entry.mealType
+    setEntries((prev) =>
+      prev.map((e) => e._id === entry._id ? { ...e, mealType: newMealType } : e)
+    )
+
+    try {
+      await api.nutrition.update(entry._id, { mealType: newMealType })
+      // Refresh summary totals in background (no spinner needed)
+      fetchSummary().catch(() => {})
+    } catch {
+      // Revert on failure
+      setEntries((prev) =>
+        prev.map((e) => e._id === entry._id ? { ...e, mealType: originalMealType } : e)
+      )
+    }
+  }
+
   // ── AI parse handler ──────────────────────────────────────────────────────
   async function handleAiParse() {
     if (!aiText.trim()) return
     setAiParsing(true)
     setAiError(null)
     setParsedFoods([])
+    setParsedSuggestions([])
     setCheckedFoods(new Set())
     try {
       const res = await api.nutrition.aiParse(aiText.trim(), category)
       const foods = res?.data?.foods ?? res?.foods ?? []
-      setParsedFoods(Array.isArray(foods) ? foods : [])
-      setCheckedFoods(new Set((Array.isArray(foods) ? foods : []).map((f) => f.name)))
+      const suggestions = res?.data?.suggestions ?? []
+      const foodList = Array.isArray(foods) ? foods : []
+      const suggList = Array.isArray(suggestions) ? suggestions : []
+      setParsedFoods(foodList)
+      setParsedSuggestions(suggList)
+      // Confirmed foods checked by default; suggestions unchecked
+      setCheckedFoods(new Set(foodList.map((f) => f.name)))
       if (res?.aiUsage) showUsage(res.aiUsage, 'nutrition-parse', {
         input: aiText.trim(),
-        output: (Array.isArray(foods) ? foods : []).map(f => f.name).join(', '),
+        output: foodList.map(f => f.name).join(', '),
       })
     } catch (err) {
       setAiError(err?.message ?? 'Failed to parse — please try again')
@@ -701,18 +915,20 @@ export default function NutritionTracker() {
 
   // ── Add to log ────────────────────────────────────────────────────────────
   async function handleAddToLog() {
-    const selected = parsedFoods.filter((f) => checkedFoods.has(f.name))
+    const allItems = [...parsedFoods, ...parsedSuggestions]
+    const selected = allItems.filter((f) => checkedFoods.has(f.name))
     if (selected.length === 0) return
     setAddingToLog(true)
     try {
       await api.nutrition.create({
         date: viewDate,
-        mealType: 'snack',
+        mealType: detectMealType(aiText),
         foods: selected,
         rawText: aiText.trim(),
       })
       setAiText('')
       setParsedFoods([])
+      setParsedSuggestions([])
       setCheckedFoods(new Set())
       await Promise.all([fetchEntries(), fetchSummary()])
       bumpCalendar()
@@ -845,71 +1061,178 @@ export default function NutritionTracker() {
               t={t}
               dateLabel={dateLabel}
             />
+            <AlgorithmCard summary={summary} navigate={navigate} />
           </div>
 
           {/* ── RIGHT: AI Analyser + Today's log ── */}
           <div className="flex flex-col gap-5">
 
-            {/* AI input section */}
-            <div className="rounded-[14px] border border-border bg-white px-5 py-5 md:px-6 md:py-6 shadow-sm">
-              <p className="text-[14px] md:text-[16px] font-semibold text-ink1 mb-3">AI Food Analyser</p>
-
-              <textarea
-                value={aiText}
-                onChange={(e) => setAiText(e.target.value)}
-                placeholder={t('nutritionAiPlaceholder')}
-                rows={3}
-                disabled={aiParsing}
-                className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
-              />
-
-              <button
-                type="button"
-                onClick={handleAiParse}
-                disabled={aiParsing || !aiText.trim()}
-                className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-              >
-                {aiParsing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    {t('nutritionAiParsing')}
-                  </span>
-                ) : (
-                  'Analyse'
-                )}
-              </button>
-
-              {aiError && (
-                <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">
-                  {aiError}
-                </p>
-              )}
-
-              {parsedFoods.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-[12px] font-medium text-ink2 mb-1">
-                    {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
-                  </p>
-                  <div className="border border-border rounded-[10px] overflow-hidden">
-                    {parsedFoods.map((food) => (
-                      <ParsedFoodRow
-                        key={food.name}
-                        food={food}
-                        checked={checkedFoods.has(food.name)}
-                        onToggle={toggleFood}
-                      />
-                    ))}
-                  </div>
+            {/* AI / Manual analyser section */}
+            <div className="rounded-[14px] border border-border bg-white shadow-sm overflow-hidden">
+              {/* Tab bar */}
+              <div className="flex border-b border-border">
+                {[{ key: 'ai', labelKey: 'nutritionTabAI' }, { key: 'manual', labelKey: 'nutritionTabManual' }].map(({ key, labelKey }) => (
                   <button
+                    key={key}
                     type="button"
-                    onClick={handleAddToLog}
-                    disabled={addingToLog || checkedFoods.size === 0}
-                    className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    onClick={() => setAnalyserTab(key)}
+                    className={[
+                      'flex-1 py-[11px] text-[13px] font-semibold transition-colors focus:outline-none',
+                      analyserTab === key
+                        ? 'text-orange border-b-2 border-orange -mb-px bg-white'
+                        : 'text-ink3 hover:text-ink2 bg-sand/30',
+                    ].join(' ')}
                   >
-                    {addingToLog ? 'Adding…' : t('nutritionConfirm')}
+                    {t(labelKey)}
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
+
+              <div className="px-5 py-5 md:px-6 md:py-6">
+                {analyserTab === 'ai' ? (
+                  <>
+                    <textarea
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      placeholder={t('nutritionAiPlaceholder')}
+                      rows={3}
+                      disabled={aiParsing}
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAiParse}
+                      disabled={aiParsing || !aiText.trim()}
+                      className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    >
+                      {aiParsing ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          {t('nutritionAiParsing')}
+                        </span>
+                      ) : (
+                        t('nutritionAiAnalyse')
+                      )}
+                    </button>
+                    {aiError && (
+                      <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>
+                    )}
+                    {parsedFoods.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-[12px] font-medium text-ink2 mb-1">
+                          {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
+                        </p>
+                        <div className="border border-border rounded-[10px] overflow-hidden">
+                          {parsedFoods.map((food) => (
+                            <ParsedFoodRow
+                              key={food.name}
+                              food={food}
+                              checked={checkedFoods.has(food.name)}
+                              onToggle={toggleFood}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Drink / add-on suggestions */}
+                        {parsedSuggestions.length > 0 && (
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" /><line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" />
+                              </svg>
+                              <p className="text-[12px] font-medium text-ink2">{t('nutritionChooseDrink')}</p>
+                            </div>
+                            <div className="border border-orange/30 rounded-[10px] overflow-hidden bg-orange/5">
+                              {parsedSuggestions.map((food) => (
+                                <ParsedFoodRow
+                                  key={food.name}
+                                  food={food}
+                                  checked={checkedFoods.has(food.name)}
+                                  onToggle={toggleFood}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleAddToLog}
+                          disabled={addingToLog || checkedFoods.size === 0}
+                          className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                        >
+                          {addingToLog ? t('nutritionAdding') : t('nutritionConfirm')}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* ── Manual entry form ── */
+                  <div className="flex flex-col gap-3">
+                    {/* Meal type pills */}
+                    <div className="flex gap-2 flex-wrap">
+                      {MEAL_ORDER.map((mt) => (
+                        <button
+                          key={mt}
+                          type="button"
+                          onClick={() => setManualMealType(mt)}
+                          aria-pressed={manualMealType === mt}
+                          className={[
+                            'px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
+                            manualMealType === mt
+                              ? 'bg-orange text-white'
+                              : 'bg-sand text-ink2 hover:bg-orange/10',
+                          ].join(' ')}
+                        >
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Food name */}
+                    <input
+                      type="text"
+                      value={manualName}
+                      onChange={(e) => setManualName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualAdd()}
+                      placeholder={t('nutritionManualNamePlaceholder')}
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                    />
+
+                    {/* Quantity + unit */}
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={manualQty}
+                        onChange={(e) => setManualQty(e.target.value)}
+                        placeholder={t('nutritionManualQtyPlaceholder')}
+                        min="0"
+                        className="w-[80px] border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                      />
+                      <input
+                        type="text"
+                        value={manualUnit}
+                        onChange={(e) => setManualUnit(e.target.value)}
+                        placeholder={t('nutritionManualUnitPlaceholder')}
+                        className="flex-1 border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                      />
+                    </div>
+
+                    {manualError && (
+                      <p className="text-[12px] text-[#E11D48]" role="alert">{manualError}</p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleManualAdd}
+                      disabled={manualSaving || !manualName.trim()}
+                      className="w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    >
+                      {manualSaving ? t('nutritionManualSaving') : t('nutritionManualAdd')}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Today's food log */}
@@ -973,18 +1296,36 @@ export default function NutritionTracker() {
                   <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
-                    <MealGroup
-                      key={mt}
-                      mealType={mt}
-                      entries={mealGroups[mt]}
-                      t={t}
-                      onRequestDelete={handleRequestDelete}
-                      logMetric={logMetric}
-                    />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={sensors}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="flex flex-col gap-3">
+                    {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                      <MealGroup
+                        key={mt}
+                        mealType={mt}
+                        entries={mealGroups[mt]}
+                        t={t}
+                        onRequestDelete={handleRequestDelete}
+                        logMetric={logMetric}
+                        isDropTarget={overMealType === mt}
+                      />
+                    ))}
+                  </div>
+                  <DragOverlay>
+                    {activeEntryId ? (
+                      <div className="rounded-[10px] bg-white border border-orange shadow-lg px-4 py-3 text-[13px] font-medium text-ink1 opacity-90">
+                        {(() => {
+                          const e = entries.find((x) => x._id === activeEntryId)
+                          return e?.foods?.map((f) => f.name).join(', ') ?? e?.rawText ?? '…'
+                        })()}
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
               )}
             </div>
 
@@ -1006,13 +1347,13 @@ export default function NutritionTracker() {
           className="fixed bottom-[80px] md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-40px)] max-w-[400px] rounded-[12px] bg-[#1C1C1E] shadow-xl overflow-hidden"
         >
           <div className="flex items-center justify-between px-4 py-[13px]">
-            <span className="text-[13px] font-medium text-white">Entry deleted</span>
+            <span className="text-[13px] font-medium text-white">{t('nutritionEntryDeleted')}</span>
             <button
               type="button"
               onClick={handleUndoDelete}
               className="text-[13px] font-semibold text-orange ml-4 focus:outline-none focus-visible:underline"
             >
-              Undo
+              {t('nutritionUndo')}
             </button>
           </div>
           <div className="h-[3px] bg-white/10">
