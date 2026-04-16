@@ -5,6 +5,7 @@ import Wave from '../components/Wave'
 import FAB from '../components/FAB'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useAiUsage } from '../context/AiUsageContext'
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function todayISO() {
@@ -448,10 +449,10 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
                   const carbs = food.nutrients?.carbs ?? food.carbs
                   const fat = food.nutrients?.fat ?? food.fat
                   const macros = [
-                    protein != null && `P ${protein}g`,
-                    carbs != null && `C ${carbs}g`,
-                    fat != null && `F ${fat}g`,
-                  ].filter(Boolean).join('  ')
+                    protein != null && `${t('nutritionProtein')} ${protein}g`,
+                    carbs != null && `${t('nutritionCarbs')} ${carbs}g`,
+                    fat != null && `${t('nutritionFat')} ${fat}g`,
+                  ].filter(Boolean).join(' · ')
                   return (
                     <div key={food.name ?? idx} className="flex items-start justify-between gap-3 py-[6px] border-b border-border/50 last:border-0">
                       <div className="min-w-0">
@@ -519,6 +520,7 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
 export default function NutritionTracker() {
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { showUsage } = useAiUsage()
   const todayStr = todayISO()
   const [viewDate, setViewDate] = useState(todayStr)
   const dateLabel = formatDateLabel(viewDate)
@@ -673,6 +675,10 @@ export default function NutritionTracker() {
       const foods = res?.data?.foods ?? res?.foods ?? []
       setParsedFoods(Array.isArray(foods) ? foods : [])
       setCheckedFoods(new Set((Array.isArray(foods) ? foods : []).map((f) => f.name)))
+      if (res?.aiUsage) showUsage(res.aiUsage, 'nutrition-parse', {
+        input: aiText.trim(),
+        output: (Array.isArray(foods) ? foods : []).map(f => f.name).join(', '),
+      })
     } catch (err) {
       setAiError(err?.message ?? 'Failed to parse — please try again')
     } finally {

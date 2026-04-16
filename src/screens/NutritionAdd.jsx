@@ -4,6 +4,7 @@ import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useAiUsage } from '../context/AiUsageContext'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -95,6 +96,7 @@ export default function NutritionAdd() {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useLanguage()
+  const { showUsage } = useAiUsage()
   const entryDate = location.state?.date ?? todayISO()
 
   // ── Form state ───────────────────────────────────────────────────────
@@ -216,6 +218,9 @@ export default function NutritionAdd() {
         const res = await api.nutrition.ocr(base64, mimeType)
         const item = res?.data?.food ?? res?.data ?? res
         setPhotoResult(item)
+        if (res?.aiUsage) showUsage(res.aiUsage, 'nutrition-ocr', {
+          output: item?.name ? `${item.name}${item.calories ? ` · ${item.calories} kcal` : ''}` : undefined,
+        })
       } catch (err) {
         setPhotoError(err.message || 'Failed to read the photo — please try again.')
       } finally {
