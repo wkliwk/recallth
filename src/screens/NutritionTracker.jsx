@@ -89,6 +89,21 @@ const CATEGORY_NUTRIENTS = {
 
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack']
 
+const MEAL_TYPE_KEYWORDS = [
+  { type: 'breakfast', words: ['早餐', '早飯', '早午餐', 'breakfast', '早'] },
+  { type: 'lunch',     words: ['午餐', '午飯', 'lunch'] },
+  { type: 'dinner',    words: ['晚餐', '晚飯', 'dinner', '晚'] },
+  { type: 'snack',     words: ['下午茶', '茶餐', '小食', 'snack', '宵夜', '下午'] },
+]
+
+function detectMealType(text) {
+  const lower = text.toLowerCase()
+  for (const { type, words } of MEAL_TYPE_KEYWORDS) {
+    if (words.some((w) => lower.includes(w.toLowerCase()))) return type
+  }
+  return 'snack'
+}
+
 const LOG_METRICS = [
   { key: 'calories', label: 'kcal', unit: 'kcal' },
   { key: 'protein', label: 'Protein', unit: 'g' },
@@ -434,7 +449,12 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-                <p className="text-[13px] text-ink1 truncate">{names}</p>
+                <div className="min-w-0">
+                  <p className="text-[13px] text-ink1 truncate">{names}</p>
+                  {entry.rawText && (
+                    <p className="text-[11px] text-ink3 truncate mt-[1px]">{entry.rawText}</p>
+                  )}
+                </div>
               </div>
               <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
             </button>
@@ -701,7 +721,7 @@ export default function NutritionTracker() {
     try {
       await api.nutrition.create({
         date: viewDate,
-        mealType: 'snack',
+        mealType: detectMealType(aiText),
         foods: selected,
         rawText: aiText.trim(),
       })
