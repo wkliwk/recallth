@@ -159,13 +159,18 @@ function ParsedFoodRow({ food, checked, onToggle }) {
         className="mt-[2px] w-4 h-4 accent-orange cursor-pointer shrink-0"
       />
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-ink1 leading-snug">{food.name}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-[13px] font-medium text-ink1 leading-snug">{food.name}</p>
+          {(food.quantity != null || food.unit) && (
+            <span className="text-[11px] text-ink3 shrink-0">{food.quantity} {food.unit}</span>
+          )}
+        </div>
         <p className="text-[11px] text-ink3 mt-[2px]">
           {[
-            food.calories != null && `${food.calories} kcal`,
-            food.protein != null && `${food.protein}g protein`,
-            food.carbs != null && `${food.carbs}g carbs`,
-            food.fat != null && `${food.fat}g fat`,
+            (food.nutrients?.calories ?? food.calories) != null && `${food.nutrients?.calories ?? food.calories} kcal`,
+            (food.nutrients?.protein ?? food.protein) != null && `${food.nutrients?.protein ?? food.protein}g protein`,
+            (food.nutrients?.carbs ?? food.carbs) != null && `${food.nutrients?.carbs ?? food.carbs}g carbs`,
+            (food.nutrients?.fat ?? food.fat) != null && `${food.nutrients?.fat ?? food.fat}g fat`,
           ]
             .filter(Boolean)
             .join(' · ')}
