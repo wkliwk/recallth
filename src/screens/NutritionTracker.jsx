@@ -181,25 +181,24 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function MealGroup({ mealType, entries, t, onDelete }) {
+function MealGroup({ mealType, entries, t, onRequestDelete }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [confirmingId, setConfirmingId] = useState(null)
 
   const totalCal = entries.reduce((sum, e) => {
     const c = e.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? e.calories ?? 0
     return sum + c
   }, 0)
 
-  async function handleDelete(entryId) {
-    setDeletingId(entryId)
-    try {
-      await api.nutrition.remove(entryId)
-      setExpandedId(null)
-      onDelete?.()
-    } finally {
-      setDeletingId(null)
-    }
+  function handleDeleteClick(entry) {
+    setConfirmingId(entry._id)
+  }
+
+  function handleConfirmDelete(entry) {
+    setConfirmingId(null)
+    setExpandedId(null)
+    onRequestDelete?.(entry)
   }
 
   return (
@@ -213,7 +212,7 @@ function MealGroup({ mealType, entries, t, onDelete }) {
         const cal =
           entry.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? entry.calories ?? 0
         const isExpanded = expandedId === entry._id
-        const isDeleting = deletingId === entry._id
+        const isConfirming = confirmingId === entry._id
         return (
           <div key={entry._id} className="border-b border-border last:border-0">
             {/* Entry row — tap to expand/collapse */}
@@ -268,25 +267,40 @@ function MealGroup({ mealType, entries, t, onDelete }) {
                   <p className="text-[12px] text-ink3 py-2">No food details available</p>
                 )}
 
-                {/* Delete button */}
-                <button
-                  type="button"
-                  onClick={() => handleDelete(entry._id)}
-                  disabled={isDeleting}
-                  className="mt-2 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                >
-                  {isDeleting ? (
-                    <span className="w-[12px] h-[12px] border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
-                  ) : (
+                {/* Delete — confirm step */}
+                {!isConfirming ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(entry)}
+                    className="mt-2 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                       <path d="M10 11v6M14 11v6" />
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
-                  )}
-                  {isDeleting ? 'Deleting…' : 'Delete record'}
-                </button>
+                    Delete record
+                  </button>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-[12px] text-ink2 flex-1">Delete this entry?</span>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(null)}
+                      className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-ink2 bg-sand hover:bg-border transition-colors focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmDelete(entry)}
+                      className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-white bg-red-500 hover:bg-red-600 transition-colors focus:outline-none"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -322,6 +336,10 @@ export default function NutritionTracker() {
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
+
+  // ── Pending delete (undo) state ───────────────────────────────────────────
+  const [pendingDelete, setPendingDelete] = useState(null)
+  // { entry, timerId }
 
   // ── Fetch category on mount ───────────────────────────────────────────────
   useEffect(() => {
@@ -376,6 +394,32 @@ export default function NutritionTracker() {
     fetchSummary()
     fetchEntries()
   }, [fetchSummary, fetchEntries])
+
+  // ── Delete with undo ─────────────────────────────────────────────────────
+  function handleRequestDelete(entry) {
+    // Cancel any existing pending delete first
+    if (pendingDelete) {
+      clearTimeout(pendingDelete.timerId)
+      api.nutrition.remove(pendingDelete.entry._id).then(() => {
+        fetchEntries()
+        fetchSummary()
+      }).catch(() => {})
+    }
+    const timerId = setTimeout(async () => {
+      await api.nutrition.remove(entry._id).catch(() => {})
+      setPendingDelete(null)
+      fetchEntries()
+      fetchSummary()
+    }, 5000)
+    setPendingDelete({ entry, timerId })
+  }
+
+  function handleUndoDelete() {
+    if (!pendingDelete) return
+    clearTimeout(pendingDelete.timerId)
+    setPendingDelete(null)
+    // entry reappears automatically since it's filtered back in
+  }
 
   // ── Category selection handler ────────────────────────────────────────────
   async function handleSelectCategory(cat) {
@@ -451,10 +495,11 @@ export default function NutritionTracker() {
     return `${actual.toLocaleString()} / ${target.toLocaleString()} kcal`
   })()
 
-  // ── Group entries by mealType ─────────────────────────────────────────────
+  // ── Group entries by mealType (hide pending-delete entry) ────────────────
+  const pendingDeleteId = pendingDelete?.entry?._id
   const mealGroups = MEAL_ORDER.reduce((acc, mt) => {
     const group = entries.filter(
-      (e) => (e.mealType ?? '').toLowerCase() === mt
+      (e) => (e.mealType ?? '').toLowerCase() === mt && e._id !== pendingDeleteId
     )
     if (group.length > 0) acc[mt] = group
     return acc
@@ -634,7 +679,7 @@ export default function NutritionTracker() {
                       mealType={mt}
                       entries={mealGroups[mt]}
                       t={t}
-                      onDelete={() => Promise.all([fetchEntries(), fetchSummary()])}
+                      onRequestDelete={handleRequestDelete}
                     />
                   ))}
                 </div>
@@ -649,6 +694,34 @@ export default function NutritionTracker() {
       <div className="md:hidden">
         <FAB onClick={() => navigate('/nutrition/add')} />
       </div>
+
+      {/* ── Undo delete toast ── */}
+      <style>{`@keyframes drainBar { from { width: 100% } to { width: 0% } }`}</style>
+      {pendingDelete && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-[80px] md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-40px)] max-w-[400px] rounded-[12px] bg-[#1C1C1E] shadow-xl overflow-hidden"
+        >
+          <div className="flex items-center justify-between px-4 py-[13px]">
+            <span className="text-[13px] font-medium text-white">Entry deleted</span>
+            <button
+              type="button"
+              onClick={handleUndoDelete}
+              className="text-[13px] font-semibold text-orange ml-4 focus:outline-none focus-visible:underline"
+            >
+              Undo
+            </button>
+          </div>
+          <div className="h-[3px] bg-white/10">
+            <div
+              key={pendingDelete.entry._id}
+              className="h-full bg-orange"
+              style={{ animation: 'drainBar 5s linear forwards' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
