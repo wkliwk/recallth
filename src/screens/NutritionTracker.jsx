@@ -677,6 +677,7 @@ export default function NutritionTracker() {
   const [aiText, setAiText] = useState('')
   const [aiParsing, setAiParsing] = useState(false)
   const [parsedFoods, setParsedFoods] = useState([])
+  const [parsedSuggestions, setParsedSuggestions] = useState([])
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
@@ -874,12 +875,18 @@ export default function NutritionTracker() {
     setAiParsing(true)
     setAiError(null)
     setParsedFoods([])
+    setParsedSuggestions([])
     setCheckedFoods(new Set())
     try {
       const res = await api.nutrition.aiParse(aiText.trim(), category)
       const foods = res?.data?.foods ?? res?.foods ?? []
-      setParsedFoods(Array.isArray(foods) ? foods : [])
-      setCheckedFoods(new Set((Array.isArray(foods) ? foods : []).map((f) => f.name)))
+      const suggestions = res?.data?.suggestions ?? []
+      const foodList = Array.isArray(foods) ? foods : []
+      const suggList = Array.isArray(suggestions) ? suggestions : []
+      setParsedFoods(foodList)
+      setParsedSuggestions(suggList)
+      // Confirmed foods checked by default; suggestions unchecked
+      setCheckedFoods(new Set(foodList.map((f) => f.name)))
     } catch (err) {
       setAiError(err?.message ?? 'Failed to parse — please try again')
     } finally {
@@ -902,7 +909,8 @@ export default function NutritionTracker() {
 
   // ── Add to log ────────────────────────────────────────────────────────────
   async function handleAddToLog() {
-    const selected = parsedFoods.filter((f) => checkedFoods.has(f.name))
+    const allItems = [...parsedFoods, ...parsedSuggestions]
+    const selected = allItems.filter((f) => checkedFoods.has(f.name))
     if (selected.length === 0) return
     setAddingToLog(true)
     try {
@@ -914,6 +922,7 @@ export default function NutritionTracker() {
       })
       setAiText('')
       setParsedFoods([])
+      setParsedSuggestions([])
       setCheckedFoods(new Set())
       await Promise.all([fetchEntries(), fetchSummary()])
       bumpCalendar()
@@ -1117,6 +1126,29 @@ export default function NutritionTracker() {
                             />
                           ))}
                         </div>
+
+                        {/* Drink / add-on suggestions */}
+                        {parsedSuggestions.length > 0 && (
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" /><line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" />
+                              </svg>
+                              <p className="text-[12px] font-medium text-ink2">Choose your drink</p>
+                            </div>
+                            <div className="border border-orange/30 rounded-[10px] overflow-hidden bg-orange/5">
+                              {parsedSuggestions.map((food) => (
+                                <ParsedFoodRow
+                                  key={food.name}
+                                  food={food}
+                                  checked={checkedFoods.has(food.name)}
+                                  onToggle={toggleFood}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <button
                           type="button"
                           onClick={handleAddToLog}
