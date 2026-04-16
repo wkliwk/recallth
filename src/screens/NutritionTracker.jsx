@@ -98,6 +98,18 @@ const CATEGORY_NUTRIENTS = {
   ],
 }
 
+const ALL_NUTRIENTS = [
+  { key: 'calories', labelKey: 'nutritionCalories', unit: 'kcal' },
+  { key: 'protein', labelKey: 'nutritionProtein', unit: 'g' },
+  { key: 'carbs', labelKey: 'nutritionCarbs', unit: 'g' },
+  { key: 'fat', labelKey: 'nutritionFat', unit: 'g' },
+  { key: 'sugar', labelKey: 'nutritionSugar', unit: 'g' },
+  { key: 'fiber', labelKey: 'nutritionFiber', unit: 'g' },
+  { key: 'sodium', labelKey: 'nutritionSodium', unit: 'mg' },
+  { key: 'folate', labelKey: 'nutritionFolate', unit: 'mcg' },
+  { key: 'iron', labelKey: 'nutritionIron', unit: 'mg' },
+]
+
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack']
 
 const MEAL_TYPE_KEYWORDS = [
@@ -160,8 +172,10 @@ function NutrientBar({ label, actual, target, unit }) {
 }
 
 // ── Daily summary card ────────────────────────────────────────────────────────
-function SummaryCard({ category, loading, summary, t, dateLabel = 'Today' }) {
-  const nutrients = CATEGORY_NUTRIENTS[category] ?? CATEGORY_NUTRIENTS.custom
+function SummaryCard({ category, loading, summary, t, dateLabel = 'Today', customConfig }) {
+  const nutrients = category === 'custom'
+    ? (customConfig?.nutrients ?? []).map(k => ALL_NUTRIENTS.find(n => n.key === k)).filter(Boolean)
+    : (CATEGORY_NUTRIENTS[category] ?? CATEGORY_NUTRIENTS.custom)
 
   if (loading) {
     return (
@@ -642,6 +656,94 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
   )
 }
 
+// ── Customise nutrients modal ─────────────────────────────────────────────────
+function CustomiseModal({ open, onClose, config, onSave, t }) {
+  const [selected, setSelected] = useState(config?.nutrients ?? ['calories', 'protein', 'carbs', 'fat'])
+  const [goals, setGoals] = useState(config?.goals ?? {})
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setSelected(config?.nutrients ?? ['calories', 'protein', 'carbs', 'fat'])
+      setGoals(config?.goals ?? {})
+    }
+  }, [open, config])
+
+  const toggle = (key) => {
+    setSelected(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+  }
+
+  const handleSave = async () => {
+    if (selected.length === 0) return
+    setSaving(true)
+    await onSave({ nutrients: selected, goals })
+    setSaving(false)
+    onClose()
+  }
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/40"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full md:max-w-[420px] bg-white rounded-t-[20px] md:rounded-[20px] max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="text-[15px] font-semibold text-ink1">{t('nutritionCustomiseTitle')}</h2>
+          <button onClick={onClose} className="text-ink3 hover:text-ink1 text-[20px] leading-none">✕</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+          {ALL_NUTRIENTS.map(({ key, labelKey, unit }) => {
+            const isOn = selected.includes(key)
+            return (
+              <div key={key} className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => toggle(key)}
+                  className={[
+                    'w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors',
+                    isOn ? 'bg-orange border-orange' : 'border-ink3 bg-white',
+                  ].join(' ')}
+                  aria-pressed={isOn}
+                >
+                  {isOn && <span className="text-white text-[11px] leading-none">✓</span>}
+                </button>
+                <span className="text-[13px] text-ink1 w-[100px]">
+                  {t(labelKey) !== labelKey ? t(labelKey) : key}{' '}
+                  <span className="text-ink3">({unit})</span>
+                </span>
+                {isOn && (
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={t('nutritionCustomiseGoalPlaceholder')}
+                    value={goals[key] ?? ''}
+                    onChange={(e) => setGoals(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                    className="ml-auto w-[90px] border border-border rounded-[8px] px-3 py-1.5 text-[13px] text-ink1 focus:outline-none focus:ring-2 focus:ring-orange/30"
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <div className="px-5 py-4 border-t border-border">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || selected.length === 0}
+            className="w-full bg-orange text-white py-3 rounded-[12px] text-[14px] font-semibold disabled:opacity-50"
+          >
+            {saving ? '…' : t('nutritionCustomiseSave')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function NutritionTracker() {
   const navigate = useNavigate()
@@ -662,6 +764,10 @@ export default function NutritionTracker() {
   // ── Category state ────────────────────────────────────────────────────────
   const [category, setCategory] = useState('gym')
   const [categoryLoading, setCategoryLoading] = useState(true)
+
+  // ── Custom nutrient config ────────────────────────────────────────────────
+  const [customConfig, setCustomConfig] = useState({ nutrients: ['calories', 'protein', 'carbs', 'fat'], goals: { calories: 2000, protein: 150, carbs: 200, fat: 65 } })
+  const [customizeOpen, setCustomizeOpen] = useState(false)
 
   // ── Summary state ─────────────────────────────────────────────────────────
   const [summary, setSummary] = useState(null)
@@ -740,7 +846,16 @@ export default function NutritionTracker() {
         if (!cancelled) setCategoryLoading(false)
       }
     }
+    async function fetchCustomConfig() {
+      try {
+        const cfg = await api.nutrition.getCustomConfig()
+        if (!cancelled && cfg?.data) setCustomConfig(cfg.data)
+      } catch {
+        // keep default config
+      }
+    }
     fetchCategory()
+    fetchCustomConfig()
     return () => { cancelled = true }
   }, [])
 
@@ -939,6 +1054,12 @@ export default function NutritionTracker() {
     }
   }
 
+  // ── Save custom nutrient config ───────────────────────────────────────────
+  async function handleSaveCustomConfig(newConfig) {
+    const res = await api.nutrition.setCustomConfig(newConfig)
+    if (res?.data) setCustomConfig(res.data)
+  }
+
   // ── Compute calorie subtitle ──────────────────────────────────────────────
   const calSub = (() => {
     if (summaryLoading || categoryLoading) return t('nutritionSub')
@@ -1019,6 +1140,15 @@ export default function NutritionTracker() {
               )
             })}
           </div>
+          {category === 'custom' && (
+            <button
+              type="button"
+              onClick={() => setCustomizeOpen(true)}
+              className="mt-2 flex items-center gap-1.5 text-[12px] text-orange font-medium hover:underline"
+            >
+              <span>⚙</span> {t('nutritionCustomiseBtn')}
+            </button>
+          )}
         </div>
 
         {/* ── Two-column grid at lg ── */}
@@ -1060,6 +1190,7 @@ export default function NutritionTracker() {
               summary={summary}
               t={t}
               dateLabel={dateLabel}
+              customConfig={customConfig}
             />
             <AlgorithmCard summary={summary} navigate={navigate} />
           </div>
@@ -1337,6 +1468,15 @@ export default function NutritionTracker() {
       <div className="md:hidden">
         <FAB onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })} />
       </div>
+
+      {/* ── Customise nutrients modal ── */}
+      <CustomiseModal
+        open={customizeOpen}
+        onClose={() => setCustomizeOpen(false)}
+        config={customConfig}
+        onSave={handleSaveCustomConfig}
+        t={t}
+      />
 
       {/* ── Undo delete toast ── */}
       <style>{`@keyframes drainBar { from { width: 100% } to { width: 0% } }`}</style>
