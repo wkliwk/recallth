@@ -670,6 +670,9 @@ export default function NutritionTracker() {
   const [entriesLoading, setEntriesLoading] = useState(true)
   const [entriesError, setEntriesError] = useState(null)
 
+  // ── Analyser tab: 'ai' | 'manual' ────────────────────────────────────────
+  const [analyserTab, setAnalyserTab] = useState('ai')
+
   // ── AI input state ────────────────────────────────────────────────────────
   const [aiText, setAiText] = useState('')
   const [aiParsing, setAiParsing] = useState(false)
@@ -677,6 +680,20 @@ export default function NutritionTracker() {
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
+
+  // ── Manual entry state ────────────────────────────────────────────────────
+  const [manualName, setManualName] = useState('')
+  const [manualQty, setManualQty] = useState('')
+  const [manualUnit, setManualUnit] = useState('')
+  const [manualMealType, setManualMealType] = useState(() => {
+    const h = new Date().getHours()
+    if (h >= 6 && h < 11) return 'breakfast'
+    if (h >= 11 && h < 15) return 'lunch'
+    if (h >= 17 && h < 22) return 'dinner'
+    return 'snack'
+  })
+  const [manualSaving, setManualSaving] = useState(false)
+  const [manualError, setManualError] = useState(null)
 
   // ── Calendar refresh key (incremented after add/delete to re-fetch dots) ─
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0)
@@ -792,6 +809,27 @@ export default function NutritionTracker() {
       await api.nutrition.setCategory(cat)
     } catch {
       // non-fatal — UI already updated optimistically
+    }
+  }
+
+  // ── Manual add handler ────────────────────────────────────────────────────
+  async function handleManualAdd() {
+    const name = manualName.trim()
+    if (!name) return
+    setManualSaving(true)
+    setManualError(null)
+    const food = { name, ...(manualQty ? { quantity: Number(manualQty) || manualQty } : {}), ...(manualUnit.trim() ? { unit: manualUnit.trim() } : {}), nutrients: {} }
+    try {
+      await api.nutrition.create({ date: viewDate, mealType: manualMealType, foods: [food], rawText: name })
+      setManualName('')
+      setManualQty('')
+      setManualUnit('')
+      await Promise.all([fetchEntries(), fetchSummary()])
+      bumpCalendar()
+    } catch (err) {
+      setManualError(err?.message ?? 'Failed to save — please try again')
+    } finally {
+      setManualSaving(false)
     }
   }
 
@@ -1014,66 +1052,149 @@ export default function NutritionTracker() {
           {/* ── RIGHT: AI Analyser + Today's log ── */}
           <div className="flex flex-col gap-5">
 
-            {/* AI input section */}
-            <div className="rounded-[14px] border border-border bg-white px-5 py-5 md:px-6 md:py-6 shadow-sm">
-              <p className="text-[14px] md:text-[16px] font-semibold text-ink1 mb-3">AI Food Analyser</p>
-
-              <textarea
-                value={aiText}
-                onChange={(e) => setAiText(e.target.value)}
-                placeholder={t('nutritionAiPlaceholder')}
-                rows={3}
-                disabled={aiParsing}
-                className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
-              />
-
-              <button
-                type="button"
-                onClick={handleAiParse}
-                disabled={aiParsing || !aiText.trim()}
-                className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-              >
-                {aiParsing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    {t('nutritionAiParsing')}
-                  </span>
-                ) : (
-                  'Analyse'
-                )}
-              </button>
-
-              {aiError && (
-                <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">
-                  {aiError}
-                </p>
-              )}
-
-              {parsedFoods.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-[12px] font-medium text-ink2 mb-1">
-                    {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
-                  </p>
-                  <div className="border border-border rounded-[10px] overflow-hidden">
-                    {parsedFoods.map((food) => (
-                      <ParsedFoodRow
-                        key={food.name}
-                        food={food}
-                        checked={checkedFoods.has(food.name)}
-                        onToggle={toggleFood}
-                      />
-                    ))}
-                  </div>
+            {/* AI / Manual analyser section */}
+            <div className="rounded-[14px] border border-border bg-white shadow-sm overflow-hidden">
+              {/* Tab bar */}
+              <div className="flex border-b border-border">
+                {[{ key: 'ai', label: 'AI Analyser' }, { key: 'manual', label: 'Manual Entry' }].map(({ key, label }) => (
                   <button
+                    key={key}
                     type="button"
-                    onClick={handleAddToLog}
-                    disabled={addingToLog || checkedFoods.size === 0}
-                    className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    onClick={() => setAnalyserTab(key)}
+                    className={[
+                      'flex-1 py-[11px] text-[13px] font-semibold transition-colors focus:outline-none',
+                      analyserTab === key
+                        ? 'text-orange border-b-2 border-orange -mb-px bg-white'
+                        : 'text-ink3 hover:text-ink2 bg-sand/30',
+                    ].join(' ')}
                   >
-                    {addingToLog ? 'Adding…' : t('nutritionConfirm')}
+                    {label}
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
+
+              <div className="px-5 py-5 md:px-6 md:py-6">
+                {analyserTab === 'ai' ? (
+                  <>
+                    <textarea
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      placeholder={t('nutritionAiPlaceholder')}
+                      rows={3}
+                      disabled={aiParsing}
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAiParse}
+                      disabled={aiParsing || !aiText.trim()}
+                      className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    >
+                      {aiParsing ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          {t('nutritionAiParsing')}
+                        </span>
+                      ) : (
+                        'Analyse'
+                      )}
+                    </button>
+                    {aiError && (
+                      <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>
+                    )}
+                    {parsedFoods.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-[12px] font-medium text-ink2 mb-1">
+                          {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
+                        </p>
+                        <div className="border border-border rounded-[10px] overflow-hidden">
+                          {parsedFoods.map((food) => (
+                            <ParsedFoodRow
+                              key={food.name}
+                              food={food}
+                              checked={checkedFoods.has(food.name)}
+                              onToggle={toggleFood}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddToLog}
+                          disabled={addingToLog || checkedFoods.size === 0}
+                          className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                        >
+                          {addingToLog ? 'Adding…' : t('nutritionConfirm')}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* ── Manual entry form ── */
+                  <div className="flex flex-col gap-3">
+                    {/* Meal type pills */}
+                    <div className="flex gap-2 flex-wrap">
+                      {MEAL_ORDER.map((mt) => (
+                        <button
+                          key={mt}
+                          type="button"
+                          onClick={() => setManualMealType(mt)}
+                          aria-pressed={manualMealType === mt}
+                          className={[
+                            'px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
+                            manualMealType === mt
+                              ? 'bg-orange text-white'
+                              : 'bg-sand text-ink2 hover:bg-orange/10',
+                          ].join(' ')}
+                        >
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Food name */}
+                    <input
+                      type="text"
+                      value={manualName}
+                      onChange={(e) => setManualName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualAdd()}
+                      placeholder="Food name (e.g. 白飯, Salad)"
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                    />
+
+                    {/* Quantity + unit */}
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={manualQty}
+                        onChange={(e) => setManualQty(e.target.value)}
+                        placeholder="Qty"
+                        min="0"
+                        className="w-[80px] border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                      />
+                      <input
+                        type="text"
+                        value={manualUnit}
+                        onChange={(e) => setManualUnit(e.target.value)}
+                        placeholder="Unit (e.g. 碗, g, cup)"
+                        className="flex-1 border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
+                      />
+                    </div>
+
+                    {manualError && (
+                      <p className="text-[12px] text-[#E11D48]" role="alert">{manualError}</p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleManualAdd}
+                      disabled={manualSaving || !manualName.trim()}
+                      className="w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    >
+                      {manualSaving ? 'Saving…' : 'Add to log'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Today's food log */}
