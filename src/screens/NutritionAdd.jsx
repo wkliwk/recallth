@@ -49,6 +49,7 @@ function NutritionResultCard({ item, selected, onSelect }) {
   const carbs = item.nutrients?.carbs ?? item.carbs ?? item.nutriments?.carbohydrates ?? undefined
   const fat = item.nutrients?.fat ?? item.fat ?? item.nutriments?.fat ?? undefined
   const serving = item.quantity ?? item.serving ?? item.serving_size ?? item.servingSize ?? ''
+  const isLibrary = item.source === 'library'
 
   return (
     <button
@@ -61,9 +62,14 @@ function NutritionResultCard({ item, selected, onSelect }) {
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-[14px] font-semibold text-ink1">{name}</span>
-        {calories !== undefined && (
-          <span className="text-[12px] text-ink3 shrink-0">{calories} kcal</span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isLibrary && (
+            <span className="text-[10px] font-medium bg-orange/10 text-orange rounded-pill px-2 py-0.5">Saved</span>
+          )}
+          {calories !== undefined && (
+            <span className="text-[12px] text-ink3">{calories} kcal</span>
+          )}
+        </div>
       </div>
       {brand ? <p className="text-[12px] text-ink2 mt-0.5">{brand}</p> : null}
       {serving ? <p className="text-[12px] text-ink3">{serving}</p> : null}
@@ -171,6 +177,28 @@ export default function NutritionAdd() {
     setAiPanelOpen(false)
   }
 
+  // ── Save food item to personal library (silent — never blocks UI) ───
+  async function saveToLibrary(item) {
+    const name = item.name ?? item.product_name ?? ''
+    if (!name.trim()) return
+    try {
+      await api.nutrition.library.save({
+        name: name.trim(),
+        brand: (item.brand ?? item.brands ?? '').trim(),
+        servingSize: (item.servingSize ?? item.serving_size ?? item.serving ?? item.quantity ?? '').trim(),
+        calories: item.calories ?? item.nutrients?.calories ?? item.nutriments?.energy_value ?? null,
+        protein: item.protein ?? item.nutrients?.protein ?? item.nutriments?.proteins ?? null,
+        carbs: item.carbs ?? item.nutrients?.carbs ?? item.nutriments?.carbohydrates ?? null,
+        fat: item.fat ?? item.nutrients?.fat ?? item.nutriments?.fat ?? null,
+        sugar: item.sugar ?? item.nutrients?.sugar ?? null,
+        fiber: item.fiber ?? item.nutrients?.fiber ?? null,
+        sodium: item.sodium ?? item.nutrients?.sodium ?? null,
+      })
+    } catch {
+      // silent — library save never blocks the user
+    }
+  }
+
   // ── Search tab handlers ──────────────────────────────────────────────
   async function handleSearch(e) {
     e.preventDefault()
@@ -193,7 +221,9 @@ export default function NutritionAdd() {
 
   function handleSearchUse() {
     if (searchSelectedIndex === null || !searchResults[searchSelectedIndex]) return
-    fillFormFromItem(searchResults[searchSelectedIndex])
+    const item = searchResults[searchSelectedIndex]
+    fillFormFromItem(item)
+    saveToLibrary(item)
   }
 
   // ── Photo tab handlers ───────────────────────────────────────────────
@@ -238,6 +268,7 @@ export default function NutritionAdd() {
   function handlePhotoUse() {
     if (!photoResult) return
     fillFormFromItem(photoResult)
+    saveToLibrary(photoResult)
   }
 
   // ── Describe tab handlers (existing AI) ──────────────────────────────
@@ -277,6 +308,18 @@ export default function NutritionAdd() {
     }))
     setErrors((prev) => ({ ...prev, foodName: undefined }))
     setAiPanelOpen(false)
+    // Save a library-friendly version with flat nutrient fields
+    saveToLibrary({
+      name: item.name,
+      servingSize: [item.quantity, item.unit].filter(Boolean).join(' ') || item.serving || '',
+      calories: item.nutrients?.calories ?? item.calories ?? null,
+      protein: item.nutrients?.protein ?? item.protein ?? null,
+      carbs: item.nutrients?.carbs ?? item.carbs ?? null,
+      fat: item.nutrients?.fat ?? item.fat ?? null,
+      sugar: item.nutrients?.sugar ?? null,
+      fiber: item.nutrients?.fiber ?? null,
+      sodium: item.nutrients?.sodium ?? null,
+    })
   }
 
   // ── Validation ───────────────────────────────────────────────────────
@@ -317,6 +360,16 @@ export default function NutritionAdd() {
         ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
       }
       await api.nutrition.create(payload)
+      // Save to personal library (fire-and-forget)
+      saveToLibrary({
+        name: form.foodName.trim(),
+        brand: form.brand.trim(),
+        servingSize: form.quantity.trim(),
+        calories: form.calories !== '' ? Number(form.calories) : null,
+        protein: form.protein !== '' ? Number(form.protein) : null,
+        carbs: form.carbs !== '' ? Number(form.carbs) : null,
+        fat: form.fat !== '' ? Number(form.fat) : null,
+      })
       navigate(-1)
     } catch (err) {
       setErrors({ submit: err.message || 'Failed to save — please try again.' })

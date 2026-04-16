@@ -118,5 +118,11 @@ export const api = {
     getCategory: () => request('/nutrition/category'),
     setCategory: (category) => request('/nutrition/category', { method: 'PUT', body: JSON.stringify({ category }) }),
     days: (year, month) => request(`/nutrition/days?year=${year}&month=${month}`),
+    library: {
+      list: () => request('/nutrition/library'),
+      search: (q) => request(`/nutrition/library/search?q=${encodeURIComponent(q)}`),
+      save: (data) => request('/nutrition/library', { method: 'POST', body: JSON.stringify(data) }),
+      remove: (id) => request(`/nutrition/library/${id}`, { method: 'DELETE' }),
+    },
   },
 }
