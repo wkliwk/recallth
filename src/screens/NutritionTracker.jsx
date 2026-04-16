@@ -128,7 +128,7 @@ function SummaryCard({ category, loading, summary, t }) {
   }
 
   return (
-    <div className="mx-5 mb-5 rounded-[14px] border border-border bg-white px-5 py-4 flex flex-col gap-[14px]">
+    <div className="mb-5 rounded-[14px] border border-border bg-white px-5 py-4 md:px-6 md:py-5 flex flex-col gap-[14px] shadow-sm">
       <p className="text-[13px] font-semibold text-ink1">Today</p>
       {nutrients.map((n) => (
         <NutrientBar
@@ -464,166 +464,191 @@ export default function NutritionTracker() {
 
   return (
     <div className="min-h-screen bg-page">
-      {/* ── Orange header ── */}
+      {/* ── Mobile header + wave ── */}
       <OrangeHeader
         title={t('nutritionTitle')}
         subtitle={calSub}
       />
-
-      {/* ── Wave separator ── */}
-      <div className="-mt-[40px]">
+      <div className="-mt-[40px] md:mt-0">
         <Wave />
       </div>
 
-      {/* ── Category selector ── */}
-      <div className="px-5 mb-5">
-        <div
-          className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
-          role="group"
-          aria-label="Nutrition category"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {CATEGORIES.map(({ key, labelKey }) => {
-            const active = category === key
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleSelectCategory(key)}
-                aria-pressed={active}
-                disabled={categoryLoading}
-                className={[
-                  'shrink-0 px-[14px] py-[7px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
-                  active
-                    ? 'bg-orange text-white'
-                    : 'bg-sand text-ink2 hover:bg-orange/10',
-                  categoryLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer',
-                ].join(' ')}
-              >
-                {t(labelKey)}
-              </button>
-            )
-          })}
+      {/* ── Desktop sticky header ── */}
+      <div className="hidden md:flex items-center justify-between px-6 py-4 border-b border-border bg-white sticky top-0 z-10">
+        <div>
+          <h1 className="text-[20px] font-semibold text-ink1">{t('nutritionTitle')}</h1>
+          <p className="text-[13px] text-ink3 mt-[2px]">{calSub}</p>
         </div>
-      </div>
-
-      {/* ── Medical disclaimer ── */}
-      {showDisclaimer && (
-        <div
-          className="mx-5 mb-5 px-4 py-3 rounded-[12px] bg-[#FDE8DE]"
-          role="note"
-          aria-label="Medical disclaimer"
-        >
-          <p className="text-[12px] text-ink2">{t('nutritionDisclaimer')}</p>
-        </div>
-      )}
-
-      {/* ── Daily summary card ── */}
-      <SummaryCard
-        category={category}
-        loading={summaryLoading}
-        summary={summary}
-        t={t}
-      />
-
-      {/* ── AI input section ── */}
-      <div className="mx-5 mb-5 rounded-[14px] border border-border bg-white px-5 py-5">
-        <p className="text-[14px] font-semibold text-ink1 mb-3">AI Food Analyser</p>
-
-        <textarea
-          value={aiText}
-          onChange={(e) => setAiText(e.target.value)}
-          placeholder={t('nutritionAiPlaceholder')}
-          rows={3}
-          disabled={aiParsing}
-          className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60"
-        />
-
-        {/* Parse button */}
         <button
           type="button"
-          onClick={handleAiParse}
-          disabled={aiParsing || !aiText.trim()}
-          className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+          onClick={() => navigate('/nutrition/add')}
+          className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
         >
-          {aiParsing ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              {t('nutritionAiParsing')}
-            </span>
-          ) : (
-            'Analyse'
-          )}
+          + Add food
         </button>
-
-        {/* AI error */}
-        {aiError && (
-          <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">
-            {aiError}
-          </p>
-        )}
-
-        {/* Parsed foods */}
-        {parsedFoods.length > 0 && (
-          <div className="mt-4">
-            <p className="text-[12px] font-medium text-ink2 mb-1">
-              {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
-            </p>
-            <div className="border border-border rounded-[10px] overflow-hidden">
-              {parsedFoods.map((food) => (
-                <ParsedFoodRow
-                  key={food.name}
-                  food={food}
-                  checked={checkedFoods.has(food.name)}
-                  onToggle={toggleFood}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={handleAddToLog}
-              disabled={addingToLog || checkedFoods.size === 0}
-              className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-            >
-              {addingToLog ? 'Adding…' : t('nutritionConfirm')}
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* ── Today's food log ── */}
-      <div className="px-5 pb-[100px]">
-        <p className="text-[14px] font-semibold text-ink1 mb-3">Today's log</p>
+      {/* ── Main content container ── */}
+      <div className="max-w-[1000px] mx-auto px-4 md:px-6 lg:px-8 pt-2 md:pt-6">
 
-        {entriesLoading ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-[90px]" />
-            <Skeleton className="h-[90px]" />
+        {/* ── Category selector ── */}
+        <div className="mb-5 md:mb-6">
+          <div
+            className="flex gap-2 overflow-x-auto md:overflow-x-visible md:flex-wrap pb-1 scrollbar-hide"
+            role="group"
+            aria-label="Nutrition category"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {CATEGORIES.map(({ key, labelKey }) => {
+              const active = category === key
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleSelectCategory(key)}
+                  aria-pressed={active}
+                  disabled={categoryLoading}
+                  className={[
+                    'shrink-0 px-[14px] py-[7px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
+                    active
+                      ? 'bg-orange text-white'
+                      : 'bg-sand text-ink2 hover:bg-orange/10',
+                    categoryLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer',
+                  ].join(' ')}
+                >
+                  {t(labelKey)}
+                </button>
+              )
+            })}
           </div>
-        ) : entriesError ? (
-          <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
-        ) : Object.keys(mealGroups).length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-[15px] text-ink2 font-medium mb-1">{t('nutritionEmpty')}</p>
-            <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
+        </div>
+
+        {/* ── Two-column grid at lg ── */}
+        <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
+
+          {/* ── LEFT: Summary + disclaimer (sticky on desktop) ── */}
+          <div className="lg:sticky lg:top-[80px]">
+            {showDisclaimer && (
+              <div
+                className="mb-5 px-4 py-3 rounded-[12px] bg-[#FDE8DE]"
+                role="note"
+                aria-label="Medical disclaimer"
+              >
+                <p className="text-[12px] text-ink2">{t('nutritionDisclaimer')}</p>
+              </div>
+            )}
+            <SummaryCard
+              category={category}
+              loading={summaryLoading}
+              summary={summary}
+              t={t}
+            />
           </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
-              <MealGroup
-                key={mt}
-                mealType={mt}
-                entries={mealGroups[mt]}
-                t={t}
-                onDelete={() => Promise.all([fetchEntries(), fetchSummary()])}
+
+          {/* ── RIGHT: AI Analyser + Today's log ── */}
+          <div className="flex flex-col gap-5">
+
+            {/* AI input section */}
+            <div className="rounded-[14px] border border-border bg-white px-5 py-5 md:px-6 md:py-6 shadow-sm">
+              <p className="text-[14px] md:text-[16px] font-semibold text-ink1 mb-3">AI Food Analyser</p>
+
+              <textarea
+                value={aiText}
+                onChange={(e) => setAiText(e.target.value)}
+                placeholder={t('nutritionAiPlaceholder')}
+                rows={3}
+                disabled={aiParsing}
+                className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
               />
-            ))}
+
+              <button
+                type="button"
+                onClick={handleAiParse}
+                disabled={aiParsing || !aiText.trim()}
+                className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+              >
+                {aiParsing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    {t('nutritionAiParsing')}
+                  </span>
+                ) : (
+                  'Analyse'
+                )}
+              </button>
+
+              {aiError && (
+                <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">
+                  {aiError}
+                </p>
+              )}
+
+              {parsedFoods.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-[12px] font-medium text-ink2 mb-1">
+                    {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
+                  </p>
+                  <div className="border border-border rounded-[10px] overflow-hidden">
+                    {parsedFoods.map((food) => (
+                      <ParsedFoodRow
+                        key={food.name}
+                        food={food}
+                        checked={checkedFoods.has(food.name)}
+                        onToggle={toggleFood}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddToLog}
+                    disabled={addingToLog || checkedFoods.size === 0}
+                    className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                  >
+                    {addingToLog ? 'Adding…' : t('nutritionConfirm')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Today's food log */}
+            <div className="pb-[100px] md:pb-8">
+              <p className="text-[14px] md:text-[16px] font-semibold text-ink1 mb-3 md:mb-4">Today's log</p>
+
+              {entriesLoading ? (
+                <div className="flex flex-col gap-3">
+                  <Skeleton className="h-[90px]" />
+                  <Skeleton className="h-[90px]" />
+                </div>
+              ) : entriesError ? (
+                <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
+              ) : Object.keys(mealGroups).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <p className="text-[15px] text-ink2 font-medium mb-1">{t('nutritionEmpty')}</p>
+                  <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                    <MealGroup
+                      key={mt}
+                      mealType={mt}
+                      entries={mealGroups[mt]}
+                      t={t}
+                      onDelete={() => Promise.all([fetchEntries(), fetchSummary()])}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
-        )}
+        </div>
       </div>
 
-      {/* ── FAB — manual add ── */}
-      <FAB onClick={() => navigate('/nutrition/add')} />
+      {/* ── FAB — mobile only ── */}
+      <div className="md:hidden">
+        <FAB onClick={() => navigate('/nutrition/add')} />
+      </div>
     </div>
   )
 }
