@@ -811,11 +811,22 @@ export default function NutritionTracker() {
     const newMealType = over.id
     const entry = entries.find((e) => e._id === active.id)
     if (!entry || entry.mealType === newMealType) return
+
+    // Optimistic update — move entry immediately in local state
+    const originalMealType = entry.mealType
+    setEntries((prev) =>
+      prev.map((e) => e._id === entry._id ? { ...e, mealType: newMealType } : e)
+    )
+
     try {
       await api.nutrition.update(entry._id, { mealType: newMealType })
-      await Promise.all([fetchEntries(), fetchSummary()])
+      // Refresh summary totals in background (no spinner needed)
+      fetchSummary().catch(() => {})
     } catch {
-      // silent — UI reverts on next fetch
+      // Revert on failure
+      setEntries((prev) =>
+        prev.map((e) => e._id === entry._id ? { ...e, mealType: originalMealType } : e)
+      )
     }
   }
 
