@@ -257,18 +257,7 @@ export default function CabinetAdd() {
                             : 'border-border bg-page hover:border-ink3/30'
                         }`}
                       >
-                        {r.imageUrl ? (
-                          <img
-                            src={r.imageUrl}
-                            alt={r.name || ''}
-                            className="w-10 h-10 object-contain rounded-[6px]"
-                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                          />
-                        ) : null}
-                        <div
-                          className="w-10 h-10 rounded-[6px] bg-sand items-center justify-center text-[16px] text-ink3/40"
-                          style={{ display: r.imageUrl ? 'none' : 'flex' }}
-                        >
+                        <div className="w-10 h-10 rounded-[6px] bg-sand flex items-center justify-center text-[16px] text-ink3/40">
                           {(r.name || '?').charAt(0).toUpperCase()}
                         </div>
                         <span className="text-[11px] text-ink1 font-medium text-center leading-tight line-clamp-2">
@@ -285,18 +274,7 @@ export default function CabinetAdd() {
                     return (
                       <div className="rounded-[12px] border border-border overflow-hidden bg-white">
                         <div className="relative w-full aspect-[2/1] bg-sand flex items-center justify-center">
-                          {p.imageUrl ? (
-                            <img
-                              src={p.imageUrl}
-                              alt={p.name || ''}
-                              className="w-full h-full object-contain p-5"
-                              onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                            />
-                          ) : null}
-                          <div
-                            className="w-full h-full items-center justify-center text-[40px] font-semibold"
-                            style={{ display: p.imageUrl ? 'none' : 'flex', color: '#E07B4A22' }}
-                          >
+                          <div className="w-full h-full flex items-center justify-center text-[40px] font-semibold" style={{ color: '#E07B4A22' }}>
                             {(p.name || '?').charAt(0).toUpperCase()}
                           </div>
                         </div>
