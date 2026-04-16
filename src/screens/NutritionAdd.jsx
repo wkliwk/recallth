@@ -6,13 +6,13 @@ import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
-
-const MEAL_TRANSLATION_KEYS = {
-  breakfast: 'nutritionMealBreakfast',
-  lunch: 'nutritionMealLunch',
-  dinner: 'nutritionMealDinner',
-  snack: 'nutritionMealSnack',
+function mealTypeFromTime() {
+  const h = new Date().getHours()
+  if (h >= 5 && h < 11) return 'breakfast'
+  if (h >= 11 && h < 14) return 'lunch'
+  if (h >= 14 && h < 18) return 'snack'
+  if (h >= 18 && h < 22) return 'dinner'
+  return 'snack'
 }
 
 function todayISO() {
@@ -103,7 +103,7 @@ export default function NutritionAdd() {
   const [form, setForm] = useState({
     foodName: '',
     brand: '',
-    mealType: 'breakfast',
+    mealType: mealTypeFromTime(),
     quantity: '',
     calories: '',
     protein: '',
@@ -640,25 +640,6 @@ export default function NutritionAdd() {
               onChange={(e) => handleChange('brand', e.target.value)}
               placeholder="e.g. Quaker, Nestlé"
             />
-          </Field>
-
-          <Field label={t('nutritionFieldMeal')}>
-            <div className="relative">
-              <select
-                className={selectClass}
-                value={form.mealType}
-                onChange={(e) => handleChange('mealType', e.target.value)}
-              >
-                {MEAL_TYPES.map((mt) => (
-                  <option key={mt} value={mt}>
-                    {t(MEAL_TRANSLATION_KEYS[mt])}
-                  </option>
-                ))}
-              </select>
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
           </Field>
 
           <Field label={t('nutritionFieldQuantity')}>
