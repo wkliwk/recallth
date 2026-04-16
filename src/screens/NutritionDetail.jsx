@@ -217,7 +217,7 @@ export default function NutritionDetail() {
         onBack={() => navigate('/nutrition')}
       />
 
-      <div className="-mt-[40px]">
+      <div className="-mt-[40px] md:mt-0">
         <Wave />
       </div>
 

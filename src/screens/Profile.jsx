@@ -787,7 +787,7 @@ export default function Profile() {
         stats={stats}
       />
 
-      <div className="-mt-[40px]">
+      <div className="-mt-[40px] md:mt-0">
         <Wave />
       </div>
 
