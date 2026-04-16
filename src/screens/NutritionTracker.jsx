@@ -181,8 +181,10 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function MealGroup({ mealType, entries, t, onEntryClick }) {
+function MealGroup({ mealType, entries, t }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
+  const [expandedId, setExpandedId] = useState(null)
+
   const totalCal = entries.reduce((sum, e) => {
     const c = e.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? e.calories ?? 0
     return sum + c
@@ -198,16 +200,61 @@ function MealGroup({ mealType, entries, t, onEntryClick }) {
         const names = entry.foods?.map((f) => f.name).join(', ') ?? entry.rawText ?? '—'
         const cal =
           entry.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? entry.calories ?? 0
+        const isExpanded = expandedId === entry._id
         return (
-          <button
-            key={entry._id}
-            type="button"
-            onClick={() => onEntryClick(entry._id)}
-            className="w-full text-left flex items-center justify-between px-4 py-[11px] border-b border-border last:border-0 hover:bg-sand/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-          >
-            <p className="text-[13px] text-ink1 truncate pr-4">{names}</p>
-            <p className="text-[12px] text-ink3 shrink-0">{cal} kcal</p>
-          </button>
+          <div key={entry._id} className="border-b border-border last:border-0">
+            {/* Entry row — tap to expand/collapse */}
+            <button
+              type="button"
+              onClick={() => setExpandedId(isExpanded ? null : entry._id)}
+              className="w-full text-left flex items-center justify-between px-4 py-[11px] hover:bg-sand/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  className={`shrink-0 text-ink3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+                <p className="text-[13px] text-ink1 truncate">{names}</p>
+              </div>
+              <p className="text-[12px] text-ink3 shrink-0 ml-3">{cal} kcal</p>
+            </button>
+
+            {/* Expanded food details */}
+            {isExpanded && entry.foods?.length > 0 && (
+              <div className="px-4 pb-3 flex flex-col gap-[6px] bg-sand/20">
+                {entry.foods.map((food, idx) => {
+                  const kcal = food.nutrients?.calories ?? food.calories
+                  const protein = food.nutrients?.protein ?? food.protein
+                  const carbs = food.nutrients?.carbs ?? food.carbs
+                  const fat = food.nutrients?.fat ?? food.fat
+                  const macros = [
+                    protein != null && `P ${protein}g`,
+                    carbs != null && `C ${carbs}g`,
+                    fat != null && `F ${fat}g`,
+                  ].filter(Boolean).join('  ')
+                  return (
+                    <div key={idx} className="flex items-start justify-between gap-3 py-[6px] border-b border-border/50 last:border-0">
+                      <div className="min-w-0">
+                        <p className="text-[13px] text-ink1 font-medium leading-snug">
+                          {food.name}
+                          {(food.quantity != null || food.unit) && (
+                            <span className="text-ink3 font-normal ml-1">{food.quantity} {food.unit}</span>
+                          )}
+                        </p>
+                        {macros && <p className="text-[11px] text-ink3 mt-[2px]">{macros}</p>}
+                      </div>
+                      {kcal != null && (
+                        <p className="text-[12px] text-ink2 shrink-0 font-medium">{kcal} kcal</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )
       })}
     </div>
@@ -533,7 +580,6 @@ export default function NutritionTracker() {
                 mealType={mt}
                 entries={mealGroups[mt]}
                 t={t}
-                onEntryClick={(id) => navigate(`/nutrition/${id}`)}
               />
             ))}
           </div>
