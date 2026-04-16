@@ -2,6 +2,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
+import { AiUsageProvider } from './context/AiUsageContext'
+import AiUsageBadge from './components/AiUsageBadge'
+import { useAiUsage } from './context/AiUsageContext'
 import WebShell from './components/WebShell'
 import Landing from './screens/Landing'
 import Auth from './screens/Auth'
@@ -92,12 +95,20 @@ function AppRoutes() {
   )
 }
 
+function GlobalAiUsageBadge() {
+  const { usage, clearUsage } = useAiUsage()
+  return <AiUsageBadge usage={usage} onDismiss={clearUsage} />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <LanguageProvider>
-          <AppRoutes />
+          <AiUsageProvider>
+            <AppRoutes />
+            <GlobalAiUsageBadge />
+          </AiUsageProvider>
         </LanguageProvider>
       </AuthProvider>
     </BrowserRouter>

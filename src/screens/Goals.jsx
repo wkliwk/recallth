@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useAiUsage } from '../context/AiUsageContext'
 
 // ── Skeleton primitive ───────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
@@ -120,6 +121,7 @@ function CurrentEmoji({ checkIns }) {
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Goals() {
   const { t } = useLanguage()
+  const { showUsage } = useAiUsage()
 
   // ── Data state ──────────────────────────────────────────────────────────
   const [checkIns, setCheckIns] = useState([])
@@ -178,6 +180,7 @@ export default function Goals() {
 
     try {
       const res = await api.goals.checkIn({ goal: goalName.trim(), rating })
+      if (res?.data?.aiUsage) showUsage(res.data.aiUsage)
       const nudge = res?.data?.aiResponse ?? ''
       if (nudge) {
         setAiNudge(nudge)

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { chatService } from '../services/chat'
 import { useLanguage } from '../context/LanguageContext'
+import { useAiUsage } from '../context/AiUsageContext'
 
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
   return (
@@ -34,6 +35,7 @@ function ChatPanel({ onClose }) {
   const [isTyping, setIsTyping] = useState(false)
   const [imagePreview, setImagePreview] = useState(null) // { base64, mimeType, url }
   const [appliedActions, setAppliedActions] = useState(new Set())
+  const { showUsage } = useAiUsage()
   const bottomRef = useRef(null)
   const fileRef = useRef(null)
 
@@ -90,6 +92,7 @@ function ChatPanel({ onClose }) {
           text: res.data.message?.content ?? t('chatNoResponse'),
           actions: res.data.actions || [],
         }])
+        if (res.data.aiUsage) showUsage(res.data.aiUsage)
       }
     } catch {
       setMessages((m) => [
@@ -265,6 +268,7 @@ function ChatPanel({ onClose }) {
           to   { transform: translateX(0);    opacity: 1; }
         }
       `}</style>
+
     </div>
   )
 }

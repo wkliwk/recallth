@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useAiUsage } from '../context/AiUsageContext'
 
 const COMMON_MARKERS = [
   { name: 'Vitamin D', unit: 'ng/mL', refLow: 30, refHigh: 100 },
@@ -52,6 +53,7 @@ function Skeleton({ className = '' }) {
 
 export default function Bloodwork() {
   const { t } = useLanguage()
+  const { showUsage } = useAiUsage()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -146,6 +148,7 @@ export default function Bloodwork() {
       const res = await api.bloodwork.interpret({})
       const d = res?.data ?? res
       setInterpretation(d)
+      if (d?.aiUsage) showUsage(d.aiUsage)
     } catch {
       setInterpretation({ error: true })
     } finally {
