@@ -234,6 +234,7 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 
 // ── Algorithm explanation card ────────────────────────────────────────────────
 function AlgorithmCard({ summary, navigate }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const basis = summary?.targetBasis
   const f = summary?.formula
@@ -250,7 +251,7 @@ function AlgorithmCard({ summary, navigate }) {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
             <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <span className="text-[12px] font-semibold text-ink1">How are targets calculated?</span>
+          <span className="text-[12px] font-semibold text-ink1">{t('nutritionAlgoTitle')}</span>
         </div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`}>
           <polyline points="6 9 12 15 18 9" />
@@ -261,7 +262,7 @@ function AlgorithmCard({ summary, navigate }) {
         <div className="px-4 pb-4 border-t border-border text-[12px] leading-relaxed">
           {basis === 'personalised' && f ? (
             <div className="flex flex-col gap-[6px] pt-3">
-              <p className="text-[11px] font-semibold text-orange uppercase tracking-wide mb-1">Personalised · Mifflin-St Jeor</p>
+              <p className="text-[11px] font-semibold text-orange uppercase tracking-wide mb-1">{t('nutritionAlgoPersonalised')}</p>
               <div className="bg-sand/60 rounded-[10px] p-3 flex flex-col gap-[5px] font-mono text-[11px] text-ink2">
                 <p>BMR = 10×{f.weightKg}kg + 6.25×{f.heightCm}cm − 5×{f.age} {f.sex === 'male' ? '+ 5' : '− 161'}</p>
                 <p className="font-semibold text-ink1">BMR = {f.bmr} kcal</p>
@@ -272,20 +273,18 @@ function AlgorithmCard({ summary, navigate }) {
                 <p className="mt-1">Protein = {f.weightKg}kg × factor</p>
                 <p className="font-semibold text-ink1">= {f.proteinTarget}g/day</p>
               </div>
-              <p className="text-[10px] text-ink3 mt-1">Update your profile to recalculate.</p>
+              <p className="text-[10px] text-ink3 mt-1">{t('nutritionAlgoUpdateProfile')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2 pt-3">
-              <p className="text-ink2">Targets are using <strong>general guidelines</strong>.</p>
-              <p className="text-ink3 text-[11px]">
-                Complete your profile — height, weight, age, sex, and activity level — to get targets personalised to your body using the Mifflin-St Jeor formula.
-              </p>
+              <p className="text-ink2"><strong>{t('nutritionAlgoDefault')}</strong></p>
+              <p className="text-ink3 text-[11px]">{t('nutritionAlgoDefaultSub')}</p>
               <button
                 type="button"
                 onClick={() => navigate('/profile')}
                 className="mt-1 text-[12px] font-semibold text-orange hover:underline text-left focus:outline-none"
               >
-                Complete profile →
+                {t('nutritionAlgoCompleteProfile')}
               </button>
             </div>
           )}
@@ -343,6 +342,7 @@ function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKe
 const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
+  const { t } = useLanguage()
   const toMonthISO = (iso) => iso.slice(0, 7) + '-01'
   const [calMonth, setCalMonth] = useState(() => toMonthISO(viewDate))
   const [recordDays, setRecordDays] = useState(new Set())
@@ -461,11 +461,11 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
       <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border">
         <div className="flex items-center gap-1">
           <span className="w-[8px] h-[8px] rounded-full bg-orange inline-block" />
-          <span className="text-[10px] text-ink3">Has record</span>
+          <span className="text-[10px] text-ink3">{t('nutritionCalHasRecord')}</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="w-[8px] h-[8px] rounded-full bg-orange inline-block ring-[1.5px] ring-orange ring-offset-1" />
-          <span className="text-[10px] text-ink3">Today</span>
+          <span className="text-[10px] text-ink3">{t('nutritionCalToday')}</span>
         </div>
       </div>
     </div>
@@ -531,7 +531,7 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
               <div
                 {...dragHandleProps}
                 className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink4 hover:text-ink3"
-                aria-label="Drag to move"
+                aria-label={t('nutritionDragHandle')}
               >
                 <svg width="12" height="14" viewBox="0 0 10 14" fill="currentColor">
                   <circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/>
@@ -593,7 +593,7 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
                     </div>
                   )
                 }) : (
-                  <p className="text-[12px] text-ink3 py-2">No food details available</p>
+                  <p className="text-[12px] text-ink3 py-2">{t('nutritionNoFoodDetails')}</p>
                 )}
 
                 {/* Delete — confirm step */}
@@ -609,24 +609,24 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
                       <path d="M10 11v6M14 11v6" />
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                     </svg>
-                    Delete record
+                    {t('nutritionDeleteRecord')}
                   </button>
                 ) : (
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-[12px] text-ink2 flex-1">Delete this entry?</span>
+                    <span className="text-[12px] text-ink2 flex-1">{t('nutritionDeleteEntry')}</span>
                     <button
                       type="button"
                       onClick={() => setConfirmingId(null)}
                       className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-ink2 bg-sand hover:bg-border transition-colors focus:outline-none"
                     >
-                      Cancel
+                      {t('cancelButton')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleConfirmDelete(entry)}
                       className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-white bg-red-500 hover:bg-red-600 transition-colors focus:outline-none"
                     >
-                      Delete
+                      {t('journalDelete')}
                     </button>
                   </div>
                 )}
@@ -1065,7 +1065,7 @@ export default function NutritionTracker() {
             <div className="rounded-[14px] border border-border bg-white shadow-sm overflow-hidden">
               {/* Tab bar */}
               <div className="flex border-b border-border">
-                {[{ key: 'ai', label: 'AI Analyser' }, { key: 'manual', label: 'Manual Entry' }].map(({ key, label }) => (
+                {[{ key: 'ai', labelKey: 'nutritionTabAI' }, { key: 'manual', labelKey: 'nutritionTabManual' }].map(({ key, labelKey }) => (
                   <button
                     key={key}
                     type="button"
@@ -1077,7 +1077,7 @@ export default function NutritionTracker() {
                         : 'text-ink3 hover:text-ink2 bg-sand/30',
                     ].join(' ')}
                   >
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
               </div>
@@ -1105,7 +1105,7 @@ export default function NutritionTracker() {
                           {t('nutritionAiParsing')}
                         </span>
                       ) : (
-                        'Analyse'
+                        t('nutritionAiAnalyse')
                       )}
                     </button>
                     {aiError && (
@@ -1134,7 +1134,7 @@ export default function NutritionTracker() {
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
                                 <path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" /><line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" />
                               </svg>
-                              <p className="text-[12px] font-medium text-ink2">Choose your drink</p>
+                              <p className="text-[12px] font-medium text-ink2">{t('nutritionChooseDrink')}</p>
                             </div>
                             <div className="border border-orange/30 rounded-[10px] overflow-hidden bg-orange/5">
                               {parsedSuggestions.map((food) => (
@@ -1155,7 +1155,7 @@ export default function NutritionTracker() {
                           disabled={addingToLog || checkedFoods.size === 0}
                           className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
                         >
-                          {addingToLog ? 'Adding…' : t('nutritionConfirm')}
+                          {addingToLog ? t('nutritionAdding') : t('nutritionConfirm')}
                         </button>
                       </div>
                     )}
@@ -1189,7 +1189,7 @@ export default function NutritionTracker() {
                       value={manualName}
                       onChange={(e) => setManualName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleManualAdd()}
-                      placeholder="Food name (e.g. 白飯, Salad)"
+                      placeholder={t('nutritionManualNamePlaceholder')}
                       className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
                     />
 
@@ -1199,7 +1199,7 @@ export default function NutritionTracker() {
                         type="number"
                         value={manualQty}
                         onChange={(e) => setManualQty(e.target.value)}
-                        placeholder="Qty"
+                        placeholder={t('nutritionManualQtyPlaceholder')}
                         min="0"
                         className="w-[80px] border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
                       />
@@ -1207,7 +1207,7 @@ export default function NutritionTracker() {
                         type="text"
                         value={manualUnit}
                         onChange={(e) => setManualUnit(e.target.value)}
-                        placeholder="Unit (e.g. 碗, g, cup)"
+                        placeholder={t('nutritionManualUnitPlaceholder')}
                         className="flex-1 border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white"
                       />
                     </div>
@@ -1222,7 +1222,7 @@ export default function NutritionTracker() {
                       disabled={manualSaving || !manualName.trim()}
                       className="w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
                     >
-                      {manualSaving ? 'Saving…' : 'Add to log'}
+                      {manualSaving ? t('nutritionManualSaving') : t('nutritionManualAdd')}
                     </button>
                   </div>
                 )}
@@ -1341,13 +1341,13 @@ export default function NutritionTracker() {
           className="fixed bottom-[80px] md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-40px)] max-w-[400px] rounded-[12px] bg-[#1C1C1E] shadow-xl overflow-hidden"
         >
           <div className="flex items-center justify-between px-4 py-[13px]">
-            <span className="text-[13px] font-medium text-white">Entry deleted</span>
+            <span className="text-[13px] font-medium text-white">{t('nutritionEntryDeleted')}</span>
             <button
               type="button"
               onClick={handleUndoDelete}
               className="text-[13px] font-semibold text-orange ml-4 focus:outline-none focus-visible:underline"
             >
-              Undo
+              {t('nutritionUndo')}
             </button>
           </div>
           <div className="h-[3px] bg-white/10">
