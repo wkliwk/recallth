@@ -13,6 +13,7 @@ import {
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import FAB from '../components/FAB'
+import ProfileOnboardingChat from '../components/ProfileOnboardingChat'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
@@ -248,7 +249,7 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 }
 
 // ── Algorithm explanation card ────────────────────────────────────────────────
-function AlgorithmCard({ summary, navigate }) {
+function AlgorithmCard({ summary, onOpenProfileChat }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const basis = summary?.targetBasis
@@ -296,7 +297,7 @@ function AlgorithmCard({ summary, navigate }) {
               <p className="text-ink3 text-[11px]">{t('nutritionAlgoDefaultSub')}</p>
               <button
                 type="button"
-                onClick={() => navigate('/profile')}
+                onClick={onOpenProfileChat}
                 className="mt-1 text-[12px] font-semibold text-orange hover:underline text-left focus:outline-none"
               >
                 {t('nutritionAlgoCompleteProfile')}
@@ -778,6 +779,9 @@ export default function NutritionTracker() {
   const [entriesLoading, setEntriesLoading] = useState(true)
   const [entriesError, setEntriesError] = useState(null)
 
+  // ── Profile onboarding chat ───────────────────────────────────────────────
+  const [showProfileChat, setShowProfileChat] = useState(false)
+
   // ── Analyser tab: 'ai' | 'manual' ────────────────────────────────────────
   const [analyserTab, setAnalyserTab] = useState('ai')
 
@@ -1193,7 +1197,7 @@ export default function NutritionTracker() {
               dateLabel={dateLabel}
               customConfig={customConfig}
             />
-            <AlgorithmCard summary={summary} navigate={navigate} />
+            <AlgorithmCard summary={summary} onOpenProfileChat={() => setShowProfileChat(true)} />
           </div>
 
           {/* ── RIGHT: AI Analyser + Today's log ── */}
@@ -1478,6 +1482,17 @@ export default function NutritionTracker() {
         onSave={handleSaveCustomConfig}
         t={t}
       />
+
+      {/* ── Profile onboarding chat ── */}
+      {showProfileChat && (
+        <ProfileOnboardingChat
+          onClose={() => setShowProfileChat(false)}
+          onComplete={() => {
+            setShowProfileChat(false)
+            fetchSummary()
+          }}
+        />
+      )}
 
       {/* ── Undo delete toast ── */}
       <style>{`@keyframes drainBar { from { width: 100% } to { width: 0% } }`}</style>
