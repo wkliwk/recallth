@@ -69,6 +69,45 @@ function Field({ label, value, onChange }) {
   )
 }
 
+function SelectField({ label, value, onChange, options }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] uppercase tracking-[0.08em] text-ink3 font-medium">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none bg-white border border-border-md rounded-[10px] px-3 py-[8px] text-[13px] text-ink1 outline-none focus:border-orange-md transition-colors cursor-pointer"
+        >
+          <option value="">—</option>
+          {options.map(({ value: v, label: l }) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+        <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+const SEX_OPTIONS = [
+  { value: 'male',   label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other',  label: 'Other' },
+]
+
+const ACTIVITY_OPTIONS = [
+  { value: 'sedentary',   label: 'Sedentary (little/no exercise)' },
+  { value: 'light',       label: 'Lightly active (1–3x/week)' },
+  { value: 'moderate',    label: 'Moderately active (3–5x/week)' },
+  { value: 'active',      label: 'Active (6–7x/week)' },
+  { value: 'very_active', label: 'Very active (2x/day)' },
+]
+
 function EditActions({ saving, error, onSave, onCancel }) {
   const { t } = useLanguage()
   return (
@@ -173,7 +212,8 @@ function AboutSection({ data, onSave }) {
           <Field label={t('fieldAge')} value={draft.age} onChange={(v) => set('age', v)} />
           <Field label={t('fieldHeight')} value={draft.height} onChange={(v) => set('height', v)} />
           <Field label={t('fieldWeight')} value={draft.weight} onChange={(v) => set('weight', v)} />
-          <Field label={t('fieldGender')} value={draft.gender} onChange={(v) => set('gender', v)} />
+          <SelectField label="Sex" value={draft.sex} onChange={(v) => set('sex', v)} options={SEX_OPTIONS} />
+          <SelectField label="Activity level" value={draft.activityLevel} onChange={(v) => set('activityLevel', v)} options={ACTIVITY_OPTIONS} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
@@ -181,7 +221,8 @@ function AboutSection({ data, onSave }) {
           <ReadRow label={t('fieldAge')} value={data.age} />
           <ReadRow label={t('fieldHeight')} value={data.height} />
           <ReadRow label={t('fieldWeight')} value={data.weight} />
-          <ReadRow label={t('fieldGender')} value={data.gender} />
+          <ReadRow label="Sex" value={SEX_OPTIONS.find((o) => o.value === data.sex)?.label ?? data.sex} />
+          <ReadRow label="Activity level" value={ACTIVITY_OPTIONS.find((o) => o.value === data.activityLevel)?.label ?? data.activityLevel} />
         </div>
       )}
     </ProfileSection>
@@ -448,7 +489,7 @@ function LifestyleSection({ data, onSave }) {
 }
 
 // ── Empty state fallbacks ──────────────────────────────────────────────────
-const EMPTY_BODY       = { weight: '', height: '', age: '', gender: '' }
+const EMPTY_BODY       = { weight: '', height: '', age: '', sex: '', activityLevel: '' }
 const EMPTY_GOALS      = { primary: [], primaryGoal: '' }
 const EMPTY_EXERCISE   = { frequency: '', type: '', fitnessLevel: '' }
 const EMPTY_DIET       = { restrictions: [], allergies: [] }

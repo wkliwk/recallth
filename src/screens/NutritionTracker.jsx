@@ -222,6 +222,69 @@ function ParsedFoodRow({ food, checked, onToggle }) {
   )
 }
 
+// ── Algorithm explanation card ────────────────────────────────────────────────
+function AlgorithmCard({ summary, navigate }) {
+  const [open, setOpen] = useState(false)
+  const basis = summary?.targetBasis
+  const f = summary?.formula
+
+  return (
+    <div className="rounded-[14px] border border-border bg-white overflow-hidden shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 focus:outline-none"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
+            <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span className="text-[12px] font-semibold text-ink1">How are targets calculated?</span>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 border-t border-border text-[12px] leading-relaxed">
+          {basis === 'personalised' && f ? (
+            <div className="flex flex-col gap-[6px] pt-3">
+              <p className="text-[11px] font-semibold text-orange uppercase tracking-wide mb-1">Personalised · Mifflin-St Jeor</p>
+              <div className="bg-sand/60 rounded-[10px] p-3 flex flex-col gap-[5px] font-mono text-[11px] text-ink2">
+                <p>BMR = 10×{f.weightKg}kg + 6.25×{f.heightCm}cm − 5×{f.age} {f.sex === 'male' ? '+ 5' : '− 161'}</p>
+                <p className="font-semibold text-ink1">BMR = {f.bmr} kcal</p>
+                <p className="mt-1">TDEE = {f.bmr} × {f.activityMultiplier} ({f.activityLevel.replace('_', ' ')})</p>
+                <p className="font-semibold text-ink1">TDEE = {f.tdee} kcal</p>
+                <p className="mt-1">Calorie target = {f.tdee} {f.calorieAdjustmentLabel}</p>
+                <p className="font-semibold text-ink1">= {f.calorieTarget} kcal/day</p>
+                <p className="mt-1">Protein = {f.weightKg}kg × factor</p>
+                <p className="font-semibold text-ink1">= {f.proteinTarget}g/day</p>
+              </div>
+              <p className="text-[10px] text-ink3 mt-1">Update your profile to recalculate.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 pt-3">
+              <p className="text-ink2">Targets are using <strong>general guidelines</strong>.</p>
+              <p className="text-ink3 text-[11px]">
+                Complete your profile — height, weight, age, sex, and activity level — to get targets personalised to your body using the Mifflin-St Jeor formula.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="mt-1 text-[12px] font-semibold text-orange hover:underline text-left focus:outline-none"
+              >
+                Complete profile →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Mobile collapsible calendar ───────────────────────────────────────────────
 function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
   const [open, setOpen] = useState(false)
@@ -859,6 +922,7 @@ export default function NutritionTracker() {
               t={t}
               dateLabel={dateLabel}
             />
+            <AlgorithmCard summary={summary} navigate={navigate} />
           </div>
 
           {/* ── RIGHT: AI Analyser + Today's log ── */}
