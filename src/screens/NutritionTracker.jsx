@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+} from '@dnd-kit/core'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import FAB from '../components/FAB'
@@ -463,10 +473,22 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories' }) {
+function DraggableEntry({ entry, children }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: entry._id })
+  return (
+    <div ref={setNodeRef} style={{ opacity: isDragging ? 0.4 : 1 }}>
+      {/* Drag handle attached via listeners */}
+      {children({ dragHandleProps: { ...listeners, ...attributes } })}
+    </div>
+  )
+}
+
+function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories', isDropTarget = false }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
+
+  const { setNodeRef } = useDroppable({ id: mealType })
 
   const metricCfg = LOG_METRICS.find((m) => m.key === logMetric) ?? LOG_METRICS[0]
 
@@ -486,8 +508,11 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
   }
 
   return (
-    <div className="rounded-[14px] border border-border bg-white overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-[10px] border-b border-border bg-sand/40">
+    <div
+      ref={setNodeRef}
+      className={`rounded-[14px] border bg-white overflow-hidden transition-colors ${isDropTarget ? 'border-orange shadow-md' : 'border-border'}`}
+    >
+      <div className={`flex items-center justify-between px-4 py-[10px] border-b border-border transition-colors ${isDropTarget ? 'bg-orange/10' : 'bg-sand/40'}`}>
         <p className="text-[13px] font-semibold text-ink1">{label}</p>
         <p className="text-[12px] text-ink3">{totalMetric} {metricCfg.unit}</p>
       </div>
@@ -497,30 +522,46 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
         const isExpanded = expandedId === entry._id
         const isConfirming = confirmingId === entry._id
         return (
-          <div key={entry._id} className="border-b border-border last:border-0">
-            {/* Entry row — tap to expand/collapse */}
-            <button
-              type="button"
-              onClick={() => setExpandedId(isExpanded ? null : entry._id)}
-              className="w-full text-left flex items-center justify-between px-4 py-[11px] hover:bg-sand/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <svg
-                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  className={`shrink-0 text-ink3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                >
-                  <polyline points="6 9 12 15 18 9" />
+          <DraggableEntry key={entry._id} entry={entry}>
+            {({ dragHandleProps }) => (
+          <div className="border-b border-border last:border-0">
+            {/* Entry row — drag handle + tap to expand */}
+            <div className="flex items-center">
+              {/* Drag handle */}
+              <div
+                {...dragHandleProps}
+                className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink4 hover:text-ink3"
+                aria-label="Drag to move"
+              >
+                <svg width="12" height="14" viewBox="0 0 10 14" fill="currentColor">
+                  <circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/>
+                  <circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/>
+                  <circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/>
                 </svg>
-                <div className="min-w-0">
-                  <p className="text-[13px] text-ink1 truncate">{names}</p>
-                  {entry.rawText && (
-                    <p className="text-[11px] text-ink3 truncate mt-[1px]">{entry.rawText}</p>
-                  )}
-                </div>
               </div>
-              <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
-            </button>
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : entry._id)}
+                className="flex-1 text-left flex items-center justify-between pr-4 py-[11px] hover:bg-sand/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange min-w-0"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    className={`shrink-0 text-ink3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-[13px] text-ink1 truncate">{names}</p>
+                    {entry.rawText && (
+                      <p className="text-[11px] text-ink3 truncate mt-[1px]">{entry.rawText}</p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
+              </button>
+            </div>
 
             {/* Expanded food details */}
             {isExpanded && (
@@ -592,6 +633,8 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
               </div>
             )}
           </div>
+        )}
+          </DraggableEntry>
         )
       })}
     </div>
@@ -638,6 +681,14 @@ export default function NutritionTracker() {
   // ── Calendar refresh key (incremented after add/delete to re-fetch dots) ─
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0)
   function bumpCalendar() { setCalendarRefreshKey((k) => k + 1) }
+
+  // ── DnD state ─────────────────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  )
+  const [activeEntryId, setActiveEntryId] = useState(null)
+  const [overMealType, setOverMealType] = useState(null)
 
   // ── Log metric preference (localStorage) ─────────────────────────────────
   const [logMetric, setLogMetric] = useState(
@@ -741,6 +792,30 @@ export default function NutritionTracker() {
       await api.nutrition.setCategory(cat)
     } catch {
       // non-fatal — UI already updated optimistically
+    }
+  }
+
+  // ── DnD handlers ──────────────────────────────────────────────────────────
+  function handleDragStart({ active }) {
+    setActiveEntryId(active.id)
+  }
+
+  function handleDragOver({ over }) {
+    setOverMealType(over ? over.id : null)
+  }
+
+  async function handleDragEnd({ active, over }) {
+    setActiveEntryId(null)
+    setOverMealType(null)
+    if (!over) return
+    const newMealType = over.id
+    const entry = entries.find((e) => e._id === active.id)
+    if (!entry || entry.mealType === newMealType) return
+    try {
+      await api.nutrition.update(entry._id, { mealType: newMealType })
+      await Promise.all([fetchEntries(), fetchSummary()])
+    } catch {
+      // silent — UI reverts on next fetch
     }
   }
 
@@ -1051,18 +1126,36 @@ export default function NutritionTracker() {
                   <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
-                    <MealGroup
-                      key={mt}
-                      mealType={mt}
-                      entries={mealGroups[mt]}
-                      t={t}
-                      onRequestDelete={handleRequestDelete}
-                      logMetric={logMetric}
-                    />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={sensors}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="flex flex-col gap-3">
+                    {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                      <MealGroup
+                        key={mt}
+                        mealType={mt}
+                        entries={mealGroups[mt]}
+                        t={t}
+                        onRequestDelete={handleRequestDelete}
+                        logMetric={logMetric}
+                        isDropTarget={overMealType === mt}
+                      />
+                    ))}
+                  </div>
+                  <DragOverlay>
+                    {activeEntryId ? (
+                      <div className="rounded-[10px] bg-white border border-orange shadow-lg px-4 py-3 text-[13px] font-medium text-ink1 opacity-90">
+                        {(() => {
+                          const e = entries.find((x) => x._id === activeEntryId)
+                          return e?.foods?.map((f) => f.name).join(', ') ?? e?.rawText ?? '…'
+                        })()}
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
               )}
             </div>
 
