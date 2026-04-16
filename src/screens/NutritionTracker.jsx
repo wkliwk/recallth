@@ -6,11 +6,26 @@ import FAB from '../components/FAB'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 
-// ── Date helper ───────────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
 function todayISO() {
   const d = new Date()
   const pad = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function offsetDate(iso, days) {
+  const d = new Date(iso + 'T00:00:00')
+  d.setDate(d.getDate() + days)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function formatDateLabel(iso) {
+  const today = todayISO()
+  if (iso === today) return 'Today'
+  if (iso === offsetDate(today, -1)) return 'Yesterday'
+  const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 // ── Skeleton primitive ────────────────────────────────────────────────────────
@@ -119,7 +134,7 @@ function NutrientBar({ label, actual, target, unit }) {
 }
 
 // ── Daily summary card ────────────────────────────────────────────────────────
-function SummaryCard({ category, loading, summary, t }) {
+function SummaryCard({ category, loading, summary, t, dateLabel = 'Today' }) {
   const nutrients = CATEGORY_NUTRIENTS[category] ?? CATEGORY_NUTRIENTS.custom
 
   if (loading) {
@@ -141,7 +156,7 @@ function SummaryCard({ category, loading, summary, t }) {
 
   return (
     <div className="mb-5 rounded-[14px] border border-border bg-white px-5 py-4 md:px-6 md:py-5 flex flex-col gap-[14px] shadow-sm">
-      <p className="text-[13px] font-semibold text-ink1">Today</p>
+      <p className="text-[13px] font-semibold text-ink1">{dateLabel}</p>
       {nutrients.map((n) => (
         <NutrientBar
           key={n.key}
@@ -327,7 +342,17 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
 export default function NutritionTracker() {
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const today = todayISO()
+  const todayStr = todayISO()
+  const [viewDate, setViewDate] = useState(todayStr)
+  const dateLabel = formatDateLabel(viewDate)
+  const isToday = viewDate === todayStr
+
+  function handlePrevDay() { setViewDate((d) => offsetDate(d, -1)) }
+  function handleNextDay() {
+    const next = offsetDate(viewDate, 1)
+    if (next <= todayStr) setViewDate(next)
+  }
+  function handleGoToday() { setViewDate(todayStr) }
 
   // ── Category state ────────────────────────────────────────────────────────
   const [category, setCategory] = useState('gym')
@@ -388,21 +413,21 @@ export default function NutritionTracker() {
   const fetchSummary = useCallback(async () => {
     setSummaryLoading(true)
     try {
-      const res = await api.nutrition.summary(today)
+      const res = await api.nutrition.summary(viewDate)
       setSummary(res?.data ?? res ?? null)
     } catch {
       setSummary(null)
     } finally {
       setSummaryLoading(false)
     }
-  }, [today])
+  }, [viewDate])
 
-  // ── Fetch today's log ─────────────────────────────────────────────────────
+  // ── Fetch selected day's log ──────────────────────────────────────────────
   const fetchEntries = useCallback(async () => {
     setEntriesLoading(true)
     setEntriesError(null)
     try {
-      const res = await api.nutrition.list(today)
+      const res = await api.nutrition.list(viewDate)
       const data = res?.data ?? res ?? []
       setEntries(Array.isArray(data) ? data : [])
     } catch (err) {
@@ -411,7 +436,7 @@ export default function NutritionTracker() {
     } finally {
       setEntriesLoading(false)
     }
-  }, [today])
+  }, [viewDate])
 
   useEffect(() => {
     fetchSummary()
@@ -493,7 +518,7 @@ export default function NutritionTracker() {
     setAddingToLog(true)
     try {
       await api.nutrition.create({
-        date: today,
+        date: viewDate,
         mealType: 'snack',
         foods: selected,
         rawText: aiText.trim(),
@@ -549,7 +574,7 @@ export default function NutritionTracker() {
         </div>
         <button
           type="button"
-          onClick={() => navigate('/nutrition/add')}
+          onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
           className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
         >
           + Add food
@@ -610,6 +635,7 @@ export default function NutritionTracker() {
               loading={summaryLoading}
               summary={summary}
               t={t}
+              dateLabel={dateLabel}
             />
           </div>
 
@@ -680,8 +706,39 @@ export default function NutritionTracker() {
 
             {/* Today's food log */}
             <div className="pb-[100px] md:pb-8">
+              {/* Date navigation */}
               <div className="flex items-center justify-between mb-3 md:mb-4">
-                <p className="text-[14px] md:text-[16px] font-semibold text-ink1">Today's log</p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrevDay}
+                    aria-label="Previous day"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGoToday}
+                    aria-label={isToday ? 'Today' : 'Back to today'}
+                    className="px-2 py-[2px] rounded-[6px] text-[14px] md:text-[16px] font-semibold text-ink1 hover:bg-sand transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                  >
+                    {dateLabel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextDay}
+                    disabled={isToday}
+                    aria-label="Next day"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="flex gap-1" role="group" aria-label="Log display metric">
                   {LOG_METRICS.map((m) => (
                     <button
@@ -736,7 +793,7 @@ export default function NutritionTracker() {
 
       {/* ── FAB — mobile only ── */}
       <div className="md:hidden">
-        <FAB onClick={() => navigate('/nutrition/add')} />
+        <FAB onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })} />
       </div>
 
       {/* ── Undo delete toast ── */}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
@@ -41,7 +41,9 @@ const selectClass =
 
 export default function NutritionAdd() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useLanguage()
+  const entryDate = location.state?.date ?? todayISO()
 
   // ── Form state ───────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -130,7 +132,7 @@ export default function NutritionAdd() {
     setSubmitting(true)
     try {
       const payload = {
-        date: todayISO(),
+        date: entryDate,
         mealType: form.mealType,
         foods: [
           {
