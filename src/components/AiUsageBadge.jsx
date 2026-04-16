@@ -5,22 +5,74 @@ const isDebugMode = () =>
   import.meta.env.DEV ||
   new URLSearchParams(window.location.search).get('debug') === '1'
 
-function fmt(n) {
-  return n?.toLocaleString() ?? '0'
+const fmt    = (n)   => n?.toLocaleString() ?? '0'
+const fmtCost = (usd) => (!usd || usd < 0.000001) ? '< $0.000001' : `$${usd.toFixed(6)}`
+const fmtTime = (ts)  => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+const S = {
+  wrap: {
+    position: 'fixed', bottom: 80, right: 16, zIndex: 9999,
+    background: 'rgba(18,18,18,0.96)', color: '#e0e0e0',
+    borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
+    boxShadow: '0 6px 24px rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+    fontFamily: 'monospace', fontSize: 11, overflow: 'hidden',
+    width: 300,
+  },
+  section: { padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)' },
+  row:     { lineHeight: 1.7 },
+  label:   { color: '#6b7280' },
+  footer:  { padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
 }
 
-function fmtCost(usd) {
-  if (!usd || usd < 0.000001) return '< $0.000001'
-  return `$${usd.toFixed(6)}`
+function Row({ label, value, color, bold }) {
+  return (
+    <div style={S.row}>
+      <span style={S.label}>{label} </span>
+      <span style={{ color, fontWeight: bold ? 700 : 400 }}>{value}</span>
+    </div>
+  )
 }
 
-function fmtTime(ts) {
-  const d = new Date(ts)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+function IoBlock({ label, text }) {
+  const [open, setOpen] = useState(false)
+  if (!text) return null
+  return (
+    <div style={{ marginTop: 3 }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 10, padding: 0, textDecoration: 'underline' }}
+      >
+        {open ? `▾ hide ${label}` : `▸ ${label}`}
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 3, padding: '4px 6px',
+          background: 'rgba(255,255,255,0.05)', borderRadius: 6,
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          color: '#d1d5db', maxHeight: 160, overflowY: 'auto', lineHeight: 1.5,
+        }}>
+          {text}
+        </div>
+      )}
+    </div>
+  )
 }
 
-const dark = 'rgba(18,18,18,0.95)'
-const border = '1px solid rgba(255,255,255,0.1)'
+function LogEntry({ entry, isLast }) {
+  return (
+    <div style={{ padding: '5px 10px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span style={{ color: '#f97316', fontWeight: 600 }}>{entry.feature}</span>
+        <span style={{ color: '#6b7280' }}>{fmtTime(entry.ts)}</span>
+      </div>
+      <div style={{ color: '#9ca3af' }}>
+        {fmt(entry.inputTokens)}↑ {fmt(entry.outputTokens)}↓ · <span style={{ color: '#fbbf24' }}>{fmtCost(entry.estimatedCostUSD)}</span>
+      </div>
+      <IoBlock label="input"  text={entry.input}  />
+      <IoBlock label="output" text={entry.output} />
+    </div>
+  )
+}
 
 export default function AiUsageBadge() {
   const { usage, log, clearUsage, clearLog } = useAiUsage()
@@ -30,61 +82,38 @@ export default function AiUsageBadge() {
   if (!usage && log.length === 0) return null
 
   const totalTokens = log.reduce((s, e) => s + (e.totalTokens ?? 0), 0)
-  const totalCost = log.reduce((s, e) => s + (e.estimatedCostUSD ?? 0), 0)
+  const totalCost   = log.reduce((s, e) => s + (e.estimatedCostUSD ?? 0), 0)
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 80,
-        right: 16,
-        zIndex: 9999,
-        width: showHistory ? 300 : 220,
-        background: dark,
-        color: '#e0e0e0',
-        borderRadius: 12,
-        border,
-        boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
-        backdropFilter: 'blur(8px)',
-        fontFamily: 'monospace',
-        fontSize: 11,
-        overflow: 'hidden',
-        transition: 'width 0.2s ease',
-      }}
-    >
-      {/* ── Current call header ── */}
+    <div style={S.wrap}>
+
+      {/* ── Current call ── */}
       {usage && (
-        <div style={{ padding: '8px 10px', borderBottom: border }}>
+        <div style={S.section}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
             <span style={{ color: '#f97316', fontWeight: 700, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
               AI Usage
             </span>
-            <button
-              onClick={clearUsage}
-              style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '0 2px' }}
-              title="Close"
-            >✕</button>
+            <button onClick={clearUsage} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, padding: '0 2px' }}>✕</button>
           </div>
-          <div style={{ lineHeight: 1.7 }}>
-            <Row label="model" value={usage.model} color="#fff" />
-            <Row label="in" value={fmt(usage.inputTokens)} color="#34d399" />
-            <Row label="out" value={fmt(usage.outputTokens)} color="#60a5fa" />
-            <Row label="total" value={fmt(usage.totalTokens)} color="#e5e7eb" />
-            <Row label="cost" value={fmtCost(usage.estimatedCostUSD)} color="#fbbf24" bold />
-          </div>
+          <Row label="model"  value={usage.model}                        color="#fff" />
+          <Row label="in"     value={fmt(usage.inputTokens)}             color="#34d399" />
+          <Row label="out"    value={fmt(usage.outputTokens)}            color="#60a5fa" />
+          <Row label="total"  value={fmt(usage.totalTokens)}             color="#e5e7eb" />
+          <Row label="cost"   value={fmtCost(usage.estimatedCostUSD)}    color="#fbbf24" bold />
         </div>
       )}
 
-      {/* ── Footer: totals + history toggle ── */}
-      <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ lineHeight: 1.5 }}>
-          <span style={{ color: '#6b7280' }}>session </span>
+      {/* ── Session totals + history toggle ── */}
+      <div style={S.footer}>
+        <div>
+          <span style={S.label}>session </span>
           <span style={{ color: '#e5e7eb' }}>{fmt(totalTokens)} tok</span>
-          <span style={{ color: '#6b7280' }}> · </span>
+          <span style={S.label}> · </span>
           <span style={{ color: '#fbbf24', fontWeight: 600 }}>{fmtCost(totalCost)}</span>
         </div>
         <button
-          onClick={() => setShowHistory((v) => !v)}
+          onClick={() => setShowHistory(v => !v)}
           style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 10, textDecoration: 'underline' }}
         >
           {showHistory ? 'hide' : `log (${log.length})`}
@@ -93,43 +122,22 @@ export default function AiUsageBadge() {
 
       {/* ── History panel ── */}
       {showHistory && (
-        <div style={{ borderTop: border }}>
-          <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
-            {log.length === 0 ? (
-              <div style={{ padding: '8px 10px', color: '#6b7280' }}>No calls yet</div>
-            ) : (
-              [...log].reverse().map((entry, i) => (
-                <div key={i} style={{ padding: '4px 10px', borderBottom: i < log.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#f97316' }}>{entry.feature}</span>
-                    <span style={{ color: '#6b7280' }}>{fmtTime(entry.ts)}</span>
-                  </div>
-                  <div style={{ color: '#9ca3af' }}>
-                    {fmt(entry.totalTokens)} tok · <span style={{ color: '#fbbf24' }}>{fmtCost(entry.estimatedCostUSD)}</span>
-                  </div>
-                </div>
-              ))
-            )}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            {log.length === 0
+              ? <div style={{ padding: '8px 10px', color: '#6b7280' }}>No calls yet</div>
+              : [...log].reverse().map((entry, i) => (
+                  <LogEntry key={i} entry={entry} isLast={i === log.length - 1} />
+                ))
+            }
           </div>
-          <div style={{ padding: '5px 10px', borderTop: border, display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={clearLog}
-              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 10 }}
-            >
+          <div style={{ padding: '5px 10px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={clearLog} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 10 }}>
               clear log
             </button>
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function Row({ label, value, color, bold }) {
-  return (
-    <div>
-      <span style={{ color: '#6b7280' }}>{label} </span>
-      <span style={{ color, fontWeight: bold ? 700 : 400 }}>{value}</span>
     </div>
   )
 }

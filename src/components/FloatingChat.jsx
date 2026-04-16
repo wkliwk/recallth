@@ -92,7 +92,10 @@ function ChatPanel({ onClose }) {
           text: res.data.message?.content ?? t('chatNoResponse'),
           actions: res.data.actions || [],
         }])
-        if (res.data.aiUsage) showUsage(res.data.aiUsage, 'chat')
+        if (res.data.aiUsage) showUsage(res.data.aiUsage, 'chat', {
+          input: text || t('chatImagePrompt'),
+          output: res.data.message?.content,
+        })
       }
     } catch {
       setMessages((m) => [

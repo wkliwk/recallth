@@ -129,7 +129,10 @@ export default function CabinetAdd() {
         const results = Array.isArray(res.data) ? res.data : [res.data]
         setAiResults(results)
         setAiSelected(0)
-        if (res.aiUsage) showUsage(res.aiUsage, 'ai-lookup')
+        if (res.aiUsage) showUsage(res.aiUsage, 'ai-lookup', {
+          input: aiQuery.trim(),
+          output: results.map(p => p.name ?? p.productName ?? JSON.stringify(p)).join(', '),
+        })
       }
     } catch (err) {
       setErrors({ submit: err.message || 'AI lookup failed' })

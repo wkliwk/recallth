@@ -2,6 +2,13 @@ import { createContext, useContext, useState, useCallback } from 'react'
 
 const LOG_KEY = 'recallth_ai_usage_log'
 const MAX_LOG = 200
+const MAX_IO = 800 // chars per input/output stored
+
+function trunc(str) {
+  if (!str) return undefined
+  const s = typeof str === 'string' ? str : JSON.stringify(str)
+  return s.length > MAX_IO ? s.slice(0, MAX_IO) + '…' : s
+}
 
 function loadLog() {
   try {
@@ -21,7 +28,8 @@ export function AiUsageProvider({ children }) {
   const [usage, setUsage] = useState(null)
   const [log, setLog] = useState(loadLog)
 
-  const showUsage = useCallback((aiUsage, feature = 'unknown') => {
+  // showUsage(aiUsage, feature, { input?, output? })
+  const showUsage = useCallback((aiUsage, feature = 'unknown', io = {}) => {
     if (!aiUsage) return
     setUsage(aiUsage)
 
@@ -33,6 +41,8 @@ export function AiUsageProvider({ children }) {
       outputTokens: aiUsage.outputTokens,
       totalTokens: aiUsage.totalTokens,
       estimatedCostUSD: aiUsage.estimatedCostUSD,
+      ...(io.input  != null ? { input:  trunc(io.input)  } : {}),
+      ...(io.output != null ? { output: trunc(io.output) } : {}),
     }
 
     setLog((prev) => {
