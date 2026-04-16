@@ -73,6 +73,18 @@ const CATEGORY_NUTRIENTS = {
 }
 
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack']
+
+const LOG_METRICS = [
+  { key: 'calories', label: 'kcal', unit: 'kcal' },
+  { key: 'protein', label: 'Protein', unit: 'g' },
+  { key: 'carbs', label: 'Carbs', unit: 'g' },
+  { key: 'fat', label: 'Fat', unit: 'g' },
+]
+
+function getFoodMetric(food, key) {
+  return food.nutrients?.[key] ?? food[key] ?? 0
+}
+
 const MEAL_LABEL_KEYS = {
   breakfast: 'nutritionMealBreakfast',
   lunch: 'nutritionMealLunch',
@@ -181,13 +193,15 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function MealGroup({ mealType, entries, t, onRequestDelete }) {
+function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories' }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
 
-  const totalCal = entries.reduce((sum, e) => {
-    const c = e.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? e.calories ?? 0
+  const metricCfg = LOG_METRICS.find((m) => m.key === logMetric) ?? LOG_METRICS[0]
+
+  const totalMetric = entries.reduce((sum, e) => {
+    const c = e.foods?.reduce((s, f) => s + getFoodMetric(f, logMetric), 0) ?? getFoodMetric(e, logMetric)
     return sum + c
   }, 0)
 
@@ -205,12 +219,11 @@ function MealGroup({ mealType, entries, t, onRequestDelete }) {
     <div className="rounded-[14px] border border-border bg-white overflow-hidden">
       <div className="flex items-center justify-between px-4 py-[10px] border-b border-border bg-sand/40">
         <p className="text-[13px] font-semibold text-ink1">{label}</p>
-        <p className="text-[12px] text-ink3">{totalCal} kcal</p>
+        <p className="text-[12px] text-ink3">{totalMetric} {metricCfg.unit}</p>
       </div>
       {entries.map((entry) => {
         const names = entry.foods?.map((f) => f.name).join(', ') ?? entry.rawText ?? '—'
-        const cal =
-          entry.foods?.reduce((s, f) => s + (f.nutrients?.calories ?? f.calories ?? 0), 0) ?? entry.calories ?? 0
+        const metricVal = entry.foods?.reduce((s, f) => s + getFoodMetric(f, logMetric), 0) ?? getFoodMetric(entry, logMetric)
         const isExpanded = expandedId === entry._id
         const isConfirming = confirmingId === entry._id
         return (
@@ -231,7 +244,7 @@ function MealGroup({ mealType, entries, t, onRequestDelete }) {
                 </svg>
                 <p className="text-[13px] text-ink1 truncate">{names}</p>
               </div>
-              <p className="text-[12px] text-ink3 shrink-0 ml-3">{cal} kcal</p>
+              <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
             </button>
 
             {/* Expanded food details */}
@@ -336,6 +349,16 @@ export default function NutritionTracker() {
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
+
+  // ── Log metric preference (localStorage) ─────────────────────────────────
+  const [logMetric, setLogMetric] = useState(
+    () => localStorage.getItem('nutrition_log_metric') ?? 'calories'
+  )
+
+  function handleLogMetricChange(key) {
+    setLogMetric(key)
+    localStorage.setItem('nutrition_log_metric', key)
+  }
 
   // ── Pending delete (undo) state ───────────────────────────────────────────
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -657,7 +680,27 @@ export default function NutritionTracker() {
 
             {/* Today's food log */}
             <div className="pb-[100px] md:pb-8">
-              <p className="text-[14px] md:text-[16px] font-semibold text-ink1 mb-3 md:mb-4">Today's log</p>
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <p className="text-[14px] md:text-[16px] font-semibold text-ink1">Today's log</p>
+                <div className="flex gap-1" role="group" aria-label="Log display metric">
+                  {LOG_METRICS.map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => handleLogMetricChange(m.key)}
+                      aria-pressed={logMetric === m.key}
+                      className={[
+                        'px-[10px] py-[4px] rounded-pill text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
+                        logMetric === m.key
+                          ? 'bg-orange text-white'
+                          : 'bg-sand text-ink3 hover:bg-orange/10 hover:text-ink2',
+                      ].join(' ')}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {entriesLoading ? (
                 <div className="flex flex-col gap-3">
@@ -680,6 +723,7 @@ export default function NutritionTracker() {
                       entries={mealGroups[mt]}
                       t={t}
                       onRequestDelete={handleRequestDelete}
+                      logMetric={logMetric}
                     />
                   ))}
                 </div>
