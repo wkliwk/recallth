@@ -207,6 +207,183 @@ function ParsedFoodRow({ food, checked, onToggle }) {
   )
 }
 
+// ── Mobile collapsible calendar ───────────────────────────────────────────────
+function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="lg:hidden rounded-[14px] border border-border bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 focus:outline-none"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span className="text-[13px] font-semibold text-ink1">{dateLabel}</span>
+        </div>
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round"
+          className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 border-t border-border">
+          <div className="pt-3">
+            <NutritionCalendar
+              viewDate={viewDate}
+              onSelectDate={(d) => { onSelectDate(d); setOpen(false) }}
+              todayStr={todayStr}
+              refreshKey={refreshKey}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Nutrition Calendar ────────────────────────────────────────────────────────
+const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+
+function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
+  const toMonthISO = (iso) => iso.slice(0, 7) + '-01'
+  const [calMonth, setCalMonth] = useState(() => toMonthISO(viewDate))
+  const [recordDays, setRecordDays] = useState(new Set())
+
+  // Sync calendar month when viewDate moves to a different month
+  useEffect(() => {
+    const newMonth = toMonthISO(viewDate)
+    if (newMonth !== calMonth) setCalMonth(newMonth)
+  }, [viewDate]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch which days have records whenever calMonth or refreshKey changes
+  useEffect(() => {
+    const [year, month] = calMonth.split('-')
+    api.nutrition.days(year, month)
+      .then((res) => {
+        const list = res?.data ?? []
+        setRecordDays(new Set(Array.isArray(list) ? list : []))
+      })
+      .catch(() => {})
+  }, [calMonth, refreshKey])
+
+  const year = parseInt(calMonth.slice(0, 4), 10)
+  const month = parseInt(calMonth.slice(5, 7), 10)
+  const firstDow = (new Date(year, month - 1, 1).getDay() + 6) % 7 // Mon=0
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+
+  const isCurrentMonth = calMonth.slice(0, 7) === todayStr.slice(0, 7)
+
+  function prevMonth() {
+    const d = new Date(year, month - 2, 1)
+    setCalMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`)
+  }
+  function nextMonth() {
+    if (isCurrentMonth) return
+    const d = new Date(year, month, 1)
+    setCalMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`)
+  }
+
+  const cells = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => {
+      const d = i + 1
+      return `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    }),
+  ]
+
+  return (
+    <div className="rounded-[14px] border border-border bg-white px-4 pt-4 pb-3 shadow-sm">
+      {/* Month header */}
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={prevMonth}
+          aria-label="Previous month"
+          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <span className="text-[13px] font-semibold text-ink1">{monthLabel}</span>
+        <button
+          type="button"
+          onClick={nextMonth}
+          disabled={isCurrentMonth}
+          aria-label="Next month"
+          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div className="grid grid-cols-7 mb-1">
+        {DOW.map((d) => (
+          <span key={d} className="text-[10px] font-medium text-ink3 text-center py-[2px]">{d}</span>
+        ))}
+      </div>
+
+      {/* Date cells */}
+      <div className="grid grid-cols-7 gap-y-[2px]">
+        {cells.map((iso, i) => {
+          if (!iso) return <div key={`empty-${i}`} />
+          const isFuture = iso > todayStr
+          const isToday = iso === todayStr
+          const isSelected = iso === viewDate
+          const hasRecord = recordDays.has(iso)
+          const dayNum = parseInt(iso.slice(8), 10)
+          return (
+            <button
+              key={iso}
+              type="button"
+              disabled={isFuture}
+              onClick={() => onSelectDate(iso)}
+              className={[
+                'relative flex flex-col items-center justify-center rounded-[8px] h-8 text-[12px] font-medium transition-colors focus:outline-none',
+                isFuture ? 'text-ink4 cursor-not-allowed' : 'cursor-pointer',
+                isSelected ? 'bg-orange text-white' : '',
+                !isSelected && isToday ? 'ring-[1.5px] ring-orange text-orange' : '',
+                !isSelected && !isToday && !isFuture ? 'text-ink1 hover:bg-sand' : '',
+              ].filter(Boolean).join(' ')}
+            >
+              {dayNum}
+              {hasRecord && !isSelected && (
+                <span className="absolute bottom-[4px] left-1/2 -translate-x-1/2 w-[4px] h-[4px] rounded-full bg-orange" />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border">
+        <div className="flex items-center gap-1">
+          <span className="w-[8px] h-[8px] rounded-full bg-orange inline-block" />
+          <span className="text-[10px] text-ink3">Has record</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="w-[8px] h-[8px] rounded-full bg-orange inline-block ring-[1.5px] ring-orange ring-offset-1" />
+          <span className="text-[10px] text-ink3">Today</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Meal group card ───────────────────────────────────────────────────────────
 function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories' }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
@@ -375,6 +552,10 @@ export default function NutritionTracker() {
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
 
+  // ── Calendar refresh key (incremented after add/delete to re-fetch dots) ─
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState(0)
+  function bumpCalendar() { setCalendarRefreshKey((k) => k + 1) }
+
   // ── Log metric preference (localStorage) ─────────────────────────────────
   const [logMetric, setLogMetric] = useState(
     () => localStorage.getItem('nutrition_log_metric') ?? 'calories'
@@ -458,6 +639,7 @@ export default function NutritionTracker() {
       setPendingDelete(null)
       fetchEntries()
       fetchSummary()
+      bumpCalendar()
     }, 5000)
     setPendingDelete({ entry, timerId })
   }
@@ -527,6 +709,7 @@ export default function NutritionTracker() {
       setParsedFoods([])
       setCheckedFoods(new Set())
       await Promise.all([fetchEntries(), fetchSummary()])
+      bumpCalendar()
     } catch (err) {
       setAiError(err?.message ?? 'Failed to add to log — please try again')
     } finally {
@@ -619,11 +802,30 @@ export default function NutritionTracker() {
         {/* ── Two-column grid at lg ── */}
         <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
 
-          {/* ── LEFT: Summary + disclaimer (sticky on desktop) ── */}
-          <div className="lg:sticky lg:top-[80px]">
+          {/* ── LEFT: Calendar + Summary (sticky on desktop) ── */}
+          <div className="lg:sticky lg:top-[80px] flex flex-col gap-4">
+            {/* Calendar — always visible on desktop, collapsible on mobile */}
+            <div className="hidden lg:block">
+              <NutritionCalendar
+                viewDate={viewDate}
+                onSelectDate={setViewDate}
+                todayStr={todayStr}
+                refreshKey={calendarRefreshKey}
+              />
+            </div>
+
+            {/* Mobile: collapsible calendar */}
+            <MobileCalendar
+              viewDate={viewDate}
+              onSelectDate={setViewDate}
+              todayStr={todayStr}
+              dateLabel={dateLabel}
+              refreshKey={calendarRefreshKey}
+            />
+
             {showDisclaimer && (
               <div
-                className="mb-5 px-4 py-3 rounded-[12px] bg-[#FDE8DE]"
+                className="px-4 py-3 rounded-[12px] bg-[#FDE8DE]"
                 role="note"
                 aria-label="Medical disclaimer"
               >
@@ -706,45 +908,26 @@ export default function NutritionTracker() {
 
             {/* Today's food log */}
             <div className="pb-[100px] md:pb-8">
-              {/* Date navigation */}
+              {/* Date + metric row */}
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={handlePrevDay}
                     aria-label="Previous day"
-                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
                       <polyline points="15 18 9 12 15 6" />
                     </svg>
                   </button>
-                  {/* Date picker trigger */}
-                  <label className="relative cursor-pointer select-none">
-                    <span className="flex items-center gap-[5px] px-2 py-[2px] rounded-[6px] text-[14px] md:text-[16px] font-semibold text-ink1 hover:bg-sand transition-colors">
-                      {dateLabel}
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink3 shrink-0">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                    </span>
-                    <input
-                      type="date"
-                      value={viewDate}
-                      max={todayStr}
-                      onChange={(e) => { if (e.target.value) setViewDate(e.target.value) }}
-                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                      aria-label="Pick a date"
-                    />
-                  </label>
+                  <span className="px-1 text-[14px] md:text-[15px] font-semibold text-ink1">{dateLabel}</span>
                   <button
                     type="button"
                     onClick={handleNextDay}
                     disabled={isToday}
                     aria-label="Next day"
-                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
                       <polyline points="9 18 15 12 9 6" />

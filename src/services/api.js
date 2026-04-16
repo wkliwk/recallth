@@ -104,5 +104,6 @@ export const api = {
     summary: (date) => request(`/nutrition/summary${date ? `?date=${date}` : ''}`),
     getCategory: () => request('/nutrition/category'),
     setCategory: (category) => request('/nutrition/category', { method: 'PUT', body: JSON.stringify({ category }) }),
+    days: (year, month) => request(`/nutrition/days?year=${year}&month=${month}`),
   },
 }
