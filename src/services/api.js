@@ -89,4 +89,15 @@ export const api = {
     create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
     interpret: () => request('/bloodwork/interpret', { method: 'POST' }),
   },
+  nutrition: {
+    list: (date) => request(`/nutrition${date ? `?date=${date}` : ''}`),
+    get: (id) => request(`/nutrition/${id}`),
+    create: (data) => request('/nutrition', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/nutrition/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: (id) => request(`/nutrition/${id}`, { method: 'DELETE' }),
+    aiParse: (text, category) => request('/nutrition/parse', { method: 'POST', body: JSON.stringify({ text, category }) }),
+    summary: (date) => request(`/nutrition/summary${date ? `?date=${date}` : ''}`),
+    getCategory: () => request('/nutrition/category'),
+    setCategory: (category) => request('/nutrition/category', { method: 'PUT', body: JSON.stringify({ category }) }),
+  },
 }
