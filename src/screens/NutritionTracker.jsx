@@ -32,12 +32,12 @@ function offsetDate(iso, days) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-function formatDateLabel(iso) {
+function formatDateLabel(iso, t, locale) {
   const today = todayISO()
-  if (iso === today) return 'Today'
-  if (iso === offsetDate(today, -1)) return 'Yesterday'
+  if (iso === today) return t ? t('nutritionCalToday') : 'Today'
+  if (iso === offsetDate(today, -1)) return t ? t('nutritionCalYesterday') : 'Yesterday'
   const d = new Date(iso + 'T00:00:00')
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  return d.toLocaleDateString(locale || 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 // ── Skeleton primitive ────────────────────────────────────────────────────────
@@ -355,10 +355,12 @@ function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKe
 }
 
 // ── Nutrition Calendar ────────────────────────────────────────────────────────
-const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-
 function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
   const { t } = useLanguage()
+  // Day-of-week labels derived from locale — Mon=0 in our grid (2024-01-01 was a Monday)
+  const DOW = Array.from({ length: 7 }, (_, i) =>
+    new Date(2024, 0, 1 + i).toLocaleDateString(t('locale') || 'en-GB', { weekday: 'narrow' })
+  )
   const toMonthISO = (iso) => iso.slice(0, 7) + '-01'
   const [calMonth, setCalMonth] = useState(() => toMonthISO(viewDate))
   const [recordDays, setRecordDays] = useState(new Set())
@@ -384,7 +386,7 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
   const month = parseInt(calMonth.slice(5, 7), 10)
   const firstDow = (new Date(year, month - 1, 1).getDay() + 6) % 7 // Mon=0
   const daysInMonth = new Date(year, month, 0).getDate()
-  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString(t('locale') || 'en-GB', { month: 'long', year: 'numeric' })
 
   const isCurrentMonth = calMonth.slice(0, 7) === todayStr.slice(0, 7)
 
@@ -866,7 +868,7 @@ export default function NutritionTracker() {
   const { showUsage } = useAiUsage()
   const todayStr = todayISO()
   const [viewDate, setViewDate] = useState(todayStr)
-  const dateLabel = formatDateLabel(viewDate)
+  const dateLabel = formatDateLabel(viewDate, t, t('locale'))
   const isToday = viewDate === todayStr
 
   function handlePrevDay() { setViewDate((d) => offsetDate(d, -1)) }
