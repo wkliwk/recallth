@@ -13,6 +13,7 @@ import {
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import FAB from '../components/FAB'
+import ProfileOnboardingChat from '../components/ProfileOnboardingChat'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
@@ -248,7 +249,7 @@ function ParsedFoodRow({ food, checked, onToggle }) {
 }
 
 // ── Algorithm explanation card ────────────────────────────────────────────────
-function AlgorithmCard({ summary, navigate }) {
+function AlgorithmCard({ summary, onOpenProfileChat }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const basis = summary?.targetBasis
@@ -296,7 +297,7 @@ function AlgorithmCard({ summary, navigate }) {
               <p className="text-ink3 text-[11px]">{t('nutritionAlgoDefaultSub')}</p>
               <button
                 type="button"
-                onClick={() => navigate('/profile')}
+                onClick={onOpenProfileChat}
                 className="mt-1 text-[12px] font-semibold text-orange hover:underline text-left focus:outline-none"
               >
                 {t('nutritionAlgoCompleteProfile')}
@@ -883,6 +884,9 @@ export default function NutritionTracker() {
   const [customConfig, setCustomConfig] = useState({ nutrients: ['calories', 'protein', 'carbs', 'fat'], goals: { calories: 2000, protein: 150, carbs: 200, fat: 65 } })
   const [customizeOpen, setCustomizeOpen] = useState(false)
 
+  // ── Profile onboarding chat ───────────────────────────────────────────────
+  const [profileChatOpen, setProfileChatOpen] = useState(false)
+
   // ── Summary state ─────────────────────────────────────────────────────────
   const [summary, setSummary] = useState(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
@@ -1279,7 +1283,7 @@ export default function NutritionTracker() {
       </div>
 
       {/* ── Main content container ── */}
-      <div className="max-w-[1000px] mx-auto px-4 md:px-6 lg:px-8 pt-2 md:pt-6">
+      <div className="max-w-[1000px] mx-auto px-4 md:px-6 lg:px-8 pt-2 md:pt-6 pb-10 md:pb-14">
 
         {/* ── Category selector ── */}
         <div className="mb-5 md:mb-6">
@@ -1363,7 +1367,7 @@ export default function NutritionTracker() {
               dateLabel={dateLabel}
               customConfig={customConfig}
             />
-            <AlgorithmCard summary={summary} navigate={navigate} />
+            <AlgorithmCard summary={summary} onOpenProfileChat={() => setProfileChatOpen(true)} />
           </div>
 
           {/* ── RIGHT: AI Analyser + Today's log ── */}
@@ -1725,6 +1729,13 @@ export default function NutritionTracker() {
         t={t}
         onConfirm={handleBatchDeleteConfirm}
         onCancel={() => setBatchDeleteOpen(false)}
+      />
+
+      {/* ── Profile onboarding chat ── */}
+      <ProfileOnboardingChat
+        open={profileChatOpen}
+        onClose={() => setProfileChatOpen(false)}
+        onComplete={() => { fetchSummary() }}
       />
 
       {/* ── Undo delete toast ── */}
