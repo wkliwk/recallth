@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -548,6 +548,7 @@ function MealGroup({
   selectedIds,
   onToggleSelect,
   onSelectAll,
+  onAddFood,
 }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
@@ -606,6 +607,16 @@ function MealGroup({
         </div>
       </div>
 
+      {entries.length === 0 && !selectMode && (
+        <button
+          type="button"
+          onClick={() => onAddFood?.(mealType)}
+          className="w-full flex items-center gap-2 px-4 py-[12px] text-[13px] text-ink3 hover:text-orange hover:bg-orange/5 transition-colors focus:outline-none"
+        >
+          <span className="text-[15px] font-light leading-none">＋</span>
+          <span>{t('nutritionAddFood')}</span>
+        </button>
+      )}
       {entries.map((entry) => {
         const names = entry.foods?.map((f) => f.name).join(', ') ?? entry.rawText ?? '—'
         const metricVal = entry.foods?.reduce((s, f) => s + getFoodMetric(f, logMetric), 0) ?? getFoodMetric(entry, logMetric)
@@ -907,6 +918,7 @@ export default function NutritionTracker() {
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
+  const parsedFoodsRef = useRef(null)
 
   // ── Manual entry state ────────────────────────────────────────────────────
   const [manualName, setManualName] = useState('')
@@ -1066,6 +1078,13 @@ export default function NutritionTracker() {
     fetchSummary()
     fetchEntries()
   }, [fetchSummary, fetchEntries])
+
+  // ── Auto-scroll to parsed results (#163) ─────────────────────────────────
+  useEffect(() => {
+    if (parsedFoods.length > 0 && parsedFoodsRef.current) {
+      parsedFoodsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [parsedFoods])
 
   // ── Delete with undo ─────────────────────────────────────────────────────
   function handleRequestDelete(entry) {
@@ -1397,13 +1416,32 @@ export default function NutritionTracker() {
               <div className="px-5 py-5 md:px-6 md:py-6">
                 {analyserTab === 'ai' ? (
                   <>
+                    {/* Meal type pills — #161 fix */}
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      {MEAL_ORDER.map((mt) => (
+                        <button
+                          key={mt}
+                          type="button"
+                          onClick={() => setManualMealType(mt)}
+                          aria-pressed={manualMealType === mt}
+                          className={[
+                            'px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
+                            manualMealType === mt
+                              ? 'bg-orange text-white'
+                              : 'bg-sand text-ink2 hover:bg-orange/10',
+                          ].join(' ')}
+                        >
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
                     <textarea
                       value={aiText}
                       onChange={(e) => setAiText(e.target.value)}
                       placeholder={t('nutritionAiPlaceholder')}
-                      rows={3}
+                      rows={parsedFoods.length > 0 ? 2 : 5}
                       disabled={aiParsing}
-                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60"
                     />
                     <button
                       type="button"
@@ -1424,7 +1462,7 @@ export default function NutritionTracker() {
                       <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>
                     )}
                     {parsedFoods.length > 0 && (
-                      <div className="mt-4">
+                      <div ref={parsedFoodsRef} className="mt-4">
                         <p className="text-[12px] font-medium text-ink2 mb-1">
                           {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
                         </p>
@@ -1626,19 +1664,14 @@ export default function NutritionTracker() {
                 </div>
               ) : entriesError ? (
                 <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
-              ) : Object.keys(mealGroups).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-[15px] text-ink2 font-medium mb-1">{t('nutritionEmpty')}</p>
-                  <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
-                </div>
               ) : selectMode ? (
                 /* ── Select mode: plain list, no DnD ── */
                 <div className="flex flex-col gap-3">
-                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                  {MEAL_ORDER.map((mt) => (
                     <MealGroup
                       key={mt}
                       mealType={mt}
-                      entries={mealGroups[mt]}
+                      entries={mealGroups[mt] ?? []}
                       t={t}
                       onRequestDelete={handleRequestDelete}
                       logMetric={logMetric}
@@ -1658,15 +1691,16 @@ export default function NutritionTracker() {
                   onDragEnd={handleDragEnd}
                 >
                   <div className="flex flex-col gap-3">
-                    {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                    {MEAL_ORDER.map((mt) => (
                       <MealGroup
                         key={mt}
                         mealType={mt}
-                        entries={mealGroups[mt]}
+                        entries={mealGroups[mt] ?? []}
                         t={t}
                         onRequestDelete={handleRequestDelete}
                         logMetric={logMetric}
                         isDropTarget={overMealType === mt}
+                        onAddFood={(mealT) => setManualMealType(mealT)}
                       />
                     ))}
                   </div>
