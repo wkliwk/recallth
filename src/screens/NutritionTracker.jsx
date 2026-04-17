@@ -552,7 +552,7 @@ function DraggableEntry({ entry, children }) {
 
 function MealGroup({
   mealType,
-  entries,
+  entries = [],
   t,
   onRequestDelete,
   logMetric = 'calories',
@@ -561,6 +561,7 @@ function MealGroup({
   selectedIds,
   onToggleSelect,
   onSelectAll,
+  onAddFood,
 }) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
@@ -780,6 +781,284 @@ function MealGroup({
           </DraggableEntry>
         )
       })}
+      {entries.length === 0 && !selectMode && (
+        <button
+          type="button"
+          onClick={() => onAddFood?.(mealType)}
+          className="w-full flex items-center gap-2 px-4 py-[12px] text-[13px] text-ink3 hover:text-orange hover:bg-orange/5 transition-colors focus:outline-none"
+        >
+          <span className="text-[15px] font-light leading-none">＋</span>
+          <span>{t('nutritionAddFood')}</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── AI Goal Setup modal ───────────────────────────────────────────────────────
+const NUTRIENT_LABELS_BY_LANG = {
+  calories: { en: 'Calories', zh: '卡路里' },
+  protein:  { en: 'Protein',  zh: '蛋白質' },
+  carbs:    { en: 'Carbs',    zh: '碳水化合物' },
+  fat:      { en: 'Fat',      zh: '脂肪' },
+  sugar:    { en: 'Sugar',    zh: '糖分' },
+  fiber:    { en: 'Fiber',    zh: '纖維' },
+  sodium:   { en: 'Sodium',   zh: '鈉' },
+  folate:   { en: 'Folate',   zh: '葉酸' },
+  iron:     { en: 'Iron',     zh: '鐵' },
+}
+
+const NUTRIENT_UNITS_MAP = {
+  calories: 'kcal', protein: 'g', carbs: 'g', fat: 'g',
+  sugar: 'g', fiber: 'g', sodium: 'mg', folate: 'mcg', iron: 'mg',
+}
+
+function AiGoalSetupModal({ open, onClose, onComplete }) {
+  const language = localStorage.getItem('recallth_language') || 'en'
+  const isChinese = language === 'zh-HK' || language === 'zh-TW'
+
+  const [step, setStep] = useState('goals') // 'goals' | 'loading' | 'result'
+  const [selectedGoals, setSelectedGoals] = useState([])
+  const [selectedConditions, setSelectedConditions] = useState([])
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (open) {
+      setStep('goals')
+      setSelectedGoals([])
+      setSelectedConditions([])
+      setResult(null)
+      setError(null)
+    }
+  }, [open])
+
+  const GOALS_OPTIONS = isChinese
+    ? [
+        { key: 'weight-loss', label: '減重' },
+        { key: 'muscle', label: '增肌' },
+        { key: 'maintain', label: '維持健康' },
+        { key: 'energy', label: '提升精力' },
+        { key: 'digestive', label: '改善消化' },
+        { key: 'heart', label: '心臟健康' },
+      ]
+    : [
+        { key: 'weight-loss', label: 'Lose weight' },
+        { key: 'muscle', label: 'Build muscle' },
+        { key: 'maintain', label: 'Maintain health' },
+        { key: 'energy', label: 'Boost energy' },
+        { key: 'digestive', label: 'Improve digestion' },
+        { key: 'heart', label: 'Heart health' },
+      ]
+
+  const CONDITIONS_OPTIONS = isChinese
+    ? [
+        { key: 'diabetes', label: '糖尿病' },
+        { key: 'hypertension', label: '高血壓' },
+        { key: 'vegetarian', label: '素食' },
+        { key: 'pregnancy', label: '懷孕' },
+        { key: 'kidney', label: '腎病' },
+      ]
+    : [
+        { key: 'diabetes', label: 'Diabetes' },
+        { key: 'hypertension', label: 'Hypertension' },
+        { key: 'vegetarian', label: 'Vegetarian / Vegan' },
+        { key: 'pregnancy', label: 'Pregnancy' },
+        { key: 'kidney', label: 'Kidney disease' },
+      ]
+
+  const toggleGoal = (key) =>
+    setSelectedGoals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+
+  const toggleCondition = (key) =>
+    setSelectedConditions(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+
+  const handleGetRecommendations = async () => {
+    setStep('loading')
+    setError(null)
+    try {
+      const res = await api.nutrition.aiGoals(selectedGoals, selectedConditions, language)
+      setResult(res.data)
+      setStep('result')
+    } catch (err) {
+      setError(err?.message ?? 'Failed to generate recommendations')
+      setStep('goals')
+    }
+  }
+
+  const handleSave = async () => {
+    if (!result) return
+    await onComplete({ nutrients: result.nutrients, goals: result.goals }, false)
+    onClose()
+  }
+
+  const handleAdjust = () => {
+    if (!result) return
+    onComplete({ nutrients: result.nutrients, goals: result.goals }, true)
+    onClose()
+  }
+
+  const handleSkip = () => {
+    onComplete(null, true)
+    onClose()
+  }
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/40"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full md:max-w-[440px] bg-white rounded-t-[20px] md:rounded-[20px] max-h-[88vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="text-[15px] font-semibold text-ink1">
+            {isChinese ? 'AI 營養目標設定' : 'AI Nutrition Goal Setup'}
+          </h2>
+          <button onClick={onClose} className="text-ink3 hover:text-ink1 text-[20px] leading-none">✕</button>
+        </div>
+
+        {/* Goals step */}
+        {step === 'goals' && (
+          <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+            {error && (
+              <div className="px-3 py-2 rounded-[8px] bg-red-50 text-red-600 text-[12px]">{error}</div>
+            )}
+            <p className="text-[13px] text-ink2 leading-relaxed">
+              {isChinese
+                ? '告訴 AI 你嘅目標，佢會為你推薦最適合嘅營養素追蹤方案。'
+                : 'Tell the AI your goals and it will recommend the right nutrients to track.'}
+            </p>
+
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-ink3 font-semibold mb-2">
+                {isChinese ? '你嘅健康目標' : 'Your Health Goals'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {GOALS_OPTIONS.map(({ key, label }) => {
+                  const active = selectedGoals.includes(key)
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => toggleGoal(key)}
+                      className={[
+                        'px-3 py-1.5 rounded-pill text-[13px] font-medium transition-colors',
+                        active ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10',
+                      ].join(' ')}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-ink3 font-semibold mb-2">
+                {isChinese ? '飲食限制或健康狀況（可選）' : 'Dietary Restrictions / Conditions (optional)'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {CONDITIONS_OPTIONS.map(({ key, label }) => {
+                  const active = selectedConditions.includes(key)
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => toggleCondition(key)}
+                      className={[
+                        'px-3 py-1.5 rounded-pill text-[13px] font-medium transition-colors',
+                        active ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10',
+                      ].join(' ')}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading step */}
+        {step === 'loading' && (
+          <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 gap-3">
+            <div className="w-8 h-8 border-2 border-orange border-t-transparent rounded-full animate-spin" />
+            <p className="text-[13px] text-ink3">
+              {isChinese ? 'AI 正在分析你嘅目標…' : 'AI is analysing your goals…'}
+            </p>
+          </div>
+        )}
+
+        {/* Result step */}
+        {step === 'result' && result && (
+          <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+            <p className="text-[13px] text-ink2 leading-relaxed">
+              {isChinese
+                ? 'AI 根據你嘅目標推薦以下追蹤方案。直接儲存，或點擊「自訂」微調。'
+                : 'AI has recommended the following plan. Save directly or tap "Adjust" to fine-tune.'}
+            </p>
+            {result.nutrients.map((key) => (
+              <div key={key} className="rounded-[12px] bg-sand/60 px-4 py-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[13px] font-semibold text-ink1">
+                    {(isChinese ? NUTRIENT_LABELS_BY_LANG[key]?.zh : NUTRIENT_LABELS_BY_LANG[key]?.en) ?? key}
+                    <span className="text-ink3 font-normal ml-1">({NUTRIENT_UNITS_MAP[key]})</span>
+                  </span>
+                  <span className="text-[13px] font-semibold text-orange">
+                    {result.goals[key] ?? '—'}
+                  </span>
+                </div>
+                {result.explanations?.[key] && (
+                  <p className="text-[11px] text-ink3 leading-relaxed">{result.explanations[key]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        {step === 'goals' && (
+          <div className="px-5 py-4 border-t border-border flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleGetRecommendations}
+              disabled={selectedGoals.length === 0}
+              className="w-full bg-orange text-white py-3 rounded-[12px] text-[14px] font-semibold disabled:opacity-50"
+            >
+              {isChinese ? '獲取 AI 推薦' : 'Get AI Recommendations'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="w-full py-2 text-[12px] text-ink3 hover:text-ink2"
+            >
+              {isChinese ? '跳過，手動設定' : 'Skip, set manually'}
+            </button>
+          </div>
+        )}
+
+        {step === 'result' && (
+          <div className="px-5 py-4 border-t border-border flex gap-3">
+            <button
+              type="button"
+              onClick={handleAdjust}
+              className="flex-1 border border-orange text-orange py-3 rounded-[12px] text-[14px] font-semibold hover:bg-orange/5"
+            >
+              {isChinese ? '自訂' : 'Adjust'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="flex-1 bg-orange text-white py-3 rounded-[12px] text-[14px] font-semibold"
+            >
+              {isChinese ? '儲存' : 'Save'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -875,7 +1154,24 @@ function CustomiseModal({ open, onClose, config, onSave, t }) {
 // ── V2: Week strip ────────────────────────────────────────────────────────────
 const DOW_SHORT = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
-function WeekStrip({ viewDate, onSelectDate, todayStr }) {
+function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
+  const [expanded, setExpanded] = useState(false)
+
+  // Current month for record dot fetching
+  const currentMonth = viewDate.slice(0, 7)
+  const [recordDays, setRecordDays] = useState(new Set())
+
+  // Fetch record dots for current month (and adjacent when needed)
+  useEffect(() => {
+    const [year, month] = currentMonth.split('-')
+    api.nutrition.days(year, month)
+      .then((res) => {
+        const list = res?.data ?? []
+        setRecordDays(new Set(Array.isArray(list) ? list : []))
+      })
+      .catch(() => {})
+  }, [currentMonth, refreshKey])
+
   // Build the Mon–Sun week that contains viewDate
   const base = new Date(viewDate + 'T00:00:00')
   const dow = (base.getDay() + 6) % 7 // Mon=0
@@ -891,63 +1187,109 @@ function WeekStrip({ viewDate, onSelectDate, todayStr }) {
 
   function prevWeek() { onSelectDate(offsetDate(days[0], -7)) }
   function nextWeek() {
-    const next = offsetDate(days[6], 1)
-    if (next <= todayStr) onSelectDate(offsetDate(days[0], 7))
+    if (!days.includes(todayStr)) onSelectDate(offsetDate(days[0], 7))
   }
 
   const isCurrentWeek = days.includes(todayStr)
 
   return (
-    <div className="bg-white border-b border-border px-3 py-3">
-      <div className="flex items-center justify-between max-w-[480px] mx-auto">
-        <button
-          type="button"
-          onClick={prevWeek}
-          aria-label="Previous week"
-          className="w-7 h-7 flex items-center justify-center text-ink3 hover:text-ink2 focus:outline-none shrink-0"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-        </button>
-        <div className="flex gap-1 flex-1 justify-around">
-          {days.map((iso) => {
-            const isFuture = iso > todayStr
-            const isToday = iso === todayStr
-            const isSelected = iso === viewDate
-            const dayNum = parseInt(iso.slice(8), 10)
-            const dowIdx = (new Date(iso + 'T00:00:00').getDay() + 6) % 7
-            return (
-              <button
-                key={iso}
-                type="button"
-                disabled={isFuture}
-                onClick={() => onSelectDate(iso)}
-                className="flex flex-col items-center gap-[5px] focus:outline-none disabled:cursor-not-allowed"
-              >
-                <span className="text-[10px] font-medium text-ink3 uppercase">{DOW_SHORT[dowIdx]}</span>
-                <span className={[
-                  'w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-colors',
-                  isSelected ? 'bg-orange text-white' : '',
-                  !isSelected && isToday ? 'ring-[1.5px] ring-orange text-orange' : '',
-                  !isSelected && !isToday && !isFuture ? 'text-ink2 hover:bg-sand' : '',
-                  isFuture ? 'text-ink4' : '',
-                ].filter(Boolean).join(' ')}>
-                  {dayNum}
-                </span>
-              </button>
-            )
-          })}
+    <div className="bg-white border-b border-border">
+      {/* Week row */}
+      <div className="px-3 pt-3 pb-2">
+        <div className="flex items-center justify-between max-w-[560px] mx-auto">
+          {/* Prev week (hidden when expanded — month nav takes over) */}
+          {!expanded && (
+            <button type="button" onClick={prevWeek} aria-label="Previous week"
+              className="w-7 h-7 flex items-center justify-center text-ink3 hover:text-ink2 focus:outline-none shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+          )}
+          {expanded && <div className="w-7 shrink-0" />}
+
+          {/* Day buttons */}
+          <div className="flex gap-1 flex-1 justify-around">
+            {days.map((iso) => {
+              const isFuture = iso > todayStr
+              const isToday = iso === todayStr
+              const isSelected = iso === viewDate
+              const hasRecord = recordDays.has(iso)
+              const dayNum = parseInt(iso.slice(8), 10)
+              const dowIdx = (new Date(iso + 'T00:00:00').getDay() + 6) % 7
+              return (
+                <button key={iso} type="button" disabled={isFuture} onClick={() => { onSelectDate(iso); setExpanded(false) }}
+                  className="flex flex-col items-center gap-[4px] focus:outline-none disabled:cursor-not-allowed">
+                  <span className="text-[10px] font-medium text-ink3 uppercase">{DOW_SHORT[dowIdx]}</span>
+                  <span className={[
+                    'w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-colors',
+                    isSelected ? 'bg-orange text-white' : '',
+                    !isSelected && isToday ? 'ring-[1.5px] ring-orange text-orange' : '',
+                    !isSelected && !isToday && !isFuture ? 'text-ink2 hover:bg-sand' : '',
+                    isFuture ? 'text-ink4' : '',
+                  ].filter(Boolean).join(' ')}>
+                    {dayNum}
+                  </span>
+                  {/* Record dot */}
+                  <span className={[
+                    'w-[4px] h-[4px] rounded-full transition-opacity',
+                    hasRecord && !isSelected ? 'bg-orange opacity-100' : 'opacity-0',
+                  ].join(' ')} aria-hidden="true" />
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Next week */}
+          {!expanded && (
+            <button type="button" onClick={nextWeek} disabled={isCurrentWeek} aria-label="Next week"
+              className="w-7 h-7 flex items-center justify-center text-ink3 hover:text-ink2 focus:outline-none shrink-0 disabled:opacity-30">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          )}
+          {expanded && <div className="w-7 shrink-0" />}
+        </div>
+      </div>
+
+      {/* Bottom row: date label + today + expand toggle */}
+      <div className="flex items-center justify-between px-4 pb-2 max-w-[560px] mx-auto">
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] font-medium text-ink3">{formatDateLabel(viewDate)}</p>
+          {viewDate !== todayStr && (
+            <button
+              type="button"
+              onClick={() => { onSelectDate(todayStr); setExpanded(false) }}
+              className="text-[11px] font-semibold text-orange hover:underline focus:outline-none"
+            >
+              → Today
+            </button>
+          )}
         </div>
         <button
           type="button"
-          onClick={nextWeek}
-          disabled={isCurrentWeek}
-          aria-label="Next week"
-          className="w-7 h-7 flex items-center justify-center text-ink3 hover:text-ink2 focus:outline-none shrink-0 disabled:opacity-30"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-1 text-[11px] font-medium text-ink3 hover:text-ink2 focus:outline-none"
+          aria-expanded={expanded}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+          {expanded ? 'Collapse' : 'View month'}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
       </div>
-      <p className="text-center text-[11px] font-medium text-ink3 mt-2">{formatDateLabel(viewDate) === 'Today' ? 'Today' : formatDateLabel(viewDate)}</p>
+
+      {/* Expanded: full month calendar */}
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-border">
+          <div className="max-w-[560px] mx-auto pt-3">
+            <NutritionCalendar
+              viewDate={viewDate}
+              onSelectDate={(d) => { onSelectDate(d); setExpanded(false) }}
+              todayStr={todayStr}
+              refreshKey={refreshKey}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1090,8 +1432,9 @@ function CalorieRingCard({ category, loading, summary, t, onOpenAlgo, onOpenProf
 function AlgorithmSheet({ open, onClose, summary, onOpenProfileChat, t }) {
   const basis = summary?.targetBasis
   const f = summary?.formula
+  const category = summary?.category
+  const [showFormula, setShowFormula] = useState(false)
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -1100,6 +1443,18 @@ function AlgorithmSheet({ open, onClose, summary, onOpenProfileChat, t }) {
   }, [open, onClose])
 
   if (!open) return null
+
+  const goalNameMap = {
+    gym: t('nutritionAlgoGoalGym'),
+    'weight-loss': t('nutritionAlgoGoalWeightLoss'),
+    diabetes: t('nutritionAlgoGoalDiabetes'),
+    kidney: t('nutritionAlgoGoalKidney'),
+    pregnancy: t('nutritionAlgoGoalPregnancy'),
+    custom: t('nutritionAlgoGoalCustom'),
+  }
+  const goalName = goalNameMap[category] ?? t('nutritionAlgoGoalMaintain')
+  const activityDelta = f ? Math.round(f.tdee - f.bmr) : 0
+  const goalDelta = f ? Math.round(f.calorieTarget - f.tdee) : 0
 
   return (
     <>
@@ -1112,43 +1467,130 @@ function AlgorithmSheet({ open, onClose, summary, onOpenProfileChat, t }) {
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[24px] shadow-2xl max-h-[78vh] overflow-y-auto"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[24px] shadow-2xl max-h-[82vh] overflow-y-auto md:bottom-auto md:left-1/2 md:right-auto md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[520px] md:max-h-[80vh] md:rounded-[20px]"
         style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}
       >
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 md:hidden">
           <div className="w-10 h-1 rounded-full bg-sand" />
         </div>
-        <div className="px-5 pb-4">
-          <h2 className="text-[17px] font-bold text-ink1 mt-3 mb-4">{t('nutritionAlgoTitle')}</h2>
+        <div className="px-5 pb-4 pt-3">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-[17px] font-bold text-ink1">{t('nutritionAlgoTitle')}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="hidden md:flex w-7 h-7 items-center justify-center rounded-full bg-sand text-ink3 hover:bg-border transition-colors text-[13px] font-bold focus:outline-none"
+            >✕</button>
+          </div>
+
           {basis === 'personalised' && f ? (
             <>
               <p className="text-[11px] font-semibold text-orange uppercase tracking-wide mb-3">{t('nutritionAlgoPersonalised')}</p>
-              <div className="bg-sand rounded-[14px] p-4 flex flex-col gap-4 text-[11px] text-ink2">
-                <div>
-                  <p className="font-sans text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoBmrHint')}</p>
-                  <p className="font-mono">BMR = 10×{f.weightKg}kg + 6.25×{f.heightCm}cm − 5×{f.age} {f.sex === 'male' ? '+ 5' : '− 161'}</p>
-                  <p className="font-mono font-semibold text-ink1 mt-[2px]">BMR = {f.bmr} kcal</p>
-                </div>
-                <div>
-                  <p className="font-sans text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoTdeeHint')}</p>
-                  <p className="font-mono">TDEE = {f.bmr} × {f.activityMultiplier} ({f.activityLevel.replace('_', ' ')})</p>
-                  <p className="font-mono font-semibold text-ink1 mt-[2px]">TDEE = {f.tdee} kcal</p>
-                </div>
-                <div>
-                  <p className="font-sans text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoCalHint')}</p>
-                  <p className="font-mono">Calorie target = {f.tdee} {f.calorieAdjustmentLabel}</p>
-                  <p className="font-mono font-semibold text-ink1 mt-[2px]">= {f.calorieTarget} kcal/day</p>
-                </div>
-                <div>
-                  <p className="font-sans text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoProteinHint')}</p>
-                  <p className="font-mono">Protein = {f.weightKg}kg × {(f.proteinTarget / f.weightKg).toFixed(1)}g/kg</p>
-                  <p className="font-mono font-semibold text-ink1 mt-[2px]">= {f.proteinTarget}g/day</p>
+
+              {/* Plain language summary */}
+              <p className="text-[14px] text-ink2 leading-relaxed mb-4">
+                {t('nutritionAlgoSummaryTemplate')
+                  .replace('{w}', f.weightKg)
+                  .replace('{h}', f.heightCm)
+                  .replace('{a}', f.age)
+                  .replace('{bmr}', f.bmr.toLocaleString())
+                  .replace('{activity}', f.activityLevel.replace(/_/g, ' '))
+                  .replace('{tdee}', f.tdee.toLocaleString())
+                  .replace('{goal}', goalName)
+                  .replace('{cal}', f.calorieTarget.toLocaleString())}
+              </p>
+
+              {/* Waterfall breakdown */}
+              <div className="bg-sand rounded-[16px] p-4 mb-3">
+                <p className="text-[11px] text-ink3 font-medium mb-3 uppercase tracking-wide">{t('nutritionAlgoWaterfallTitle')}</p>
+                <div className="flex flex-col">
+                  {/* BMR row */}
+                  <div className="flex items-center justify-between py-[10px] border-b border-border/60">
+                    <div>
+                      <p className="text-[14px] font-semibold text-ink1">{t('nutritionAlgoBmrLabel')}</p>
+                      <p className="text-[11px] text-ink3 mt-[1px]">{t('nutritionAlgoBmrDesc')}</p>
+                    </div>
+                    <span className="text-[15px] font-bold text-ink1 tabular-nums">{f.bmr.toLocaleString()} kcal</span>
+                  </div>
+                  {/* Activity row */}
+                  <div className="flex items-center justify-between py-[10px] border-b border-border/60">
+                    <div>
+                      <p className="text-[14px] font-semibold text-ink1">
+                        <span className="text-[#16a34a] mr-1">＋</span>{t('nutritionAlgoActivityLabel')}
+                      </p>
+                      <p className="text-[11px] text-ink3 mt-[1px]">{f.activityLevel.replace(/_/g, ' ')}</p>
+                    </div>
+                    <span className="text-[15px] font-bold text-[#16a34a] tabular-nums">+{activityDelta.toLocaleString()} kcal</span>
+                  </div>
+                  {/* Goal adjustment row (hidden when delta is 0) */}
+                  {goalDelta !== 0 && (
+                    <div className="flex items-center justify-between py-[10px] border-b border-border/60">
+                      <div>
+                        <p className="text-[14px] font-semibold text-ink1">
+                          <span className={`mr-1 ${goalDelta > 0 ? 'text-[#16a34a]' : 'text-orange'}`}>{goalDelta > 0 ? '＋' : '－'}</span>
+                          {goalName}
+                        </p>
+                        <p className="text-[11px] text-ink3 mt-[1px]">{f.calorieAdjustmentLabel}</p>
+                      </div>
+                      <span className={`text-[15px] font-bold tabular-nums ${goalDelta > 0 ? 'text-[#16a34a]' : 'text-orange'}`}>
+                        {goalDelta > 0 ? '+' : ''}{goalDelta.toLocaleString()} kcal
+                      </span>
+                    </div>
+                  )}
+                  {/* Daily calorie total */}
+                  <div className="flex items-center justify-between pt-[12px]">
+                    <p className="text-[15px] font-bold text-ink1">{t('nutritionAlgoDailyGoal')}</p>
+                    <span className="text-[18px] font-black text-orange tabular-nums">{f.calorieTarget.toLocaleString()} kcal</span>
+                  </div>
+                  {/* Protein */}
+                  <div className="flex items-center justify-between pt-[6px] pb-[2px]">
+                    <div>
+                      <p className="text-[14px] font-semibold text-ink1">{t('nutritionAlgoProteinGoal')}</p>
+                      <p className="text-[11px] text-ink3 mt-[1px]">{f.weightKg}kg × {(f.proteinTarget / f.weightKg).toFixed(1)}g/kg</p>
+                    </div>
+                    <span className="text-[15px] font-bold text-ink2 tabular-nums">{f.proteinTarget}g/day</span>
+                  </div>
                 </div>
               </div>
-              <p className="text-[10px] text-ink3 mt-3">{t('nutritionAlgoUpdateProfile')}</p>
+
+              {/* Collapsible formula */}
+              <button
+                type="button"
+                onClick={() => setShowFormula(v => !v)}
+                className="flex items-center justify-between w-full py-2 mb-1 text-[13px] font-semibold text-ink3 hover:text-ink2 transition-colors focus:outline-none"
+              >
+                <span>{t('nutritionAlgoShowFormula')}</span>
+                <span style={{ transform: showFormula ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
+              </button>
+              {showFormula && (
+                <div className="bg-[#F9F7F4] border border-border rounded-[14px] p-4 flex flex-col gap-4 text-[11px] text-ink2 mb-3">
+                  <div>
+                    <p className="text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoBmrHint')}</p>
+                    <p className="font-mono">BMR = 10×{f.weightKg}kg + 6.25×{f.heightCm}cm − 5×{f.age} {f.sex === 'male' ? '+ 5' : '− 161'}</p>
+                    <p className="font-mono font-semibold text-ink1 mt-[2px]">BMR = {f.bmr} kcal</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoTdeeHint')}</p>
+                    <p className="font-mono">TDEE = {f.bmr} × {f.activityMultiplier} ({f.activityLevel.replace(/_/g, ' ')})</p>
+                    <p className="font-mono font-semibold text-ink1 mt-[2px]">TDEE = {f.tdee} kcal</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoCalHint')}</p>
+                    <p className="font-mono">Calorie target = {f.tdee} {f.calorieAdjustmentLabel}</p>
+                    <p className="font-mono font-semibold text-ink1 mt-[2px]">= {f.calorieTarget} kcal/day</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-ink3 mb-[4px]">{t('nutritionAlgoProteinHint')}</p>
+                    <p className="font-mono">Protein = {f.weightKg}kg × {(f.proteinTarget / f.weightKg).toFixed(1)}g/kg</p>
+                    <p className="font-mono font-semibold text-ink1 mt-[2px]">= {f.proteinTarget}g/day</p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[10px] text-ink3 mb-3">{t('nutritionAlgoUpdateProfile')}</p>
             </>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 mt-3">
               <p className="text-ink2 font-semibold text-[13px]">{t('nutritionAlgoDefault')}</p>
               <p className="text-ink3 text-[12px]">{t('nutritionAlgoDefaultSub')}</p>
               <button type="button" onClick={() => { onClose(); onOpenProfileChat() }} className="text-[13px] font-semibold text-orange focus:outline-none text-left">
@@ -1159,7 +1601,7 @@ function AlgorithmSheet({ open, onClose, summary, onOpenProfileChat, t }) {
           <button
             type="button"
             onClick={onClose}
-            className="w-full mt-5 border border-border text-ink2 text-[13px] font-semibold py-3 rounded-full focus:outline-none"
+            className="w-full mt-2 border border-border text-ink2 text-[13px] font-semibold py-3 rounded-full focus:outline-none"
           >
             {t('back')}
           </button>
@@ -1201,10 +1643,10 @@ function AnalyserSheet({
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[24px] shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[24px] shadow-2xl max-h-[90vh] overflow-y-auto md:bottom-auto md:left-1/2 md:right-auto md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[560px] md:max-h-[85vh] md:rounded-[20px]"
         style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}
       >
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 md:hidden">
           <div className="w-10 h-1 rounded-full bg-sand" />
         </div>
         {/* Tabs */}
@@ -1227,11 +1669,19 @@ function AnalyserSheet({
         <div className="px-5 py-5">
           {tab === 'ai' ? (
             <>
+              <div className="flex gap-2 flex-wrap mb-3">
+                {MEAL_ORDER.map((mt) => (
+                  <button key={mt} type="button" onClick={() => setManualMealType(mt)} aria-pressed={manualMealType === mt}
+                    className={['px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none', manualMealType === mt ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10'].join(' ')}>
+                    {t(MEAL_LABEL_KEYS[mt])}
+                  </button>
+                ))}
+              </div>
               <textarea
                 value={aiText}
                 onChange={(e) => setAiText(e.target.value)}
                 placeholder={t('nutritionAiPlaceholder')}
-                rows={3}
+                rows={parsedFoods.length > 0 ? 2 : 5}
                 disabled={aiParsing}
                 className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60"
               />
@@ -1383,8 +1833,9 @@ export default function NutritionTracker() {
   const [analyserSheetOpen, setAnalyserSheetOpen] = useState(false)
   const [analyserDefaultTab, setAnalyserDefaultTab] = useState('ai')
 
-  function openAnalyser(tab = 'ai') {
+  function openAnalyser(tab = 'ai', mealType = null) {
     setAnalyserDefaultTab(tab)
+    if (mealType) setManualMealType(mealType)
     setAnalyserSheetOpen(true)
   }
 
@@ -1400,8 +1851,9 @@ export default function NutritionTracker() {
   const [categoryLoading, setCategoryLoading] = useState(true)
 
   // ── Custom nutrient config ────────────────────────────────────────────────
-  const [customConfig, setCustomConfig] = useState({ nutrients: ['calories', 'protein', 'carbs', 'fat'], goals: { calories: 2000, protein: 150, carbs: 200, fat: 65 } })
+  const [customConfig, setCustomConfig] = useState({ nutrients: ['calories', 'protein', 'carbs', 'fat'], goals: { calories: 2000, protein: 150, carbs: 200, fat: 65 }, aiSetupDone: false })
   const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [aiGoalSetupOpen, setAiGoalSetupOpen] = useState(false)
 
   // ── Profile onboarding chat ───────────────────────────────────────────────
   const [profileChatOpen, setProfileChatOpen] = useState(false)
@@ -1730,7 +2182,7 @@ export default function NutritionTracker() {
     try {
       await api.nutrition.create({
         date: viewDate,
-        mealType: detectMealType(aiText),
+        mealType: manualMealType,
         foods: selected,
         rawText: aiText.trim(),
       })
@@ -1749,9 +2201,22 @@ export default function NutritionTracker() {
 
   // ── Save custom nutrient config ───────────────────────────────────────────
   async function handleSaveCustomConfig(newConfig) {
-    const res = await api.nutrition.setCustomConfig(newConfig)
+    const res = await api.nutrition.setCustomConfig({ ...newConfig, aiSetupDone: true })
     if (res?.data) setCustomConfig(res.data)
     await fetchSummary()
+  }
+
+  // ── Handle AI goal setup completion ──────────────────────────────────────
+  async function handleAiGoalComplete(aiConfig, openCustomise) {
+    if (openCustomise) {
+      // Pre-fill state with AI values so CustomiseModal shows them (null = skip, use existing config)
+      if (aiConfig) {
+        setCustomConfig(prev => ({ ...prev, nutrients: aiConfig.nutrients, goals: aiConfig.goals }))
+      }
+      setCustomizeOpen(true)
+    } else {
+      await handleSaveCustomConfig(aiConfig)
+    }
   }
 
   // ── Compute calorie subtitle ──────────────────────────────────────────────
@@ -1783,7 +2248,7 @@ export default function NutritionTracker() {
   // ── V2 layout ─────────────────────────────────────────────────────────────
   if (useV2) {
     return (
-      <div className="min-h-screen bg-page pb-[80px]">
+      <div className="min-h-screen bg-page pb-[80px] lg:pb-0">
         <V2ToggleButton isV2={true} onToggle={handleToggleV2} />
         {/* Mobile header */}
         <OrangeHeader title={t('nutritionTitle')} subtitle={calSub} />
@@ -1805,70 +2270,160 @@ export default function NutritionTracker() {
         </div>
 
         {/* Week strip */}
-        <WeekStrip viewDate={viewDate} onSelectDate={setViewDate} todayStr={todayStr} />
+        <WeekStrip viewDate={viewDate} onSelectDate={setViewDate} todayStr={todayStr} refreshKey={calendarRefreshKey} />
 
-        {/* Content */}
-        <div className="max-w-[600px] mx-auto px-4 pt-4 flex flex-col gap-3">
+        {/* ── Main content: single col mobile, two col desktop ── */}
+        <div className="max-w-[1000px] mx-auto px-4 md:px-6 pt-4 pb-10 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
 
-          {/* Hero: Calorie ring + macro chips */}
-          <CalorieRingCard
-            category={category}
-            loading={summaryLoading}
-            summary={summary}
-            t={t}
-            onOpenAlgo={() => setAlgoSheetOpen(true)}
-            onOpenProfileChat={() => setProfileChatOpen(true)}
-            categoryLabel={categoryLabel}
-          />
+          {/* ── LEFT COLUMN: summary + mode selector (sticky on desktop) ── */}
+          <div className="flex flex-col gap-3 lg:sticky lg:top-[80px]">
 
-          {/* Goal mode selector */}
-          <div className="bg-white rounded-[16px] border border-border shadow-sm px-4 py-3">
-            <p className="text-[10px] uppercase tracking-widest text-ink3 font-semibold mb-2">{t('nutritionCategoryGym') !== 'nutritionCategoryGym' ? '目標模式' : 'Goal Mode'}</p>
-            <div
-              className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
-              role="group"
-              style={{ WebkitOverflowScrolling: 'touch' }}
-            >
-              {CATEGORIES.map(({ key, labelKey }) => {
-                const active = category === key
-                return (
+            {/* Calorie ring + macro chips */}
+            <CalorieRingCard
+              category={category}
+              loading={summaryLoading}
+              summary={summary}
+              t={t}
+              onOpenAlgo={() => setAlgoSheetOpen(true)}
+              onOpenProfileChat={() => setProfileChatOpen(true)}
+              categoryLabel={categoryLabel}
+            />
+
+            {/* Goal mode selector */}
+            <div className="bg-white rounded-[16px] border border-border shadow-sm px-4 py-3">
+              <p className="text-[10px] uppercase tracking-widest text-ink3 font-semibold mb-2">Goal Mode</p>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {CATEGORIES.map(({ key, labelKey }) => {
+                  const active = category === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleSelectCategory(key)}
+                      aria-pressed={active}
+                      disabled={categoryLoading}
+                      className={[
+                        'shrink-0 px-[14px] py-[7px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
+                        active ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10',
+                        categoryLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer',
+                      ].join(' ')}
+                    >
+                      {t(labelKey)}
+                    </button>
+                  )
+                })}
+              </div>
+              {category === 'custom' && (
+                <button type="button" onClick={() => customConfig?.aiSetupDone ? setCustomizeOpen(true) : setAiGoalSetupOpen(true)} className="mt-2 flex items-center gap-1.5 text-[12px] text-orange font-medium hover:underline">
+                  <span>⚙</span> {t('nutritionCustomiseBtn')}
+                </button>
+              )}
+            </div>
+
+            {/* Disclaimer */}
+            {showDisclaimer && (
+              <div className="px-4 py-3 rounded-[12px] bg-[#FDE8DE]" role="note">
+                <p className="text-[12px] text-ink2">{t('nutritionDisclaimer')}</p>
+              </div>
+            )}
+
+            {/* Desktop-only: inline AI / Manual analyser card */}
+            <div className="hidden lg:block rounded-[14px] border border-border bg-white shadow-sm overflow-hidden">
+              <div className="flex border-b border-border">
+                {[{ key: 'ai', labelKey: 'nutritionTabAI' }, { key: 'manual', labelKey: 'nutritionTabManual' }].map(({ key, labelKey }) => (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => handleSelectCategory(key)}
-                    aria-pressed={active}
-                    disabled={categoryLoading}
+                    onClick={() => setAnalyserTab(key)}
                     className={[
-                      'shrink-0 px-[14px] py-[7px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
-                      active ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10',
-                      categoryLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer',
+                      'flex-1 py-[11px] text-[13px] font-semibold transition-colors focus:outline-none',
+                      analyserTab === key ? 'text-orange border-b-2 border-orange -mb-px bg-white' : 'text-ink3 hover:text-ink2 bg-sand/30',
                     ].join(' ')}
                   >
                     {t(labelKey)}
                   </button>
-                )
-              })}
+                ))}
+              </div>
+              <div className="px-5 py-5">
+                {analyserTab === 'ai' ? (
+                  <>
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      {MEAL_ORDER.map((mt) => (
+                        <button key={mt} type="button" onClick={() => setManualMealType(mt)} aria-pressed={manualMealType === mt}
+                          className={['px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none', manualMealType === mt ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10'].join(' ')}>
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      placeholder={t('nutritionAiPlaceholder')}
+                      rows={parsedFoods.length > 0 ? 2 : 5}
+                      disabled={aiParsing}
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60"
+                    />
+                    <button type="button" onClick={handleAiParse} disabled={aiParsing || !aiText.trim()}
+                      className="mt-3 w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 focus:outline-none">
+                      {aiParsing ? <span className="flex items-center justify-center gap-2"><span className="w-[14px] h-[14px] border-2 border-white/40 border-t-white rounded-full animate-spin" />{t('nutritionAiParsing')}</span> : t('nutritionAiAnalyse')}
+                    </button>
+                    {aiError && <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>}
+                    {parsedFoods.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-[12px] font-medium text-ink2 mb-1">{t('nutritionAiParsed').replace('{n}', parsedFoods.length)}</p>
+                        <div className="border border-border rounded-[10px] overflow-hidden">
+                          {parsedFoods.map((food) => <ParsedFoodRow key={food.name} food={food} checked={checkedFoods.has(food.name)} onToggle={toggleFood} />)}
+                        </div>
+                        {parsedSuggestions.length > 0 && (
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                              <p className="text-[12px] font-medium text-ink2">{t('nutritionChooseDrink')}</p>
+                            </div>
+                            <div className="border border-orange/30 rounded-[10px] overflow-hidden bg-orange/5">
+                              {parsedSuggestions.map((food) => <ParsedFoodRow key={food.name} food={food} checked={checkedFoods.has(food.name)} onToggle={toggleFood} />)}
+                            </div>
+                          </div>
+                        )}
+                        <button type="button" onClick={handleAddToLog} disabled={addingToLog || checkedFoods.size === 0}
+                          className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 focus:outline-none">
+                          {addingToLog ? t('nutritionAdding') : t('nutritionConfirm')}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {MEAL_ORDER.map((mt) => (
+                        <button key={mt} type="button" onClick={() => setManualMealType(mt)} aria-pressed={manualMealType === mt}
+                          className={['px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none', manualMealType === mt ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10'].join(' ')}>
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
+                    <input type="text" value={manualName} onChange={(e) => setManualName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleManualAdd()}
+                      placeholder={t('nutritionManualNamePlaceholder')}
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white" />
+                    <div className="flex gap-2">
+                      <input type="number" value={manualQty} onChange={(e) => setManualQty(e.target.value)} placeholder={t('nutritionManualQtyPlaceholder')} min="0"
+                        className="w-[80px] border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white" />
+                      <input type="text" value={manualUnit} onChange={(e) => setManualUnit(e.target.value)} placeholder={t('nutritionManualUnitPlaceholder')}
+                        className="flex-1 border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white" />
+                    </div>
+                    {manualError && <p className="text-[12px] text-[#E11D48]" role="alert">{manualError}</p>}
+                    <button type="button" onClick={handleManualAdd} disabled={manualSaving || !manualName.trim()}
+                      className="w-full rounded-[10px] bg-orange text-white text-[13px] font-semibold py-[10px] hover:bg-orange-dk transition-colors disabled:opacity-60 focus:outline-none">
+                      {manualSaving ? t('nutritionManualSaving') : t('nutritionManualAdd')}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            {category === 'custom' && (
-              <button
-                type="button"
-                onClick={() => setCustomizeOpen(true)}
-                className="mt-2 flex items-center gap-1.5 text-[12px] text-orange font-medium hover:underline"
-              >
-                <span>⚙</span> {t('nutritionCustomiseBtn')}
-              </button>
-            )}
           </div>
 
-          {/* Disclaimer */}
-          {showDisclaimer && (
-            <div className="px-4 py-3 rounded-[12px] bg-[#FDE8DE]" role="note">
-              <p className="text-[12px] text-ink2">{t('nutritionDisclaimer')}</p>
-            </div>
-          )}
-
-          {/* Meal log */}
-          <div className={`flex flex-col gap-3 ${selectMode && selectedIds.size > 0 ? 'pb-[120px]' : 'pb-6'}`}>
+          {/* ── RIGHT COLUMN: meal log ── */}
+          <div className="flex flex-col gap-3 mt-3 lg:mt-0">
             {/* Date nav + metric row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -1883,11 +2438,7 @@ export default function NutritionTracker() {
                     </button>
                   </>
                 )}
-                {selectMode && (
-                  <span className="text-[14px] font-semibold text-ink1">
-                    {selectedIds.size > 0 ? `${selectedIds.size} selected` : t('nutritionSelectMode')}
-                  </span>
-                )}
+                {selectMode && <span className="text-[14px] font-semibold text-ink1">{selectedIds.size > 0 ? `${selectedIds.size} selected` : t('nutritionSelectMode')}</span>}
               </div>
               <div className="flex items-center gap-2">
                 {!selectMode && (
@@ -1913,15 +2464,10 @@ export default function NutritionTracker() {
               <div className="flex flex-col gap-3"><Skeleton className="h-[90px]" /><Skeleton className="h-[90px]" /></div>
             ) : entriesError ? (
               <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
-            ) : Object.keys(mealGroups).length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-[15px] text-ink2 font-medium mb-1">{t('nutritionEmpty')}</p>
-                <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
-              </div>
             ) : selectMode ? (
               <div className="flex flex-col gap-3">
                 {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
-                  <MealGroup key={mt} mealType={mt} entries={mealGroups[mt]} t={t}
+                  <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
                     onRequestDelete={handleRequestDelete} logMetric={logMetric}
                     isDropTarget={false} selectMode={true}
                     selectedIds={selectedIds} onToggleSelect={handleToggleSelect} onSelectAll={handleSelectAll} />
@@ -1930,10 +2476,11 @@ export default function NutritionTracker() {
             ) : (
               <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
                 <div className="flex flex-col gap-3">
-                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
-                    <MealGroup key={mt} mealType={mt} entries={mealGroups[mt]} t={t}
+                  {MEAL_ORDER.map((mt) => (
+                    <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
                       onRequestDelete={handleRequestDelete} logMetric={logMetric}
-                      isDropTarget={overMealType === mt} />
+                      isDropTarget={overMealType === mt}
+                      onAddFood={(mt) => openAnalyser('ai', mt)} />
                   ))}
                 </div>
                 <DragOverlay>
@@ -1948,21 +2495,15 @@ export default function NutritionTracker() {
           </div>
         </div>
 
-        {/* Sticky action bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-border px-4 py-3 flex gap-3" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-          <button
-            type="button"
-            onClick={() => openAnalyser('ai')}
-            className="flex-1 bg-orange text-white text-[13px] font-semibold py-[13px] rounded-full shadow-sm flex items-center justify-center gap-2 focus:outline-none"
-          >
+        {/* Sticky action bar — mobile only */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-border px-4 py-3 flex gap-3" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <button type="button" onClick={() => openAnalyser('ai')}
+            className="flex-1 bg-orange text-white text-[13px] font-semibold py-[13px] rounded-full shadow-sm flex items-center justify-center gap-2 focus:outline-none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             {t('nutritionTabAI')}
           </button>
-          <button
-            type="button"
-            onClick={() => openAnalyser('manual')}
-            className="flex-1 border border-border text-ink1 text-[13px] font-semibold py-[13px] rounded-full flex items-center justify-center gap-2 focus:outline-none hover:bg-sand transition-colors"
-          >
+          <button type="button" onClick={() => openAnalyser('manual')}
+            className="flex-1 border border-border text-ink1 text-[13px] font-semibold py-[13px] rounded-full flex items-center justify-center gap-2 focus:outline-none hover:bg-sand transition-colors">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             {t('nutritionTabManual')}
           </button>
@@ -1995,6 +2536,9 @@ export default function NutritionTracker() {
           onManualAdd={handleManualAdd}
           viewDate={viewDate} t={t}
         />
+
+        {/* AI Goal Setup modal */}
+        <AiGoalSetupModal open={aiGoalSetupOpen} onClose={() => setAiGoalSetupOpen(false)} onComplete={handleAiGoalComplete} />
 
         {/* Customise modal */}
         <CustomiseModal open={customizeOpen} onClose={() => setCustomizeOpen(false)} config={customConfig} onSave={handleSaveCustomConfig} t={t} />
@@ -2093,7 +2637,7 @@ export default function NutritionTracker() {
           {category === 'custom' && (
             <button
               type="button"
-              onClick={() => setCustomizeOpen(true)}
+              onClick={() => customConfig?.aiSetupDone ? setCustomizeOpen(true) : setAiGoalSetupOpen(true)}
               className="mt-2 flex items-center gap-1.5 text-[12px] text-orange font-medium hover:underline"
             >
               <span>⚙</span> {t('nutritionCustomiseBtn')}
@@ -2172,11 +2716,19 @@ export default function NutritionTracker() {
               <div className="px-5 py-5 md:px-6 md:py-6">
                 {analyserTab === 'ai' ? (
                   <>
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      {MEAL_ORDER.map((mt) => (
+                        <button key={mt} type="button" onClick={() => setManualMealType(mt)} aria-pressed={manualMealType === mt}
+                          className={['px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none', manualMealType === mt ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10'].join(' ')}>
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
                     <textarea
                       value={aiText}
                       onChange={(e) => setAiText(e.target.value)}
                       placeholder={t('nutritionAiPlaceholder')}
-                      rows={3}
+                      rows={parsedFoods.length > 0 ? 2 : 5}
                       disabled={aiParsing}
                       className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
                     />
@@ -2401,11 +2953,6 @@ export default function NutritionTracker() {
                 </div>
               ) : entriesError ? (
                 <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
-              ) : Object.keys(mealGroups).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-[15px] text-ink2 font-medium mb-1">{t('nutritionEmpty')}</p>
-                  <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
-                </div>
               ) : selectMode ? (
                 /* ── Select mode: plain list, no DnD ── */
                 <div className="flex flex-col gap-3">
@@ -2413,7 +2960,7 @@ export default function NutritionTracker() {
                     <MealGroup
                       key={mt}
                       mealType={mt}
-                      entries={mealGroups[mt]}
+                      entries={mealGroups[mt] ?? []}
                       t={t}
                       onRequestDelete={handleRequestDelete}
                       logMetric={logMetric}
@@ -2433,15 +2980,16 @@ export default function NutritionTracker() {
                   onDragEnd={handleDragEnd}
                 >
                   <div className="flex flex-col gap-3">
-                    {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                    {MEAL_ORDER.map((mt) => (
                       <MealGroup
                         key={mt}
                         mealType={mt}
-                        entries={mealGroups[mt]}
+                        entries={mealGroups[mt] ?? []}
                         t={t}
                         onRequestDelete={handleRequestDelete}
                         logMetric={logMetric}
                         isDropTarget={overMealType === mt}
+                        onAddFood={(mt) => openAnalyser('ai', mt)}
                       />
                     ))}
                   </div>
@@ -2467,6 +3015,9 @@ export default function NutritionTracker() {
       <div className="md:hidden">
         <FAB onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })} />
       </div>
+
+      {/* ── AI Goal Setup modal ── */}
+      <AiGoalSetupModal open={aiGoalSetupOpen} onClose={() => setAiGoalSetupOpen(false)} onComplete={handleAiGoalComplete} />
 
       {/* ── Customise nutrients modal ── */}
       <CustomiseModal
