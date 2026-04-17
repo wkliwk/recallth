@@ -9,8 +9,8 @@ const STEPS = ['height', 'weight', 'age', 'sex', 'activity', 'done']
 function parseHeightToCm(val) {
   const s = val.trim().toLowerCase()
 
-  // feet-inches: 5'9, 5'9", 5ft9, 5ft9in, 5 9 (two numbers)
-  const feetInches = s.match(/^(\d+(?:\.\d+)?)\s*(?:ft|feet|'|′)?\s*(\d+(?:\.\d+)?)\s*(?:in|inches|"|″)?$/)
+  // feet-inches: 5'9, 5'9", 5ft9, 5ft9in (feet unit required to avoid ambiguity with plain cm numbers)
+  const feetInches = s.match(/^(\d+(?:\.\d+)?)\s*(?:ft|feet|'|′)\s*(\d+(?:\.\d+)?)\s*(?:in|inches|"|″)?$/)
   if (feetInches) {
     const cm = parseFloat(feetInches[1]) * 30.48 + parseFloat(feetInches[2]) * 2.54
     return Math.round(cm)
@@ -22,9 +22,15 @@ function parseHeightToCm(val) {
     return Math.round(parseFloat(feetOnly[1]) * 30.48)
   }
 
-  // plain number or number with cm: 170, 170cm
+  // plain number: infer unit from value range
+  // 100–250 → cm; 4–8 → feet (no inches)
   const plain = s.match(/^(\d+(?:\.\d+)?)\s*(?:cm)?$/)
-  if (plain) return parseFloat(plain[1])
+  if (plain) {
+    const n = parseFloat(plain[1])
+    if (n >= 100) return n                       // clearly cm
+    if (n >= 4 && n <= 8) return Math.round(n * 30.48)  // clearly feet
+    return null
+  }
 
   return null
 }
