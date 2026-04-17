@@ -214,6 +214,7 @@ function SummaryCard({ category, loading, summary, t, dateLabel = 'Today', custo
 // ── Parsed food item row ──────────────────────────────────────────────────────
 function ParsedFoodRow({ food, checked, onToggle }) {
   const id = `food-${food.name}-${Math.random().toString(36).slice(2)}`
+  const { t } = useLanguage()
   return (
     <label
       htmlFor={id}
@@ -227,10 +228,13 @@ function ParsedFoodRow({ food, checked, onToggle }) {
         className="mt-[2px] w-4 h-4 accent-orange cursor-pointer shrink-0"
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <p className="text-[13px] font-medium text-ink1 leading-snug">{food.name}</p>
           {(food.quantity != null || food.unit) && (
             <span className="text-[11px] text-ink3 shrink-0">{food.quantity} {food.unit}{food.grams != null ? ` · 約${food.grams}g` : ''}</span>
+          )}
+          {food.estimated && (
+            <span className="text-[10px] text-ink3 italic shrink-0">{t('nutritionEstimatedPortion')}</span>
           )}
         </div>
         <p className="text-[11px] text-ink3 mt-[2px]">
