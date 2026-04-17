@@ -111,6 +111,7 @@ export const api = {
     create: (data) => request('/nutrition', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/nutrition/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     remove: (id) => request(`/nutrition/${id}`, { method: 'DELETE' }),
+    removeBatch: (ids) => Promise.all(ids.map((id) => request(`/nutrition/${id}`, { method: 'DELETE' }))),
     aiParse: (text, category) => request('/nutrition/parse', { method: 'POST', body: JSON.stringify({ text, category }) }),
     search: (q) => request(`/nutrition/search?q=${encodeURIComponent(q)}`),
     ocr: (image, mimeType) => request('/nutrition/ocr', { method: 'POST', body: JSON.stringify({ image, mimeType }) }),

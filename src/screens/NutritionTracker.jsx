@@ -487,6 +487,44 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
   )
 }
 
+// ── Batch delete confirm modal ────────────────────────────────────────────────
+function BatchDeleteModal({ open, count, deleting, t, onConfirm, onCancel }) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-black/40"
+      onClick={(e) => { if (e.target === e.currentTarget && !deleting) onCancel() }}
+    >
+      <div className="w-full md:max-w-[380px] bg-white rounded-t-[20px] md:rounded-[20px] px-5 py-6 flex flex-col gap-4 shadow-xl">
+        <div className="flex flex-col gap-1">
+          <p className="text-[16px] font-semibold text-ink1">
+            {t('nutritionBatchConfirmTitle').replace('{n}', count)}
+          </p>
+          <p className="text-[13px] text-ink3">{t('nutritionBatchConfirmSub')}</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="flex-1 py-[11px] rounded-[12px] text-[14px] font-semibold text-ink2 bg-sand hover:bg-border transition-colors focus:outline-none disabled:opacity-50"
+          >
+            {t('cancelButton')}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="flex-1 py-[11px] rounded-[12px] text-[14px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors focus:outline-none disabled:opacity-50"
+          >
+            {deleting ? t('nutritionBatchDeleting') : t('journalDelete')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Meal group card ───────────────────────────────────────────────────────────
 function DraggableEntry({ entry, children }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: entry._id })
@@ -498,7 +536,18 @@ function DraggableEntry({ entry, children }) {
   )
 }
 
-function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calories', isDropTarget = false }) {
+function MealGroup({
+  mealType,
+  entries,
+  t,
+  onRequestDelete,
+  logMetric = 'calories',
+  isDropTarget = false,
+  selectMode = false,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
+}) {
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
@@ -512,6 +561,11 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
     return sum + c
   }, 0)
 
+  // Collapse expanded rows when entering select mode
+  useEffect(() => {
+    if (selectMode) setExpandedId(null)
+  }, [selectMode])
+
   function handleDeleteClick(entry) {
     setConfirmingId(entry._id)
   }
@@ -522,20 +576,80 @@ function MealGroup({ mealType, entries, t, onRequestDelete, logMetric = 'calorie
     onRequestDelete?.(entry)
   }
 
+  const allSelected = entries.length > 0 && entries.every((e) => selectedIds?.has(e._id))
+
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-[14px] border bg-white overflow-hidden transition-colors ${isDropTarget ? 'border-orange shadow-md' : 'border-border'}`}
+      className={`rounded-[14px] border bg-white overflow-hidden transition-colors ${isDropTarget && !selectMode ? 'border-orange shadow-md' : 'border-border'}`}
     >
-      <div className={`flex items-center justify-between px-4 py-[10px] border-b border-border transition-colors ${isDropTarget ? 'bg-orange/10' : 'bg-sand/40'}`}>
+      {/* Meal section header */}
+      <div className={`flex items-center justify-between px-4 py-[10px] border-b border-border transition-colors ${isDropTarget && !selectMode ? 'bg-orange/10' : 'bg-sand/40'}`}>
         <p className="text-[13px] font-semibold text-ink1">{label}</p>
-        <p className="text-[12px] text-ink3">{totalMetric} {metricCfg.unit}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-[12px] text-ink3">{totalMetric} {metricCfg.unit}</p>
+          {selectMode && (
+            <button
+              type="button"
+              onClick={() => onSelectAll?.(mealType, !allSelected)}
+              className={[
+                'text-[11px] font-semibold px-[10px] py-[3px] rounded-pill transition-colors focus:outline-none',
+                allSelected
+                  ? 'bg-orange text-white'
+                  : 'bg-sand text-ink2 hover:bg-orange/10',
+              ].join(' ')}
+            >
+              {t('nutritionSelectAll')}
+            </button>
+          )}
+        </div>
       </div>
+
       {entries.map((entry) => {
         const names = entry.foods?.map((f) => f.name).join(', ') ?? entry.rawText ?? '—'
         const metricVal = entry.foods?.reduce((s, f) => s + getFoodMetric(f, logMetric), 0) ?? getFoodMetric(entry, logMetric)
         const isExpanded = expandedId === entry._id
         const isConfirming = confirmingId === entry._id
+        const isSelected = selectedIds?.has(entry._id) ?? false
+
+        if (selectMode) {
+          /* ── Select mode row ── */
+          return (
+            <button
+              key={entry._id}
+              type="button"
+              onClick={() => onToggleSelect?.(entry._id)}
+              className={[
+                'w-full flex items-center gap-3 px-4 py-[12px] border-b border-border last:border-0 text-left transition-colors focus:outline-none',
+                isSelected ? 'bg-orange/5' : 'hover:bg-sand/30',
+              ].join(' ')}
+            >
+              {/* Custom checkbox */}
+              <span
+                className={[
+                  'shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+                  isSelected ? 'bg-orange border-orange' : 'border-ink3 bg-white',
+                ].join(' ')}
+                aria-hidden="true"
+              >
+                {isSelected && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] text-ink1 truncate">{names}</p>
+                {entry.rawText && (
+                  <p className="text-[11px] text-ink3 truncate mt-[1px]">{entry.rawText}</p>
+                )}
+              </div>
+              <p className="text-[12px] text-ink3 shrink-0 ml-2">{metricVal} {metricCfg.unit}</p>
+            </button>
+          )
+        }
+
+        /* ── Normal mode row ── */
         return (
           <DraggableEntry key={entry._id} entry={entry}>
             {({ dragHandleProps }) => (
@@ -829,6 +943,62 @@ export default function NutritionTracker() {
   // ── Pending delete (undo) state ───────────────────────────────────────────
   const [pendingDelete, setPendingDelete] = useState(null)
   // { entry, timerId }
+
+  // ── Batch delete state ────────────────────────────────────────────────────
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false)
+  const [batchDeleting, setBatchDeleting] = useState(false)
+
+  function handleEnterSelectMode() {
+    setSelectMode(true)
+    setSelectedIds(new Set())
+  }
+
+  function handleExitSelectMode() {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    setBatchDeleteOpen(false)
+  }
+
+  function handleToggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleSelectAll(mealType, selectAll) {
+    const mealEntries = mealGroups[mealType] ?? []
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      mealEntries.forEach((e) => {
+        if (selectAll) next.add(e._id)
+        else next.delete(e._id)
+      })
+      return next
+    })
+  }
+
+  async function handleBatchDeleteConfirm() {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    setBatchDeleting(true)
+    try {
+      await api.nutrition.removeBatch(ids)
+      setBatchDeleteOpen(false)
+      setSelectMode(false)
+      setSelectedIds(new Set())
+      await Promise.all([fetchEntries(), fetchSummary()])
+      bumpCalendar()
+    } catch {
+      // non-fatal — let user retry
+    } finally {
+      setBatchDeleting(false)
+    }
+  }
 
   // ── Fetch category on mount ───────────────────────────────────────────────
   useEffect(() => {
@@ -1372,46 +1542,76 @@ export default function NutritionTracker() {
               {/* Date + metric row */}
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={handlePrevDay}
-                    aria-label="Previous day"
-                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                  </button>
-                  <span className="px-1 text-[14px] md:text-[15px] font-semibold text-ink1">{dateLabel}</span>
-                  <button
-                    type="button"
-                    onClick={handleNextDay}
-                    disabled={isToday}
-                    aria-label="Next day"
-                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
+                  {!selectMode && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handlePrevDay}
+                        aria-label="Previous day"
+                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+                          <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                      </button>
+                      <span className="px-1 text-[14px] md:text-[15px] font-semibold text-ink1">{dateLabel}</span>
+                      <button
+                        type="button"
+                        onClick={handleNextDay}
+                        disabled={isToday}
+                        aria-label="Next day"
+                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  {selectMode && (
+                    <span className="text-[14px] md:text-[15px] font-semibold text-ink1">
+                      {selectedIds.size > 0
+                        ? `${selectedIds.size} selected`
+                        : t('nutritionSelectMode')}
+                    </span>
+                  )}
                 </div>
-                <div className="flex gap-1" role="group" aria-label="Log display metric">
-                  {LOG_METRICS.map((m) => (
+                <div className="flex items-center gap-2">
+                  {!selectMode && (
+                    <div className="flex gap-1" role="group" aria-label="Log display metric">
+                      {LOG_METRICS.map((m) => (
+                        <button
+                          key={m.key}
+                          type="button"
+                          onClick={() => handleLogMetricChange(m.key)}
+                          aria-pressed={logMetric === m.key}
+                          className={[
+                            'px-[10px] py-[4px] rounded-pill text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
+                            logMetric === m.key
+                              ? 'bg-orange text-white'
+                              : 'bg-sand text-ink3 hover:bg-orange/10 hover:text-ink2',
+                          ].join(' ')}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Select / Cancel button — only show when there are entries */}
+                  {Object.keys(mealGroups).length > 0 && (
                     <button
-                      key={m.key}
                       type="button"
-                      onClick={() => handleLogMetricChange(m.key)}
-                      aria-pressed={logMetric === m.key}
+                      onClick={selectMode ? handleExitSelectMode : handleEnterSelectMode}
                       className={[
-                        'px-[10px] py-[4px] rounded-pill text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
-                        logMetric === m.key
-                          ? 'bg-orange text-white'
-                          : 'bg-sand text-ink3 hover:bg-orange/10 hover:text-ink2',
+                        'px-[12px] py-[5px] rounded-pill text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
+                        selectMode
+                          ? 'bg-sand text-ink2 hover:bg-border'
+                          : 'bg-sand text-ink2 hover:bg-orange/10',
                       ].join(' ')}
                     >
-                      {m.label}
+                      {selectMode ? t('nutritionSelectCancel') : t('nutritionSelectMode')}
                     </button>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -1426,6 +1626,25 @@ export default function NutritionTracker() {
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <p className="text-[15px] text-ink2 font-medium mb-1">{t('nutritionEmpty')}</p>
                   <p className="text-[13px] text-ink3">{t('nutritionEmptySub')}</p>
+                </div>
+              ) : selectMode ? (
+                /* ── Select mode: plain list, no DnD ── */
+                <div className="flex flex-col gap-3">
+                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
+                    <MealGroup
+                      key={mt}
+                      mealType={mt}
+                      entries={mealGroups[mt]}
+                      t={t}
+                      onRequestDelete={handleRequestDelete}
+                      logMetric={logMetric}
+                      isDropTarget={false}
+                      selectMode={true}
+                      selectedIds={selectedIds}
+                      onToggleSelect={handleToggleSelect}
+                      onSelectAll={handleSelectAll}
+                    />
+                  ))}
                 </div>
               ) : (
                 <DndContext
@@ -1477,6 +1696,35 @@ export default function NutritionTracker() {
         config={customConfig}
         onSave={handleSaveCustomConfig}
         t={t}
+      />
+
+      {/* ── Batch delete floating bar ── */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-[80px] md:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-40px)] max-w-[400px]">
+          <button
+            type="button"
+            onClick={() => setBatchDeleteOpen(true)}
+            className="w-full flex items-center justify-center gap-2 rounded-[14px] bg-red-500 hover:bg-red-600 text-white text-[14px] font-semibold py-[14px] shadow-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+            {t('nutritionBatchDelete').replace('{n}', selectedIds.size)}
+          </button>
+        </div>
+      )}
+
+      {/* ── Batch delete confirm modal ── */}
+      <BatchDeleteModal
+        open={batchDeleteOpen}
+        count={selectedIds.size}
+        deleting={batchDeleting}
+        t={t}
+        onConfirm={handleBatchDeleteConfirm}
+        onCancel={() => setBatchDeleteOpen(false)}
       />
 
       {/* ── Undo delete toast ── */}
