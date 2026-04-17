@@ -30,19 +30,19 @@ function ScheduleBlock({ block }) {
   return (
     <div className="rounded-[14px] border overflow-hidden" style={{ borderColor: block.border }}>
       <div
-        className="flex items-center justify-between px-4 py-3"
+        className="flex items-center justify-between px-3 sm:px-4 py-3 gap-2"
         style={{ background: block.bg, borderBottom: `1px solid ${block.border}` }}
       >
-        <span className="text-[13px] font-semibold text-ink1">{block.label}</span>
-        <span className="text-[12px] text-ink3">{block.time}</span>
+        <span className="text-[13px] font-semibold text-ink1 truncate">{block.label}</span>
+        <span className="text-[12px] text-ink3 shrink-0">{block.time}</span>
       </div>
       <div className="bg-white divide-y divide-border">
         {block.items.map((item) => (
-          <div key={item.name} className="flex items-center gap-3 px-4 py-[11px]">
+          <div key={item.name} className="flex items-center gap-3 px-3 sm:px-4 py-[11px] min-w-0">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: block.dot }} />
             <div className="min-w-0">
               <p className="text-[13px] font-medium text-ink1 truncate">{item.name}</p>
-              <p className="text-[11px] text-ink3">{item.dose}</p>
+              <p className="text-[11px] text-ink3 truncate">{item.dose}</p>
             </div>
           </div>
         ))}
@@ -231,40 +231,40 @@ export default function Home() {
   ]
 
   return (
-    <div className="px-5 py-6 md:px-8 md:py-7 max-w-[960px]">
+    <div className="px-4 py-6 sm:px-5 md:px-8 md:py-7 max-w-[960px] mx-auto w-full">
 
         {/* ── Greeting row ── */}
-        <div className="flex items-end justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
           <div>
             <p className="text-[14px] text-ink2 mb-1">{greetingWord}</p>
-            <h1 className="font-display text-[32px] text-ink1 leading-none">
+            <h1 className="font-display text-[28px] sm:text-[32px] text-ink1 leading-none">
               {displayName || 'there'}
             </h1>
           </div>
-          <div className="bg-white border border-border rounded-[10px] px-4 py-2">
+          <div className="bg-white border border-border rounded-[10px] px-4 py-2 whitespace-nowrap">
             <span className="text-[13px] text-ink2">{today}</span>
           </div>
         </div>
 
         {/* ── Stats strip ── */}
-        <div className="grid grid-cols-4 gap-3 mb-7">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-7">
           {statsLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-[82px]" />
               ))
             : STATS.map((s) => (
-                <div key={s.label} className="bg-white border border-border rounded-[12px] px-4 py-4 flex flex-col gap-1">
-                  <span className={`font-display text-[28px] leading-none ${s.color}`}>{s.value}</span>
-                  <span className="text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">{s.label}</span>
+                <div key={s.label} className="bg-white border border-border rounded-[12px] px-3 py-4 sm:px-4 flex flex-col gap-1">
+                  <span className={`font-display text-[24px] sm:text-[28px] leading-none ${s.color}`}>{s.value}</span>
+                  <span className="text-[11px] sm:text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">{s.label}</span>
                 </div>
               ))}
         </div>
 
         {/* ── Two-column grid ── */}
-        <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 380px' }}>
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_380px]">
 
           {/* Left — Today's schedule */}
-          <div>
+          <div className="min-w-0">
             <h2 className="text-[15px] font-semibold text-ink1 mb-4">{t('todaySchedule')}</h2>
             <div className="flex flex-col gap-3">
               {scheduleLoading ? (
@@ -274,7 +274,7 @@ export default function Home() {
                   <Skeleton className="h-[90px]" />
                 </>
               ) : schedule.length === 0 ? (
-                <div className="rounded-[14px] border border-border bg-white px-6 py-8 text-center">
+                <div className="rounded-[14px] border border-border bg-white px-4 sm:px-6 py-8 text-center overflow-hidden">
                   <p className="text-[13px] text-ink2 mb-2">{t('noScheduleYet')}</p>
                   <Link
                     to="/cabinet"
@@ -295,8 +295,8 @@ export default function Home() {
           <div className="flex flex-col gap-4">
 
             {/* Ask AI card */}
-            <div className="rounded-[14px] border p-5" style={{ background: '#FDE8DE', borderColor: '#E8C4B0' }}>
-              <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-[14px] border p-4 sm:p-5 overflow-hidden" style={{ background: '#FDE8DE', borderColor: '#E8C4B0' }}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 mb-4 gap-2">
                 <div
                   className="w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0"
                   style={{ background: '#E07B4A' }}
@@ -312,13 +312,13 @@ export default function Home() {
               </div>
 
               {/* Input */}
-              <div className="flex items-center gap-2 bg-white border border-border rounded-[10px] px-3 py-[9px] mb-3">
+              <div className="flex items-center gap-2 bg-white border border-border rounded-[10px] px-3 py-[9px] mb-3 overflow-hidden">
                 <input
                   ref={inputRef}
                   value={quickInput}
                   onChange={(e) => setQuickInput(e.target.value)}
                   placeholder={t('askPlaceholder')}
-                  className="flex-1 text-[13px] text-ink1 placeholder:text-ink4 outline-none bg-transparent"
+                  className="flex-1 min-w-0 text-[13px] text-ink1 placeholder:text-ink4 outline-none bg-transparent"
                   onKeyDown={handleInputKeyDown}
                 />
                 <button
@@ -340,7 +340,7 @@ export default function Home() {
                   <button
                     key={p}
                     onClick={() => navigateToChat(p)}
-                    className="w-full text-left text-[12px] text-ink2 bg-white border border-border rounded-[8px] px-3 py-[8px] hover:bg-white/80 transition-colors cursor-pointer"
+                    className="w-full text-left text-[12px] text-ink2 bg-white border border-border rounded-[8px] px-3 py-[8px] hover:bg-white/80 transition-colors cursor-pointer truncate"
                   >
                     {p}
                   </button>
@@ -350,18 +350,18 @@ export default function Home() {
 
             {/* Recent conversations */}
             <div className="bg-white border border-border rounded-[14px] overflow-hidden">
-              <div className="px-5 py-4 border-b border-border">
+              <div className="px-4 sm:px-5 py-4 border-b border-border">
                 <p className="text-[13px] font-semibold text-ink1">{t('recentConversations')}</p>
               </div>
 
               {conversationsLoading ? (
-                <div className="flex flex-col gap-3 px-5 py-4">
+                <div className="flex flex-col gap-3 px-4 sm:px-5 py-4">
                   <Skeleton className="h-10" />
                   <Skeleton className="h-10" />
                   <Skeleton className="h-10" />
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="px-5 py-8 flex flex-col items-center text-center">
+                <div className="px-4 sm:px-5 py-8 flex flex-col items-center text-center">
                   <div className="w-10 h-10 rounded-full bg-orange/10 flex items-center justify-center mb-3">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -381,7 +381,7 @@ export default function Home() {
                     <button
                       key={item._id}
                       onClick={() => navigate(`/chat?id=${item._id}`)}
-                      className="w-full flex items-center gap-3 px-5 py-[13px] hover:bg-sand transition-colors cursor-pointer text-left"
+                      className="w-full flex items-center gap-3 px-4 sm:px-5 py-[13px] hover:bg-sand transition-colors cursor-pointer text-left overflow-hidden"
                     >
                       <div
                         className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
@@ -393,7 +393,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-medium text-ink1 truncate">{item.title ?? t('conversationFallback')}</p>
-                        <p className="text-[11px] text-ink3">
+                        <p className="text-[11px] text-ink3 truncate">
                           {item.createdAt ? relativeTime(item.createdAt) : ''}
                           {item.messageCount != null ? ` · ${item.messageCount} ${t('msgs')}` : ''}
                         </p>
@@ -407,7 +407,7 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="px-5 py-3 border-t border-border">
+              <div className="px-4 sm:px-5 py-3 border-t border-border">
                 <button
                   onClick={() => navigate('/chat')}
                   className="text-[12px] text-orange font-medium hover:underline cursor-pointer"
