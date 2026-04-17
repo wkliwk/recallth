@@ -794,6 +794,25 @@ export default function Profile() {
         <Wave />
       </div>
 
+      {/* Desktop-only header */}
+      <div className="hidden md:flex items-center gap-4 px-5 pt-6 pb-4">
+        <div className="w-[64px] h-[64px] rounded-full flex items-center justify-center shrink-0 bg-orange/15 text-orange text-[22px] font-medium">
+          {avatarLetter}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[20px] font-medium text-ink1 leading-tight truncate">{displayName}</h1>
+          {email && <p className="text-[13px] text-ink3 mt-0.5 truncate">{email}</p>}
+        </div>
+        <div className="flex items-center gap-5 shrink-0">
+          {stats.map((s) => (
+            <div key={s.label} className="flex flex-col items-center">
+              <span className="text-[18px] font-semibold text-ink1 leading-none">{s.value}</span>
+              <span className="text-[11px] text-ink3 mt-1">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Quick action pills */}
       <div className="flex gap-3 px-5 py-4">
         {quickActions.map(({ label, path }) => (

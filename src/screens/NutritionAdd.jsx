@@ -42,6 +42,7 @@ const selectClass =
 
 // Shared result card used by Search and Photo tabs
 function NutritionResultCard({ item, selected, onSelect }) {
+  const { t } = useLanguage()
   const name = item.name ?? item.product_name ?? ''
   const brand = item.brand ?? item.brands ?? ''
   const calories = item.nutrients?.calories ?? item.calories ?? item.nutriments?.energy_value ?? undefined
@@ -76,13 +77,13 @@ function NutritionResultCard({ item, selected, onSelect }) {
       {(protein !== undefined || carbs !== undefined || fat !== undefined) && (
         <div className="flex gap-2 mt-1.5 flex-wrap">
           {protein !== undefined && (
-            <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">P {protein}g</span>
+            <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">{t('nutritionProtein')} {protein}g</span>
           )}
           {carbs !== undefined && (
-            <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">C {carbs}g</span>
+            <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">{t('nutritionCarbs')} {carbs}g</span>
           )}
           {fat !== undefined && (
-            <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">F {fat}g</span>
+            <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">{t('nutritionFat')} {fat}g</span>
           )}
         </div>
       )}
@@ -640,13 +641,13 @@ export default function NutritionAdd() {
                               {(item.nutrients || item.protein !== undefined) && (
                                 <div className="flex gap-3 mt-1">
                                   {(item.nutrients?.protein ?? item.protein) !== undefined && (
-                                    <span className="text-[11px] text-ink3">P {item.nutrients?.protein ?? item.protein}g</span>
+                                    <span className="text-[11px] text-ink3">{t('nutritionProtein')} {item.nutrients?.protein ?? item.protein}g</span>
                                   )}
                                   {(item.nutrients?.carbs ?? item.carbs) !== undefined && (
-                                    <span className="text-[11px] text-ink3">C {item.nutrients?.carbs ?? item.carbs}g</span>
+                                    <span className="text-[11px] text-ink3">{t('nutritionCarbs')} {item.nutrients?.carbs ?? item.carbs}g</span>
                                   )}
                                   {(item.nutrients?.fat ?? item.fat) !== undefined && (
-                                    <span className="text-[11px] text-ink3">F {item.nutrients?.fat ?? item.fat}g</span>
+                                    <span className="text-[11px] text-ink3">{t('nutritionFat')} {item.nutrients?.fat ?? item.fat}g</span>
                                   )}
                                 </div>
                               )}
