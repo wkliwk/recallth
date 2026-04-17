@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -908,6 +908,18 @@ export default function NutritionTracker() {
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
 
+  // ── AI meal type (user-selectable; falls back to time-based default) ────────
+  const [aiMealType, setAiMealType] = useState(() => {
+    const h = new Date().getHours()
+    if (h >= 6 && h < 11) return 'breakfast'
+    if (h >= 11 && h < 15) return 'lunch'
+    if (h >= 17 && h < 22) return 'dinner'
+    return 'snack'
+  })
+
+  // ── Ref for auto-scroll to AI results ────────────────────────────────────
+  const aiResultsRef = useRef(null)
+
   // ── Manual entry state ────────────────────────────────────────────────────
   const [manualName, setManualName] = useState('')
   const [manualQty, setManualQty] = useState('')
@@ -1067,6 +1079,13 @@ export default function NutritionTracker() {
     fetchEntries()
   }, [fetchSummary, fetchEntries])
 
+  // ── Auto-scroll to AI results when they appear ───────────────────────────
+  useEffect(() => {
+    if (parsedFoods.length > 0 && aiResultsRef.current) {
+      aiResultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [parsedFoods])
+
   // ── Delete with undo ─────────────────────────────────────────────────────
   function handleRequestDelete(entry) {
     // Cancel any existing pending delete first
@@ -1211,7 +1230,7 @@ export default function NutritionTracker() {
     try {
       await api.nutrition.create({
         date: viewDate,
-        mealType: detectMealType(aiText),
+        mealType: aiMealType,
         foods: selected,
         rawText: aiText.trim(),
       })
@@ -1397,13 +1416,32 @@ export default function NutritionTracker() {
               <div className="px-5 py-5 md:px-6 md:py-6">
                 {analyserTab === 'ai' ? (
                   <>
+                    {/* Meal type pills — consistent with Manual tab */}
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      {MEAL_ORDER.map((mt) => (
+                        <button
+                          key={mt}
+                          type="button"
+                          onClick={() => setAiMealType(mt)}
+                          aria-pressed={aiMealType === mt}
+                          className={[
+                            'px-[12px] py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
+                            aiMealType === mt
+                              ? 'bg-orange text-white'
+                              : 'bg-sand text-ink2 hover:bg-orange/10',
+                          ].join(' ')}
+                        >
+                          {t(MEAL_LABEL_KEYS[mt])}
+                        </button>
+                      ))}
+                    </div>
                     <textarea
                       value={aiText}
                       onChange={(e) => setAiText(e.target.value)}
                       placeholder={t('nutritionAiPlaceholder')}
-                      rows={3}
+                      rows={parsedFoods.length > 0 ? 2 : 3}
                       disabled={aiParsing}
-                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
+                      className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 transition-all"
                     />
                     <button
                       type="button"
@@ -1424,7 +1462,7 @@ export default function NutritionTracker() {
                       <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>
                     )}
                     {parsedFoods.length > 0 && (
-                      <div className="mt-4">
+                      <div ref={aiResultsRef} className="mt-4">
                         <p className="text-[12px] font-medium text-ink2 mb-1">
                           {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
                         </p>
