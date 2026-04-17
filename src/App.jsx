@@ -28,6 +28,7 @@ import Bloodwork from './screens/Bloodwork'
 import NutritionTracker from './screens/NutritionTracker'
 import NutritionAdd from './screens/NutritionAdd'
 import NutritionDetail from './screens/NutritionDetail'
+import FoodDatabase from './screens/FoodDatabase'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -87,6 +88,7 @@ function AppRoutes() {
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="/nutrition"     element={<ProtectedRoute><NutritionTracker /></ProtectedRoute>} />
       <Route path="/nutrition/add" element={<ProtectedRoute><NutritionAdd /></ProtectedRoute>} />
+      <Route path="/nutrition/food-db" element={<ProtectedRoute><FoodDatabase /></ProtectedRoute>} />
       <Route path="/nutrition/:id" element={<ProtectedRoute><NutritionDetail /></ProtectedRoute>} />
 
       {/* Fallback */}
