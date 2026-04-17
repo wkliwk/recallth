@@ -1538,7 +1538,7 @@ export default function NutritionTracker() {
             </div>
 
             {/* Today's food log */}
-            <div className="pb-[100px] md:pb-8">
+            <div className={`pb-[100px] ${selectMode && selectedIds.size > 0 ? 'md:pb-20' : 'md:pb-8'}`}>
               {/* Date + metric row */}
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div className="flex items-center gap-1">
