@@ -42,7 +42,6 @@ export default function BottomNav() {
         </svg>
       ),
     },
-    { labelKey: 'profile', path: '/profile' },
   ]
 
   return (

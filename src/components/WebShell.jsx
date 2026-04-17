@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import BottomNav from './BottomNav'
@@ -140,16 +140,6 @@ const NAV_KEYS = [
       </svg>
     ),
   },
-  {
-    to: '/profile',
-    key: 'profile',
-    icon: () => (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="8" r="4" />
-        <path d="M20 21a8 8 0 0 0-16 0" />
-      </svg>
-    ),
-  },
 ]
 
 export default function WebShell({ children }) {
@@ -192,8 +182,11 @@ export default function WebShell({ children }) {
           ))}
         </nav>
 
-        {/* User strip */}
-        <div className="px-4 py-4 border-t border-border flex items-center gap-3">
+        {/* User strip — clickable → /profile */}
+        <Link
+          to="/profile"
+          className="px-4 py-4 border-t border-border flex items-center gap-3 hover:bg-sand/50 transition-colors"
+        >
           <div className="w-9 h-9 rounded-full bg-orange flex items-center justify-center shrink-0">
             <span className="text-white text-[14px] font-semibold">{avatarLetter}</span>
           </div>
@@ -201,7 +194,7 @@ export default function WebShell({ children }) {
             <p className="text-[13px] font-semibold text-ink1 truncate">{displayName}</p>
             <p className="text-[11px] text-ink3">{t('freePlan')}</p>
           </div>
-        </div>
+        </Link>
       </aside>
 
       {/* ── Content area ── */}
