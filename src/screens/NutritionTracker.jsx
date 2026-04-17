@@ -229,7 +229,7 @@ function ParsedFoodRow({ food, checked, onToggle }) {
         <div className="flex items-baseline gap-2">
           <p className="text-[13px] font-medium text-ink1 leading-snug">{food.name}</p>
           {(food.quantity != null || food.unit) && (
-            <span className="text-[11px] text-ink3 shrink-0">{food.quantity} {food.unit}</span>
+            <span className="text-[11px] text-ink3 shrink-0">{food.quantity} {food.unit}{food.grams != null ? ` · 約${food.grams}g` : ''}</span>
           )}
         </div>
         <p className="text-[11px] text-ink3 mt-[2px]">
@@ -1538,7 +1538,7 @@ export default function NutritionTracker() {
             </div>
 
             {/* Today's food log */}
-            <div className={`pb-[100px] ${selectMode && selectedIds.size > 0 ? 'md:pb-20' : 'md:pb-8'}`}>
+            <div className={`pb-[100px] ${selectMode && selectedIds.size > 0 ? 'md:pb-28' : 'md:pb-8'}`}>
               {/* Date + metric row */}
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div className="flex items-center gap-1">
