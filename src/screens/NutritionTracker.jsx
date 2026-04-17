@@ -311,39 +311,169 @@ function AlgorithmCard({ summary, onOpenProfileChat }) {
 }
 
 // ── Mobile collapsible calendar ───────────────────────────────────────────────
-function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
-  const [open, setOpen] = useState(false)
+// ── Week strip helpers ────────────────────────────────────────────────────────
+const _pad = (n) => String(n).padStart(2, '0')
+
+function dateToISO(d) {
+  return `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`
+}
+
+function getWeekStartISO(iso) {
+  const d = new Date(iso + 'T00:00:00')
+  const daysFromMon = (d.getDay() + 6) % 7
+  d.setDate(d.getDate() - daysFromMon)
+  return dateToISO(d)
+}
+
+function getWeekDays(iso) {
+  const monISO = getWeekStartISO(iso)
+  const mon = new Date(monISO + 'T00:00:00')
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(mon)
+    d.setDate(mon.getDate() + i)
+    return dateToISO(d)
+  })
+}
+
+function WeekStrip({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
+  const { t } = useLanguage()
+  const [expanded, setExpanded] = useState(false)
+  const [weekStartISO, setWeekStartISO] = useState(() => getWeekStartISO(viewDate))
+  const [recordDays, setRecordDays] = useState(new Set())
+
+  // Sync week when viewDate jumps to a different week
+  useEffect(() => {
+    const ws = getWeekStartISO(viewDate)
+    if (ws !== weekStartISO) setWeekStartISO(ws)
+  }, [viewDate]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch record days for weeks that may span 2 months
+  useEffect(() => {
+    const days = getWeekDays(weekStartISO)
+    const months = [...new Set(days.map((d) => d.slice(0, 7)))]
+    Promise.all(
+      months.map((ym) => {
+        const [y, m] = ym.split('-')
+        return api.nutrition.days(y, m).then((res) => res?.data ?? []).catch(() => [])
+      })
+    ).then((results) => {
+      setRecordDays(new Set(results.flat()))
+    })
+  }, [weekStartISO, refreshKey])
+
+  const weekDays = getWeekDays(weekStartISO)
+  const locale = t('locale') || 'en-GB'
+  const todayWeekStart = getWeekStartISO(todayStr)
+
+  function prevWeek() {
+    const d = new Date(weekStartISO + 'T00:00:00')
+    d.setDate(d.getDate() - 7)
+    setWeekStartISO(dateToISO(d))
+  }
+  function nextWeek() {
+    const d = new Date(weekStartISO + 'T00:00:00')
+    d.setDate(d.getDate() + 7)
+    const nextISO = dateToISO(d)
+    if (nextISO <= todayWeekStart) setWeekStartISO(nextISO)
+  }
+
   return (
     <div className="lg:hidden rounded-[14px] border border-border bg-white overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 focus:outline-none"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span className="text-[13px] font-semibold text-ink1">{dateLabel}</span>
-        </div>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round"
-          className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`}
+      {/* Week row */}
+      <div className="flex items-center px-3 py-2 gap-1">
+        {/* Prev week */}
+        <button
+          type="button"
+          onClick={prevWeek}
+          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors shrink-0"
+          aria-label="Previous week"
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-      {open && (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        {/* Day cells */}
+        <div className="flex-1 grid grid-cols-7 gap-[2px]">
+          {weekDays.map((iso) => {
+            const isSelected = iso === viewDate
+            const isToday = iso === todayStr
+            const isFuture = iso > todayStr
+            const hasRecord = recordDays.has(iso)
+            const dayNum = parseInt(iso.slice(8), 10)
+            const dayLetter = new Date(iso + 'T00:00:00').toLocaleDateString(locale, { weekday: 'narrow' })
+
+            return (
+              <button
+                key={iso}
+                type="button"
+                disabled={isFuture}
+                onClick={() => onSelectDate(iso)}
+                className={`flex flex-col items-center py-[5px] rounded-[10px] transition-colors focus:outline-none ${
+                  isSelected
+                    ? 'bg-orange'
+                    : isToday
+                    ? 'ring-[1.5px] ring-orange'
+                    : isFuture
+                    ? 'opacity-30 cursor-default'
+                    : 'hover:bg-sand'
+                }`}
+              >
+                <span className={`text-[9px] font-medium leading-none ${isSelected ? 'text-white/80' : 'text-ink3'}`}>
+                  {dayLetter}
+                </span>
+                <span className={`text-[13px] font-semibold leading-snug mt-[2px] ${isSelected ? 'text-white' : isToday ? 'text-orange' : 'text-ink1'}`}>
+                  {dayNum}
+                </span>
+                <div className="h-[4px] mt-[2px] flex items-center justify-center">
+                  {hasRecord && !isFuture && (
+                    <span className={`w-[5px] h-[5px] rounded-full ${isSelected ? 'bg-white/70' : 'bg-orange'}`} />
+                  )}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Next week */}
+        <button
+          type="button"
+          onClick={nextWeek}
+          disabled={weekStartISO >= todayWeekStart}
+          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors shrink-0 disabled:opacity-30 disabled:cursor-default"
+          aria-label="Next week"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+
+        {/* Expand toggle */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors shrink-0 ml-1"
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Collapse calendar' : 'Expand calendar'}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-ink3 transition-transform ${expanded ? 'rotate-180' : ''}`}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Month label below strip */}
+      <div className="px-4 pb-[6px] -mt-1">
+        <span className="text-[11px] text-ink3">{dateLabel}</span>
+      </div>
+
+      {/* Full calendar (expanded) */}
+      {expanded && (
         <div className="px-4 pb-4 border-t border-border">
           <div className="pt-3">
             <NutritionCalendar
               viewDate={viewDate}
-              onSelectDate={(d) => { onSelectDate(d); setOpen(false) }}
+              onSelectDate={(d) => { onSelectDate(d); setExpanded(false) }}
               todayStr={todayStr}
               refreshKey={refreshKey}
             />
@@ -1341,8 +1471,8 @@ export default function NutritionTracker() {
               />
             </div>
 
-            {/* Mobile: collapsible calendar */}
-            <MobileCalendar
+            {/* Mobile: week strip with expandable full calendar */}
+            <WeekStrip
               viewDate={viewDate}
               onSelectDate={setViewDate}
               todayStr={todayStr}
