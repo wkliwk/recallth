@@ -229,7 +229,7 @@ function ParsedFoodRow({ food, checked, onToggle }) {
         <div className="flex items-baseline gap-2">
           <p className="text-[13px] font-medium text-ink1 leading-snug">{food.name}</p>
           {(food.quantity != null || food.unit) && (
-            <span className="text-[11px] text-ink3 shrink-0">{food.quantity} {food.unit}</span>
+            <span className="text-[11px] text-ink3 shrink-0">{food.quantity} {food.unit}{food.grams != null ? ` · 約${food.grams}g` : ''}</span>
           )}
         </div>
         <p className="text-[11px] text-ink3 mt-[2px]">
