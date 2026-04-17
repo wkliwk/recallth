@@ -711,7 +711,7 @@ function MealGroup({
                         <p className="text-[13px] text-ink1 font-medium leading-snug">
                           {food.name}
                           {(food.quantity != null || food.unit) && (
-                            <span className="text-ink3 font-normal ml-1">{food.quantity} {food.unit}</span>
+                            <span className="text-ink3 font-normal ml-1">{food.quantity} {food.unit}{food.grams != null ? ` · 約${food.grams}g` : ''}</span>
                           )}
                         </p>
                         {macros && <p className="text-[11px] text-ink3 mt-[2px]">{macros}</p>}
@@ -1538,7 +1538,7 @@ export default function NutritionTracker() {
             </div>
 
             {/* Today's food log */}
-            <div className={`pb-[100px] ${selectMode && selectedIds.size > 0 ? 'md:pb-20' : 'md:pb-8'}`}>
+            <div className={`pb-[100px] ${selectMode && selectedIds.size > 0 ? 'md:pb-28' : 'md:pb-8'}`}>
               {/* Date + metric row */}
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div className="flex items-center gap-1">
