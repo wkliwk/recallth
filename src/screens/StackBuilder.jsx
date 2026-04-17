@@ -248,7 +248,7 @@ export default function StackBuilder() {
 
   const handleAddToStack = useCallback(
     async (name, dose) => {
-      await api.cabinet.create({ name, dosage: dose })
+      await api.cabinet.create({ name, dosage: dose, type: 'supplement' })
       setCabinetNames((prev) => new Set([...prev, name.toLowerCase()]))
     },
     []
