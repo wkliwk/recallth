@@ -1475,6 +1475,96 @@ const TRANSLATIONS = {
 
 const LanguageContext = createContext()
 
+// ── AI analyser placeholder pool ──────────────────────────────────────────────
+const AI_PLACEHOLDER_POOL = {
+  en: [
+    'Had a chicken sandwich and a latte for lunch',
+    'Breakfast: 2 scrambled eggs, toast, and orange juice',
+    'Just a few bites of fried rice, maybe half a bowl',
+    'Dinner was a bowl of ramen with chashu and soft egg',
+    'McDonald\'s double cheeseburger, medium fries, Coke',
+    'About 3 pieces of sushi and a miso soup',
+    'Snack: a banana and a handful of almonds',
+    'Chicken rice from the hawker stall, drumstick portion',
+    'Homemade pasta with tomato sauce, one serving',
+    'Two slices of pepperoni pizza for dinner',
+    'Green smoothie — spinach, banana, almond milk, protein powder',
+    'Afternoon snack: Greek yogurt with granola and blueberries',
+    'Grilled salmon fillet with steamed broccoli and rice',
+    'Just a coffee with oat milk — no food',
+    'Char siu bao (3 pieces) and a cup of jasmine tea',
+    'Instant noodles with an egg and some greens',
+    'Korean bibimbap with mixed veggies, beef, and a fried egg',
+    'Half an avocado on sourdough toast with a poached egg',
+    'Bubble tea — taro milk tea, 50% sugar, full ice, large',
+    'Takeaway fish and chips, ate most of it',
+    'Protein bar after the gym — Quest Cookies & Cream',
+    'Congee with century egg and lean pork, about 2 bowls',
+    'Steak dinner — 200g sirloin, mashed potato, side salad',
+    'Fruit plate: watermelon, mango, dragon fruit',
+    'Late night snack: crackers and hummus',
+  ],
+  'zh-HK': [
+    '午餐食咗叉燒飯同埋一杯凍奶茶',
+    '早餐：兩隻煎蛋、一片多士、一杯橙汁',
+    '食咗少少炒飯，大概半碗咁上下',
+    '晚餐係一碗叉燒拉麵，有溏心蛋',
+    '麥當勞雙層芝士漢堡、中薯條、可樂',
+    '食咗大概三件壽司同一碗味噌湯',
+    '小食：一隻香蕉同一小把杏仁',
+    '雞髀飯，街邊大排檔嗰種，一份',
+    '自煮意粉加茄汁，一人份量',
+    '晚飯食咗兩片薄餅，有香腸係上面',
+    '青瓜薄荷奶昔——菠菜、香蕉、杏仁奶、蛋白粉',
+    '下午茶：希臘乳酪加格蘭諾拉麥片同藍莓',
+    '燒三文魚配蒸西蘭花同白飯',
+    '只係飲咗一杯燕麥拿鐵，冇食嘢',
+    '飲咗三杯叉燒包同一杯香片茶',
+    '公仔麵加咗隻蛋同少少菜',
+    '韓式石鍋拌飯，有牛肉同各種蔬菜',
+    '牛油果多士加一隻水波蛋，全麥包',
+    '珍珠奶茶——芋頭味，五分甜，正常冰，大杯',
+    '外賣炸魚薯條，食咗大部分',
+    '健身後食咗一條蛋白棒',
+    '皮蛋瘦肉粥，食咗兩碗',
+    '牛扒晚餐——200克西冷，薯蓉，沙律',
+    '生果拼盤：西瓜、芒果、火龍果',
+    '宵夜：梳打餅乾同鷹嘴豆泥',
+  ],
+  'zh-TW': [
+    '午餐吃了叉燒飯和一杯冰奶茶',
+    '早餐：兩顆荷包蛋、一片吐司、一杯柳橙汁',
+    '吃了一點炒飯，大概半碗左右',
+    '晚餐是一碗叉燒拉麵，有溏心蛋',
+    '麥當勞雙層起司漢堡、中薯條、可樂',
+    '吃了大概三貫壽司和一碗味噌湯',
+    '點心：一根香蕉和一小把杏仁',
+    '雞腿便當，一份',
+    '自煮義大利麵加番茄醬，一人份',
+    '晚餐吃了兩片辣腸披薩',
+    '綠拿鐵——菠菜、香蕉、杏仁奶、蛋白粉',
+    '下午茶：希臘優格加格蘭諾拉麥片和藍莓',
+    '烤鮭魚配蒸花椰菜和白飯',
+    '只喝了一杯燕麥拿鐵，沒有吃東西',
+    '吃了三個叉燒包和一杯茉莉花茶',
+    '泡麵加了一顆蛋和一些蔬菜',
+    '韓式石鍋拌飯，有牛肉和各種蔬菜',
+    '酪梨吐司加一顆水波蛋，全麥麵包',
+    '珍珠奶茶——芋頭口味，半糖，去冰，大杯',
+    '外賣炸魚薯條，吃了大部分',
+    '健身後吃了一條蛋白棒',
+    '皮蛋瘦肉粥，吃了兩碗',
+    '牛排晚餐——200克沙朗，薯泥，沙拉',
+    '水果拼盤：西瓜、芒果、火龍果',
+    '宵夜：蘇打餅乾和鷹嘴豆泥',
+  ],
+}
+
+export function getRandomAiPlaceholder(language) {
+  const pool = AI_PLACEHOLDER_POOL[language] ?? AI_PLACEHOLDER_POOL.en
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
 export function useLanguage() {
   const context = useContext(LanguageContext)
   if (!context) {

@@ -16,7 +16,7 @@ import Wave from '../components/Wave'
 import FAB from '../components/FAB'
 import ProfileOnboardingChat from '../components/ProfileOnboardingChat'
 import { api } from '../services/api'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage, getRandomAiPlaceholder } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -1680,7 +1680,7 @@ function AnalyserSheet({
               <textarea
                 value={aiText}
                 onChange={(e) => setAiText(e.target.value)}
-                placeholder={t('nutritionAiPlaceholder')}
+                placeholder={aiPlaceholder}
                 rows={parsedFoods.length > 0 ? 2 : 5}
                 disabled={aiParsing}
                 className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60"
@@ -1811,9 +1811,10 @@ function V2ToggleButton({ isV2, onToggle }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function NutritionTracker() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { showUsage } = useAiUsage()
   const todayStr = todayISO()
+  const [aiPlaceholder] = useState(() => getRandomAiPlaceholder(language))
   const [viewDate, setViewDate] = useState(todayStr)
   const dateLabel = formatDateLabel(viewDate)
   const isToday = viewDate === todayStr
@@ -2358,7 +2359,7 @@ export default function NutritionTracker() {
                     <textarea
                       value={aiText}
                       onChange={(e) => setAiText(e.target.value)}
-                      placeholder={t('nutritionAiPlaceholder')}
+                      placeholder={aiPlaceholder}
                       rows={parsedFoods.length > 0 ? 2 : 5}
                       disabled={aiParsing}
                       className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60"
@@ -2727,7 +2728,7 @@ export default function NutritionTracker() {
                     <textarea
                       value={aiText}
                       onChange={(e) => setAiText(e.target.value)}
-                      placeholder={t('nutritionAiPlaceholder')}
+                      placeholder={aiPlaceholder}
                       rows={parsedFoods.length > 0 ? 2 : 5}
                       disabled={aiParsing}
                       className="w-full border border-border rounded-[10px] px-3 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 resize-none focus:outline-none focus:ring-2 focus:ring-orange/50 bg-white disabled:opacity-60 md:min-h-[120px]"
