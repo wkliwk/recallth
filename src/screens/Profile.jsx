@@ -794,75 +794,79 @@ export default function Profile() {
         <Wave />
       </div>
 
-      {/* Desktop-only header */}
-      <div className="hidden md:flex items-center gap-4 px-5 pt-6 pb-4">
-        <div className="w-[64px] h-[64px] rounded-full flex items-center justify-center shrink-0 bg-orange/15 text-orange text-[22px] font-medium">
-          {avatarLetter}
+      {/* ── Constrained content — max-width for desktop ── */}
+      <div className="max-w-[680px] mx-auto">
+
+        {/* Desktop-only header */}
+        <div className="hidden md:flex items-center gap-4 px-5 pt-6 pb-4">
+          <div className="w-[64px] h-[64px] rounded-full flex items-center justify-center shrink-0 bg-orange/15 text-orange text-[22px] font-medium">
+            {avatarLetter}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-[20px] font-medium text-ink1 leading-tight truncate">{displayName}</h1>
+            {email && <p className="text-[13px] text-ink3 mt-0.5 truncate">{email}</p>}
+          </div>
+          <div className="flex items-center gap-6 shrink-0">
+            {stats.map((s) => (
+              <div key={s.label} className="flex flex-col items-center">
+                <span className="text-[18px] font-semibold text-ink1 leading-none">{s.value}</span>
+                <span className="text-[11px] text-ink3 mt-1">{s.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-[20px] font-medium text-ink1 leading-tight truncate">{displayName}</h1>
-          {email && <p className="text-[13px] text-ink3 mt-0.5 truncate">{email}</p>}
-        </div>
-        <div className="flex items-center gap-5 shrink-0">
-          {stats.map((s) => (
-            <div key={s.label} className="flex flex-col items-center">
-              <span className="text-[18px] font-semibold text-ink1 leading-none">{s.value}</span>
-              <span className="text-[11px] text-ink3 mt-1">{s.label}</span>
-            </div>
+
+        {/* Quick action pills */}
+        <div className="flex gap-2 px-5 py-4">
+          {quickActions.map(({ label, path }) => (
+            <button
+              key={label}
+              onClick={() => navigate(path)}
+              className="flex-1 bg-white border-[1.5px] border-border-md rounded-pill py-[10px] text-center text-[12px] font-medium text-ink2 cursor-pointer hover:bg-sand transition-colors"
+            >
+              {label}
+            </button>
           ))}
         </div>
-      </div>
 
-      {/* Quick action pills */}
-      <div className="flex gap-3 px-5 py-4">
-        {quickActions.map(({ label, path }) => (
-          <button
-            key={label}
-            onClick={() => navigate(path)}
-            className="flex-1 bg-white border-[1.5px] border-border-md rounded-pill py-[10px] text-center text-[12px] font-medium text-ink2 cursor-pointer"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        {/* Load error */}
+        {loadError && (
+          <p className="text-[12px] text-[#C05A28] px-5 mb-3">{loadError}</p>
+        )}
 
-      {/* Load error */}
-      {loadError && (
-        <p className="text-[12px] text-[#C05A28] px-5 mb-3">{loadError}</p>
-      )}
-
-      {/* Accordion sections */}
-      <div className="flex flex-col gap-3 px-5">
-        <AboutSection    data={bodyData}      onSave={handleSave} />
-        <GoalsSection    data={goalsData}     onSave={handleSave} />
-        <ExerciseSection data={exerciseData}  onSave={handleSave} />
-        <DietSection     data={dietData}      onSave={handleSave} />
-        <SleepSection    data={sleepData}     onSave={handleSave} />
-        <LifestyleSection data={lifestyleData} onSave={handleSave} />
-      </div>
-
-      {/* Language selector */}
-      <div className="px-5 mt-6">
-        <LanguageSelector />
-      </div>
-
-      {/* Security */}
-      {hasPassword !== null && (
-        <div className="px-5 mt-6">
-          <SecuritySection hasPassword={hasPassword} googleLinked={googleLinked} />
+        {/* Accordion sections */}
+        <div className="flex flex-col gap-3 px-5">
+          <AboutSection    data={bodyData}      onSave={handleSave} />
+          <GoalsSection    data={goalsData}     onSave={handleSave} />
+          <ExerciseSection data={exerciseData}  onSave={handleSave} />
+          <DietSection     data={dietData}      onSave={handleSave} />
+          <SleepSection    data={sleepData}     onSave={handleSave} />
+          <LifestyleSection data={lifestyleData} onSave={handleSave} />
         </div>
-      )}
 
-      {/* Logout */}
-      <div className="px-5 mt-4">
-        <button
-          onClick={handleLogout}
-          className="w-full border-[1.5px] border-orange text-orange rounded-pill py-[11px] text-[13px] font-medium cursor-pointer"
-        >
-          {t('logOut')}
-        </button>
+        {/* Language selector */}
+        <div className="px-5 mt-6">
+          <LanguageSelector />
+        </div>
+
+        {/* Security */}
+        {hasPassword !== null && (
+          <div className="px-5 mt-6">
+            <SecuritySection hasPassword={hasPassword} googleLinked={googleLinked} />
+          </div>
+        )}
+
+        {/* Logout */}
+        <div className="px-5 mt-4 pb-6">
+          <button
+            onClick={handleLogout}
+            className="w-full border-[1.5px] border-orange text-orange rounded-pill py-[11px] text-[13px] font-medium cursor-pointer hover:bg-orange/5 transition-colors"
+          >
+            {t('logOut')}
+          </button>
+        </div>
+
       </div>
-
     </div>
   )
 }
