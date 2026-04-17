@@ -1,84 +1,78 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
 
-export default function BottomNav() {
+const SHORTCUTS = [
+  {
+    labelKey: 'home',
+    path: '/home',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
+        <path d="M9 21V13h6v8" />
+      </svg>
+    ),
+  },
+  {
+    labelKey: 'chat',
+    path: '/chat',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      </svg>
+    ),
+  },
+  {
+    labelKey: 'cabinet',
+    path: '/cabinet',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M3 12h18" />
+        <path d="M12 3v18" />
+      </svg>
+    ),
+  },
+]
+
+export default function BottomNav({ onMenuOpen }) {
   const { pathname } = useLocation()
   const { t } = useLanguage()
 
-  const tabs = [
-    { labelKey: 'home', path: '/home' },
-    { labelKey: 'journal', path: '/journal' },
-    { labelKey: 'chat', path: '/chat' },
-    {
-      labelKey: 'journal',
-      path: '/journal',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-      ),
-    },
-    { labelKey: 'cabinet', path: '/cabinet' },
-    {
-      labelKey: 'sideEffects',
-      path: '/side-effects',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      ),
-    },
-    {
-      labelKey: 'progress',
-      path: '/progress',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-      ),
-    },
-    { labelKey: 'profile', path: '/profile' },
-  ]
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-page border-t border-border flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)] md:hidden z-50">
-      {tabs.map((tab) => {
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)] md:hidden z-30">
+      {SHORTCUTS.map((tab) => {
         const active = pathname === tab.path
-
         return (
           <Link
             key={tab.path}
             to={tab.path}
-            className="flex flex-col items-center gap-1 no-underline"
+            className="flex flex-col items-center gap-[3px] no-underline min-w-[56px]"
           >
-            {tab.icon ? (
-              <span
-                className={`w-5 h-5 flex items-center justify-center ${active ? 'text-orange' : 'text-ink3'}`}
-              >
-                {tab.icon}
-              </span>
-            ) : active ? (
-              <span className="w-5 h-5 rounded-full bg-orange-lt flex items-center justify-center">
-                <span className="w-[6px] h-[6px] rounded-full bg-orange" />
-              </span>
-            ) : (
-              <span className="w-5 h-5 flex items-center justify-center">
-                <span className="w-[6px] h-[6px] rounded-full bg-ink3" />
-              </span>
-            )}
-
+            <span className={`w-6 h-6 flex items-center justify-center ${active ? 'text-orange' : 'text-ink3'}`}>
+              {tab.icon}
+            </span>
             <span className={`text-[10px] ${active ? 'text-ink1 font-medium' : 'text-ink3'}`}>
               {t(tab.labelKey)}
             </span>
           </Link>
         )
       })}
+
+      {/* Hamburger — opens full drawer */}
+      <button
+        onClick={onMenuOpen}
+        className="flex flex-col items-center gap-[3px] min-w-[56px] bg-transparent border-none"
+        aria-label="Open navigation menu"
+      >
+        <span className="w-6 h-6 flex items-center justify-center text-ink3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </span>
+        <span className="text-[10px] text-ink3">{t('menu')}</span>
+      </button>
     </nav>
   )
 }
-
