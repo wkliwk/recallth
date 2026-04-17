@@ -1273,13 +1273,24 @@ export default function NutritionTracker() {
           <h1 className="text-[20px] font-semibold text-ink1">{t('nutritionTitle')}</h1>
           <p className="text-[13px] text-ink3 mt-[2px]">{calSub}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
-          className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-        >
-          + Add food
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href="https://recallth.vercel.app/nutrition"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-[6px] bg-ink1 text-white text-[12px] font-semibold px-[12px] py-[6px] rounded-full hover:bg-ink2 transition-colors"
+          >
+            <span className="w-[7px] h-[7px] rounded-full bg-green-400 shrink-0" />
+            New UI
+          </a>
+          <button
+            type="button"
+            onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
+            className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+          >
+            + {t('addFood')}
+          </button>
+        </div>
       </div>
 
       {/* ── Main content container ── */}
