@@ -7,8 +7,18 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
-const FREQUENCY_OPTIONS = ['Daily', 'Twice daily', 'As needed']
-const TIMING_OPTIONS = ['Morning', 'Pre-workout', 'With meals', 'Evening', 'Before bed']
+const FREQUENCY_OPTIONS = [
+  { value: 'Daily', key: 'freqDaily' },
+  { value: 'Twice daily', key: 'freqTwiceDaily' },
+  { value: 'As needed', key: 'freqAsNeeded' },
+]
+const TIMING_OPTIONS = [
+  { value: 'Morning', key: 'timingMorning' },
+  { value: 'Pre-workout', key: 'timingPreWorkout' },
+  { value: 'With meals', key: 'timingWithMeals' },
+  { value: 'Evening', key: 'timingEvening' },
+  { value: 'Before bed', key: 'timingBeforeBed' },
+]
 
 function Field({ label, required, error, children }) {
   return (
@@ -313,7 +323,7 @@ export default function CabinetAdd() {
                           {p.brand && <p className="text-[12px] text-ink2 mt-[2px]">{p.brand}</p>}
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
                             {p.dosage && <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-orange/10 text-orange">{p.dosage}</span>}
-                            {p.timing && <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-sand text-ink2">{p.timing}</span>}
+                            {p.timing && <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-sand text-ink2">{t(TIMING_OPTIONS.find(o => o.value === p.timing)?.key ?? '') || p.timing}</span>}
                           </div>
                           {p.description && (
                             <div className="mt-3 pt-3 border-t border-border">
@@ -410,7 +420,7 @@ export default function CabinetAdd() {
                 onChange={(e) => handleChange('frequency', e.target.value)}
               >
                 {FREQUENCY_OPTIONS.map((o) => (
-                  <option key={o} value={o}>{o}</option>
+                  <option key={o.value} value={o.value}>{t(o.key)}</option>
                 ))}
               </select>
               <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -427,7 +437,7 @@ export default function CabinetAdd() {
                 onChange={(e) => handleChange('timing', e.target.value)}
               >
                 {TIMING_OPTIONS.map((o) => (
-                  <option key={o} value={o}>{o}</option>
+                  <option key={o.value} value={o.value}>{t(o.key)}</option>
                 ))}
               </select>
               <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

@@ -12,14 +12,8 @@ const SLOT_COLOURS = [
   { bg: '#FBF9F5', border: '#E8C4B0', dot: '#C05A28' },  // orange-dk
 ]
 
-// Canonical ordering for the five named time windows
-const TIME_WINDOW_ORDER = [
-  'Morning',
-  'Pre-Workout',
-  'With Meals',
-  'Evening',
-  'Before Bed',
-]
+// Canonical ordering for the five named time windows (by slot key)
+const SLOT_KEY_ORDER = ['morning', 'afternoon', 'evening', 'night', 'anytime']
 
 // ── Schedule block component ─────────────────────────────────────────────────
 function ScheduleBlock({ block }) {
@@ -109,15 +103,15 @@ export default function Schedule() {
                 dose: it.dosage ?? it.dose ?? '',
                 conflict: it.conflict ?? null,
               }))
-              return { label, time: '', bg: colours.bg, border: colours.border, dot: colours.dot, items, conflicts: [] }
+              return { key, label, time: '', bg: colours.bg, border: colours.border, dot: colours.dot, items, conflicts: [] }
             })
 
-          // Sort by canonical time window order; unknowns go last
+          // Sort by canonical slot key order; unknowns go last
           const sorted = [...normalised].sort((a, b) => {
-            const ai = TIME_WINDOW_ORDER.indexOf(a.label)
-            const bi = TIME_WINDOW_ORDER.indexOf(b.label)
-            const aIdx = ai === -1 ? TIME_WINDOW_ORDER.length : ai
-            const bIdx = bi === -1 ? TIME_WINDOW_ORDER.length : bi
+            const ai = SLOT_KEY_ORDER.indexOf(a.key)
+            const bi = SLOT_KEY_ORDER.indexOf(b.key)
+            const aIdx = ai === -1 ? SLOT_KEY_ORDER.length : ai
+            const bIdx = bi === -1 ? SLOT_KEY_ORDER.length : bi
             return aIdx - bIdx
           })
 

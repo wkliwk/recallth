@@ -130,10 +130,10 @@ function detectMealType(text) {
 }
 
 const LOG_METRICS = [
-  { key: 'calories', label: 'kcal', unit: 'kcal' },
-  { key: 'protein', label: 'Protein', unit: 'g' },
-  { key: 'carbs', label: 'Carbs', unit: 'g' },
-  { key: 'fat', label: 'Fat', unit: 'g' },
+  { key: 'calories', labelKey: null, label: 'kcal', unit: 'kcal' },
+  { key: 'protein', labelKey: 'nutritionProtein', label: 'Protein', unit: 'g' },
+  { key: 'carbs', labelKey: 'nutritionCarbs', label: 'Carbs', unit: 'g' },
+  { key: 'fat', labelKey: 'nutritionFat', label: 'Fat', unit: 'g' },
 ]
 
 function getFoodMetric(food, key) {
@@ -218,6 +218,7 @@ function SummaryCard({ category, loading, summary, t, dateLabel = 'Today', custo
 
 // ── Parsed food item row ──────────────────────────────────────────────────────
 function ParsedFoodRow({ food, checked, onToggle }) {
+  const { t } = useLanguage()
   const id = `food-${food.name}-${Math.random().toString(36).slice(2)}`
   return (
     <label
@@ -241,9 +242,9 @@ function ParsedFoodRow({ food, checked, onToggle }) {
         <p className="text-[11px] text-ink3 mt-[2px]">
           {[
             (food.nutrients?.calories ?? food.calories) != null && `${formatNum(food.nutrients?.calories ?? food.calories)} kcal`,
-            (food.nutrients?.protein ?? food.protein) != null && `${formatNum(food.nutrients?.protein ?? food.protein)}g protein`,
-            (food.nutrients?.carbs ?? food.carbs) != null && `${formatNum(food.nutrients?.carbs ?? food.carbs)}g carbs`,
-            (food.nutrients?.fat ?? food.fat) != null && `${formatNum(food.nutrients?.fat ?? food.fat)}g fat`,
+            (food.nutrients?.protein ?? food.protein) != null && `${formatNum(food.nutrients?.protein ?? food.protein)}g ${t('nutritionProtein')}`,
+            (food.nutrients?.carbs ?? food.carbs) != null && `${formatNum(food.nutrients?.carbs ?? food.carbs)}g ${t('nutritionCarbs')}`,
+            (food.nutrients?.fat ?? food.fat) != null && `${formatNum(food.nutrients?.fat ?? food.fat)}g ${t('nutritionFat')}`,
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -1159,6 +1160,7 @@ function CustomiseModal({ open, onClose, config, onSave, t }) {
 const DOW_SHORT = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
+  const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
 
   // Current month for record dot fetching
@@ -1256,14 +1258,14 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
       {/* Bottom row: date label + today + expand toggle */}
       <div className="flex items-center justify-between px-4 pb-2 max-w-[560px] mx-auto">
         <div className="flex items-center gap-2">
-          <p className="text-[11px] font-medium text-ink3">{formatDateLabel(viewDate)}</p>
+          <p className="text-[11px] font-medium text-ink3">{viewDate === todayStr ? t('nutritionCalToday') : formatDateLabel(viewDate)}</p>
           {viewDate !== todayStr && (
             <button
               type="button"
               onClick={() => { onSelectDate(todayStr); setExpanded(false) }}
               className="text-[11px] font-semibold text-orange hover:underline focus:outline-none"
             >
-              → Today
+              → {t('nutritionGoToToday')}
             </button>
           )}
         </div>
@@ -1273,7 +1275,7 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
           className="flex items-center gap-1 text-[11px] font-medium text-ink3 hover:text-ink2 focus:outline-none"
           aria-expanded={expanded}
         >
-          {expanded ? 'Collapse' : 'View month'}
+          {expanded ? t('nutritionCollapse') : t('nutritionViewMonth')}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
             <polyline points="6 9 12 15 18 9" />
@@ -1842,8 +1844,8 @@ export default function NutritionTracker() {
   const todayStr = todayISO()
   const [aiPlaceholder] = useState(() => getRandomAiPlaceholder(language))
   const [viewDate, setViewDate] = useState(todayStr)
-  const dateLabel = formatDateLabel(viewDate)
   const isToday = viewDate === todayStr
+  const dateLabel = isToday ? t('nutritionCalToday') : formatDateLabel(viewDate)
 
   // ── Feature flag ──────────────────────────────────────────────────────────
   const [useV2, setUseV2] = useState(() => getFlag('NUTRITION_V2'))
@@ -2329,7 +2331,7 @@ export default function NutritionTracker() {
 
             {/* Goal mode selector */}
             <div className="bg-white rounded-[16px] border border-border shadow-sm px-4 py-3">
-              <p className="text-[10px] uppercase tracking-widest text-ink3 font-semibold mb-2">Goal Mode</p>
+              <p className="text-[10px] uppercase tracking-widest text-ink3 font-semibold mb-2">{t('nutritionGoalMode')}</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {CATEGORIES.map(({ key, labelKey }) => {
                   const active = category === key
@@ -2484,7 +2486,7 @@ export default function NutritionTracker() {
                     {LOG_METRICS.map((m) => (
                       <button key={m.key} type="button" onClick={() => handleLogMetricChange(m.key)} aria-pressed={logMetric === m.key}
                         className={['px-[10px] py-[4px] rounded-pill text-[11px] font-medium transition-colors focus:outline-none', logMetric === m.key ? 'bg-orange text-white' : 'bg-sand text-ink3 hover:bg-orange/10 hover:text-ink2'].join(' ')}>
-                        {m.label}
+                        {m.labelKey ? t(m.labelKey) : m.label}
                       </button>
                     ))}
                   </div>
@@ -2973,7 +2975,7 @@ export default function NutritionTracker() {
                               : 'bg-sand text-ink3 hover:bg-orange/10 hover:text-ink2',
                           ].join(' ')}
                         >
-                          {m.label}
+                          {m.labelKey ? t(m.labelKey) : m.label}
                         </button>
                       ))}
                     </div>

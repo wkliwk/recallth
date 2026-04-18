@@ -65,7 +65,7 @@ function NutritionResultCard({ item, selected, onSelect }) {
         <span className="text-[14px] font-semibold text-ink1">{name}</span>
         <div className="flex items-center gap-1.5 shrink-0">
           {isLibrary && (
-            <span className="text-[10px] font-medium bg-orange/10 text-orange rounded-pill px-2 py-0.5">Saved</span>
+            <span className="text-[10px] font-medium bg-orange/10 text-orange rounded-pill px-2 py-0.5">{t('nutritionSaved')}</span>
           )}
           {calories !== undefined && (
             <span className="text-[12px] text-ink3">{calories} kcal</span>
@@ -489,7 +489,7 @@ export default function NutritionAdd() {
                           disabled={searchSelectedIndex === null}
                           className="w-full rounded-[12px] bg-orange text-white text-[13px] font-medium py-[10px] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-dk transition-colors"
                         >
-                          Use this
+                          {t('nutritionUseThis')}
                         </button>
                       </div>
                     )}
@@ -518,21 +518,21 @@ export default function NutritionAdd() {
                         type="button"
                         onClick={handlePhotoBoxClick}
                         className="w-full rounded-[12px] border-2 border-dashed border-border bg-sand flex flex-col items-center justify-center gap-2 py-8 text-ink2 hover:border-orange/60 hover:text-orange transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-                        aria-label="Upload nutrition label photo"
+                        aria-label={t('nutritionUploadLabelPhoto')}
                       >
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                           <circle cx="12" cy="13" r="4" />
                         </svg>
-                        <span className="text-[13px] font-medium">Upload nutrition label photo</span>
-                        <span className="text-[11px] text-ink3">Tap to select a photo from your device</span>
+                        <span className="text-[13px] font-medium">{t('nutritionUploadLabelPhoto')}</span>
+                        <span className="text-[11px] text-ink3">{t('nutritionTapToSelectPhoto')}</span>
                       </button>
                     )}
 
                     {photoLoading && (
                       <div className="flex flex-col items-center justify-center gap-3 py-8">
                         <Spinner />
-                        <p className="text-[13px] text-ink2">Reading nutrition label...</p>
+                        <p className="text-[13px] text-ink2">{t('nutritionReadingLabel')}</p>
                       </div>
                     )}
 
@@ -544,14 +544,14 @@ export default function NutritionAdd() {
                           onClick={handlePhotoBoxClick}
                           className="text-[12px] text-orange underline text-left"
                         >
-                          Try again
+                          {t('nutritionTryAgain')}
                         </button>
                       </div>
                     )}
 
                     {photoResult && !photoLoading && (
                       <div className="flex flex-col gap-2">
-                        <p className="text-[12px] text-ink2 font-medium">Extracted from photo</p>
+                        <p className="text-[12px] text-ink2 font-medium">{t('nutritionExtractedFromPhoto')}</p>
                         <NutritionResultCard
                           item={photoResult}
                           selected={photoSelected}
@@ -564,14 +564,14 @@ export default function NutritionAdd() {
                             disabled={!photoSelected}
                             className="flex-1 rounded-[12px] bg-orange text-white text-[13px] font-medium py-[10px] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-dk transition-colors"
                           >
-                            Use this
+                            {t('nutritionUseThis')}
                           </button>
                           <button
                             type="button"
                             onClick={handlePhotoBoxClick}
                             className="shrink-0 rounded-[12px] border border-border bg-sand text-ink2 text-[13px] font-medium px-4 py-[10px] hover:border-orange/40 transition-colors"
                           >
-                            Retake
+                            {t('nutritionRetake')}
                           </button>
                         </div>
                       </div>
@@ -599,7 +599,7 @@ export default function NutritionAdd() {
                         disabled={aiParsing || !aiText.trim()}
                         className="shrink-0 rounded-[12px] bg-orange text-white text-[13px] font-medium px-4 py-[10px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:bg-orange-dk transition-colors"
                       >
-                        {aiParsing ? <Spinner /> : 'Parse'}
+                        {aiParsing ? <Spinner /> : t('nutritionAiAnalyse')}
                       </button>
                     </div>
 
@@ -661,7 +661,7 @@ export default function NutritionAdd() {
                           disabled={aiSelectedIndex === null}
                           className="w-full rounded-[12px] bg-orange text-white text-[13px] font-medium py-[10px] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-dk transition-colors"
                         >
-                          Use this
+                          {t('nutritionUseThis')}
                         </button>
                       </div>
                     )}

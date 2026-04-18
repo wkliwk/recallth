@@ -9,8 +9,18 @@ import { useLanguage } from '../context/LanguageContext'
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
-const FREQUENCY_OPTIONS = ['Daily', 'Twice daily', 'As needed']
-const TIMING_OPTIONS = ['Morning', 'Pre-workout', 'With meals', 'Evening', 'Before bed']
+const FREQUENCY_OPTIONS = [
+  { value: 'Daily', key: 'freqDaily' },
+  { value: 'Twice daily', key: 'freqTwiceDaily' },
+  { value: 'As needed', key: 'freqAsNeeded' },
+]
+const TIMING_OPTIONS = [
+  { value: 'Morning', key: 'timingMorning' },
+  { value: 'Pre-workout', key: 'timingPreWorkout' },
+  { value: 'With meals', key: 'timingWithMeals' },
+  { value: 'Evening', key: 'timingEvening' },
+  { value: 'Before bed', key: 'timingBeforeBed' },
+]
 
 const EVIDENCE_COLORS = {
   A: { bg: '#D4ECD8', text: '#2C5A38', labelKey: 'evidenceStrong' },
@@ -382,7 +392,7 @@ export default function CabinetDetail() {
                   onChange={(e) => handleChange('frequency', e.target.value)}
                 >
                   {FREQUENCY_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                    <option key={o.value} value={o.value}>{t(o.key)}</option>
                   ))}
                 </select>
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -399,7 +409,7 @@ export default function CabinetDetail() {
                   onChange={(e) => handleChange('timing', e.target.value)}
                 >
                   {TIMING_OPTIONS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                    <option key={o.value} value={o.value}>{t(o.key)}</option>
                   ))}
                 </select>
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-ink3 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -711,7 +721,7 @@ export default function CabinetDetail() {
                                 <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-orange/10 text-orange">{p.dosage}</span>
                               )}
                               {p.timing && (
-                                <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-sand text-ink2">{p.timing}</span>
+                                <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-sand text-ink2">{t(TIMING_OPTIONS.find(o => o.value === p.timing)?.key ?? '') || p.timing}</span>
                               )}
                             </div>
 
@@ -759,8 +769,8 @@ export default function CabinetDetail() {
 
           {/* Details card */}
           <div className="bg-white rounded-card border border-border p-5">
-            <InfoRow label={t('fieldFrequency')} value={supp.frequency} />
-            <InfoRow label={t('fieldTiming')} value={supp.timing} />
+            <InfoRow label={t('fieldFrequency')} value={t(FREQUENCY_OPTIONS.find(o => o.value === supp.frequency)?.key ?? '') || supp.frequency} />
+            <InfoRow label={t('fieldTiming')} value={t(TIMING_OPTIONS.find(o => o.value === supp.timing)?.key ?? '') || supp.timing} />
             <InfoRow label={t('fieldNotes')} value={supp.notes} />
           </div>
 

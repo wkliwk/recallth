@@ -6,11 +6,11 @@ import { useLanguage } from '../../context/LanguageContext'
 const GRAIN_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`
 
 const TIMING_OPTIONS = [
-  { value: 'morning', label: 'Morning' },
-  { value: 'pre-workout', label: 'Pre-workout' },
-  { value: 'with-meals', label: 'With meals' },
-  { value: 'evening', label: 'Evening' },
-  { value: 'before-bed', label: 'Before bed' },
+  { value: 'morning', key: 'timingMorning' },
+  { value: 'pre-workout', key: 'timingPreWorkout' },
+  { value: 'with-meals', key: 'timingWithMeals' },
+  { value: 'evening', key: 'timingEvening' },
+  { value: 'before-bed', key: 'timingBeforeBed' },
 ]
 
 function InputField({ label, type = 'text', placeholder, value, onChange, required }) {
@@ -148,7 +148,7 @@ export default function Supplement({ onNext, onBack, onSkip, stepIndex, totalSte
               >
                 {TIMING_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.key)}
                   </option>
                 ))}
               </select>
