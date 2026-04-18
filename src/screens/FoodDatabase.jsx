@@ -200,6 +200,7 @@ export default function FoodDatabase() {
   const [quantity, setQuantity] = useState('1')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [viewMode, setViewMode] = useState('list') // 'list' | 'grid'
   const debounceRef = useRef(null)
 
   useEffect(() => {
@@ -295,28 +296,55 @@ export default function FoodDatabase() {
 
       <div className="px-5 pt-2 pb-[120px] flex flex-col gap-4">
 
-        {/* Search bar */}
-        <div className="relative">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('foodDbSearchPlaceholder')}
-            className="w-full bg-white border-[1.5px] border-border rounded-[12px] pl-10 pr-10 py-[10px] text-[14px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors"
-          />
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink3 pointer-events-none"
-            width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          {searching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-orange">
-              <Spinner />
-            </div>
-          )}
+        {/* Search bar + view toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('foodDbSearchPlaceholder')}
+              className="w-full bg-white border-[1.5px] border-border rounded-[12px] pl-10 pr-10 py-[10px] text-[14px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors"
+            />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink3 pointer-events-none"
+              width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            {searching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-orange">
+                <Spinner />
+              </div>
+            )}
+          </div>
+          {/* View toggle */}
+          <div className="flex items-center bg-white border border-border rounded-[10px] p-[3px] shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              aria-label="List view"
+              className={`p-[6px] rounded-[7px] transition-colors ${viewMode === 'list' ? 'bg-orange text-white' : 'text-ink3 hover:text-ink1'}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              aria-label="Grid view"
+              className={`p-[6px] rounded-[7px] transition-colors ${viewMode === 'grid' ? 'bg-orange text-white' : 'text-ink3 hover:text-ink1'}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Section label */}
@@ -345,66 +373,92 @@ export default function FoodDatabase() {
           </div>
         )}
 
-        {/* Food list */}
+        {/* Food list / grid */}
         {displayList.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {displayList.map((food, idx) => {
-              const fd = normaliseFoodData(food)
-              const isSelected = selectedFood === food
-              return (
-                <div key={idx}>
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-2 gap-2">
+              {displayList.map((food, idx) => {
+                const fd = normaliseFoodData(food)
+                const isSelected = selectedFood === food
+                return (
                   <button
+                    key={idx}
                     type="button"
                     onClick={() => selectFood(food)}
                     aria-expanded={isSelected}
-                    className={`w-full text-left rounded-[12px] border px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
-                      isSelected
-                        ? 'border-orange bg-orange/5'
-                        : 'border-border bg-white hover:border-orange/40'
+                    className={`text-left rounded-[12px] border px-3 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                      isSelected ? 'border-orange bg-orange/5' : 'border-border bg-white hover:border-orange/40'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[14px] font-semibold text-ink1 leading-tight">{fd.name}</span>
-                      {fd.nutrients.calories !== undefined && (
-                        <span className="text-[12px] text-ink3 shrink-0">{fd.nutrients.calories} kcal</span>
-                      )}
-                    </div>
-                    {fd.brand ? <p className="text-[12px] text-ink2 mt-0.5">{fd.brand}</p> : null}
-                    {fd.servingSize ? <p className="text-[12px] text-ink3">{fd.servingSize}</p> : null}
-                    <div className="flex gap-2 mt-1.5 flex-wrap">
-                      {fd.nutrients.protein !== undefined && (
-                        <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">P {fd.nutrients.protein}g</span>
-                      )}
-                      {fd.nutrients.carbs !== undefined && (
-                        <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">C {fd.nutrients.carbs}g</span>
-                      )}
-                      {fd.nutrients.fat !== undefined && (
-                        <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">F {fd.nutrients.fat}g</span>
-                      )}
-                    </div>
+                    <p className="text-[13px] font-semibold text-ink1 leading-tight line-clamp-2">{fd.name}</p>
+                    {fd.nutrients.calories !== undefined && (
+                      <p className="text-[12px] text-orange font-medium mt-1">{fd.nutrients.calories} kcal</p>
+                    )}
+                    {fd.brand ? <p className="text-[11px] text-ink3 mt-0.5 truncate">{fd.brand}</p> : null}
                   </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {displayList.map((food, idx) => {
+                const fd = normaliseFoodData(food)
+                const isSelected = selectedFood === food
+                return (
+                  <div key={idx}>
+                    <button
+                      type="button"
+                      onClick={() => selectFood(food)}
+                      aria-expanded={isSelected}
+                      className={`w-full text-left rounded-[12px] border px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                        isSelected
+                          ? 'border-orange bg-orange/5'
+                          : 'border-border bg-white hover:border-orange/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[14px] font-semibold text-ink1 leading-tight">{fd.name}</span>
+                        {fd.nutrients.calories !== undefined && (
+                          <span className="text-[12px] text-ink3 shrink-0">{fd.nutrients.calories} kcal</span>
+                        )}
+                      </div>
+                      {fd.brand ? <p className="text-[12px] text-ink2 mt-0.5">{fd.brand}</p> : null}
+                      {fd.servingSize ? <p className="text-[12px] text-ink3">{fd.servingSize}</p> : null}
+                      <div className="flex gap-2 mt-1.5 flex-wrap">
+                        {fd.nutrients.protein !== undefined && (
+                          <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">P {fd.nutrients.protein}g</span>
+                        )}
+                        {fd.nutrients.carbs !== undefined && (
+                          <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">C {fd.nutrients.carbs}g</span>
+                        )}
+                        {fd.nutrients.fat !== undefined && (
+                          <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">F {fd.nutrients.fat}g</span>
+                        )}
+                      </div>
+                    </button>
 
-                  {/* Desktop: inline panel below card */}
-                  {isSelected && (
-                    <div className="hidden md:block mt-2 bg-white rounded-[12px] border border-orange/30 px-5 py-4">
-                      <SelectionPanel
-                        food={fd}
-                        quantity={quantity}
-                        setQuantity={setQuantity}
-                        mealType={mealType}
-                        setMealType={setMealType}
-                        saving={saving}
-                        saveError={saveError}
-                        onSave={handleSave}
-                        onCancel={() => setSelectedFood(null)}
-                        t={t}
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    {/* Desktop: inline panel below card */}
+                    {isSelected && (
+                      <div className="hidden md:block mt-2 bg-white rounded-[12px] border border-orange/30 px-5 py-4">
+                        <SelectionPanel
+                          food={fd}
+                          quantity={quantity}
+                          setQuantity={setQuantity}
+                          mealType={mealType}
+                          setMealType={setMealType}
+                          saving={saving}
+                          saveError={saveError}
+                          onSave={handleSave}
+                          onCancel={() => setSelectedFood(null)}
+                          t={t}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
         )}
       </div>
 
