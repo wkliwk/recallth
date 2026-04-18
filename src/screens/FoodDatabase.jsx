@@ -376,7 +376,7 @@ export default function FoodDatabase() {
         {/* Food list / grid */}
         {displayList.length > 0 && (
           viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-1.5">
               {displayList.map((food, idx) => {
                 const fd = normaliseFoodData(food)
                 const isSelected = selectedFood === food
@@ -386,15 +386,14 @@ export default function FoodDatabase() {
                     type="button"
                     onClick={() => selectFood(food)}
                     aria-expanded={isSelected}
-                    className={`text-left rounded-[12px] border px-3 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                    className={`text-left rounded-[10px] border px-2.5 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
                       isSelected ? 'border-orange bg-orange/5' : 'border-border bg-white hover:border-orange/40'
                     }`}
                   >
-                    <p className="text-[13px] font-semibold text-ink1 leading-tight line-clamp-2">{fd.name}</p>
+                    <p className="text-[12px] font-semibold text-ink1 leading-tight line-clamp-2">{fd.name}</p>
                     {fd.nutrients.calories !== undefined && (
-                      <p className="text-[12px] text-orange font-medium mt-1">{fd.nutrients.calories} kcal</p>
+                      <p className="text-[11px] text-orange font-medium mt-1">{fd.nutrients.calories} kcal</p>
                     )}
-                    {fd.brand ? <p className="text-[11px] text-ink3 mt-0.5 truncate">{fd.brand}</p> : null}
                   </button>
                 )
               })}
