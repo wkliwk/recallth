@@ -2261,13 +2261,24 @@ export default function NutritionTracker() {
             <h1 className="text-[20px] font-semibold text-ink1">{t('nutritionTitle')}</h1>
             <p className="text-[13px] text-ink3 mt-[2px]">{calSub}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
-            className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none"
-          >
-            + {t('nutritionAddTitle')}
-          </button>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://recallth.vercel.app/nutrition"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-[6px] bg-[#1C1C1E] text-white text-[11px] font-semibold px-3 py-[7px] rounded-full shadow hover:opacity-80 transition-opacity"
+            >
+              <span className="w-2 h-2 rounded-full bg-green-400" />
+              New UI
+            </a>
+            <button
+              type="button"
+              onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
+              className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none"
+            >
+              + {t('nutritionAddTitle')}
+            </button>
+          </div>
         </div>
 
         {/* Week strip */}
@@ -2593,13 +2604,24 @@ export default function NutritionTracker() {
           <h1 className="text-[20px] font-semibold text-ink1">{t('nutritionTitle')}</h1>
           <p className="text-[13px] text-ink3 mt-[2px]">{calSub}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
-          className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-        >
-          + Add food
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href="https://recallth.vercel.app/nutrition"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-[6px] bg-[#1C1C1E] text-white text-[11px] font-semibold px-3 py-[7px] rounded-full shadow hover:opacity-80 transition-opacity"
+          >
+            <span className="w-2 h-2 rounded-full bg-green-400" />
+            New UI
+          </a>
+          <button
+            type="button"
+            onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })}
+            className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold px-4 py-[9px] rounded-[10px] hover:bg-orange-dk transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+          >
+            + Add food
+          </button>
+        </div>
       </div>
 
       {/* ── Main content container ── */}
