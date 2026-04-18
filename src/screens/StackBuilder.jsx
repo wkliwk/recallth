@@ -228,7 +228,7 @@ export default function StackBuilder() {
 
       try {
         const message = buildPrompt(goal.trim(), profile, cabinetItems)
-        const res = await chatService.send(message)
+        const res = await chatService.send(message, undefined, { sessionTitle: `Stack Builder: ${goal.trim().slice(0, 50)}` })
         const text = res?.data?.message?.content ?? ''
         const parsed = parseStackResponse(text)
 
