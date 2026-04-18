@@ -3043,6 +3043,25 @@ export default function NutritionTracker() {
         <FAB onClick={() => navigate('/nutrition/add', { state: { date: viewDate } })} />
       </div>
 
+      {/* ── Analyser bottom sheet ── */}
+      <AnalyserSheet
+        open={analyserSheetOpen}
+        onClose={() => setAnalyserSheetOpen(false)}
+        defaultTab={analyserDefaultTab}
+        aiText={aiText} setAiText={setAiText}
+        aiParsing={aiParsing} parsedFoods={parsedFoods}
+        parsedSuggestions={parsedSuggestions} checkedFoods={checkedFoods}
+        aiError={aiError} addingToLog={addingToLog}
+        onAiParse={handleAiParse} onToggleFood={toggleFood} onAddToLog={handleAddToLog}
+        manualName={manualName} setManualName={setManualName}
+        manualQty={manualQty} setManualQty={setManualQty}
+        manualUnit={manualUnit} setManualUnit={setManualUnit}
+        manualMealType={manualMealType} setManualMealType={setManualMealType}
+        manualSaving={manualSaving} manualError={manualError}
+        onManualAdd={handleManualAdd}
+        viewDate={viewDate} t={t}
+      />
+
       {/* ── AI Goal Setup modal ── */}
       <AiGoalSetupModal open={aiGoalSetupOpen} onClose={() => setAiGoalSetupOpen(false)} onComplete={handleAiGoalComplete} />
 
