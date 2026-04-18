@@ -140,6 +140,10 @@ function getFoodMetric(food, key) {
   return food.nutrients?.[key] ?? food[key] ?? 0
 }
 
+function formatNum(val) {
+  return parseFloat((+val).toFixed(1))
+}
+
 const MEAL_LABEL_KEYS = {
   breakfast: 'nutritionMealBreakfast',
   lunch: 'nutritionMealLunch',
@@ -236,10 +240,10 @@ function ParsedFoodRow({ food, checked, onToggle }) {
         </div>
         <p className="text-[11px] text-ink3 mt-[2px]">
           {[
-            (food.nutrients?.calories ?? food.calories) != null && `${food.nutrients?.calories ?? food.calories} kcal`,
-            (food.nutrients?.protein ?? food.protein) != null && `${food.nutrients?.protein ?? food.protein}g protein`,
-            (food.nutrients?.carbs ?? food.carbs) != null && `${food.nutrients?.carbs ?? food.carbs}g carbs`,
-            (food.nutrients?.fat ?? food.fat) != null && `${food.nutrients?.fat ?? food.fat}g fat`,
+            (food.nutrients?.calories ?? food.calories) != null && `${formatNum(food.nutrients?.calories ?? food.calories)} kcal`,
+            (food.nutrients?.protein ?? food.protein) != null && `${formatNum(food.nutrients?.protein ?? food.protein)}g protein`,
+            (food.nutrients?.carbs ?? food.carbs) != null && `${formatNum(food.nutrients?.carbs ?? food.carbs)}g carbs`,
+            (food.nutrients?.fat ?? food.fat) != null && `${formatNum(food.nutrients?.fat ?? food.fat)}g fat`,
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -602,7 +606,7 @@ function MealGroup({
       <div className={`flex items-center justify-between px-4 py-[10px] border-b border-border transition-colors ${isDropTarget && !selectMode ? 'bg-orange/10' : 'bg-sand/40'}`}>
         <p className="text-[13px] font-semibold text-ink1">{label}</p>
         <div className="flex items-center gap-3">
-          <p className="text-[12px] text-ink3">{totalMetric} {metricCfg.unit}</p>
+          <p className="text-[12px] text-ink3">{formatNum(totalMetric)} {metricCfg.unit}</p>
           {selectMode && (
             <button
               type="button"
@@ -659,7 +663,7 @@ function MealGroup({
                   <p className="text-[11px] text-ink3 truncate mt-[1px]">{entry.rawText}</p>
                 )}
               </div>
-              <p className="text-[12px] text-ink3 shrink-0 ml-2">{metricVal} {metricCfg.unit}</p>
+              <p className="text-[12px] text-ink3 shrink-0 ml-2">{formatNum(metricVal)} {metricCfg.unit}</p>
             </button>
           )
         }
@@ -703,7 +707,7 @@ function MealGroup({
                     )}
                   </div>
                 </div>
-                <p className="text-[12px] text-ink3 shrink-0 ml-3">{metricVal} {metricCfg.unit}</p>
+                <p className="text-[12px] text-ink3 shrink-0 ml-3">{formatNum(metricVal)} {metricCfg.unit}</p>
               </button>
             </div>
 
@@ -716,9 +720,9 @@ function MealGroup({
                   const carbs = food.nutrients?.carbs ?? food.carbs
                   const fat = food.nutrients?.fat ?? food.fat
                   const macros = [
-                    protein != null && `${t('nutritionProtein')} ${protein}g`,
-                    carbs != null && `${t('nutritionCarbs')} ${carbs}g`,
-                    fat != null && `${t('nutritionFat')} ${fat}g`,
+                    protein != null && `${t('nutritionProtein')} ${formatNum(protein)}g`,
+                    carbs != null && `${t('nutritionCarbs')} ${formatNum(carbs)}g`,
+                    fat != null && `${t('nutritionFat')} ${formatNum(fat)}g`,
                   ].filter(Boolean).join(' · ')
                   return (
                     <div key={food.name ?? idx} className="flex items-start justify-between gap-3 py-[6px] border-b border-border/50 last:border-0">
@@ -732,7 +736,7 @@ function MealGroup({
                         {macros && <p className="text-[11px] text-ink3 mt-[2px]">{macros}</p>}
                       </div>
                       {kcal != null && (
-                        <p className="text-[12px] text-ink2 shrink-0 font-medium">{kcal} kcal</p>
+                        <p className="text-[12px] text-ink2 shrink-0 font-medium">{formatNum(kcal)} kcal</p>
                       )}
                     </div>
                   )

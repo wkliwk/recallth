@@ -21,18 +21,18 @@ function todayISO() {
 }
 
 const COMMON_HK_FOODS = [
-  { name: '叉燒飯', nameEn: 'Char Siu Rice', brand: 'Cha Chaan Teng', servingSize: '1 plate (400g)', nutrients: { calories: 640, protein: 28, carbs: 86, fat: 18 } },
-  { name: '雞蛋炒飯', nameEn: 'Egg Fried Rice', brand: 'Cha Chaan Teng', servingSize: '1 plate (350g)', nutrients: { calories: 520, protein: 16, carbs: 78, fat: 16 } },
-  { name: '皮蛋瘦肉粥', nameEn: 'Century Egg & Pork Congee', brand: 'Cha Chaan Teng', servingSize: '1 bowl (400g)', nutrients: { calories: 210, protein: 15, carbs: 30, fat: 4 } },
-  { name: '港式蛋撻', nameEn: 'HK Egg Tart', brand: 'Bakery', servingSize: '1 piece (80g)', nutrients: { calories: 235, protein: 5, carbs: 27, fat: 12 } },
-  { name: '菠蘿包', nameEn: 'Pineapple Bun', brand: 'Bakery', servingSize: '1 piece (90g)', nutrients: { calories: 290, protein: 6, carbs: 45, fat: 10 } },
-  { name: '腸粉 (鮮蝦)', nameEn: 'Shrimp Rice Noodle Roll', brand: 'Dim Sum', servingSize: '2 rolls (150g)', nutrients: { calories: 190, protein: 9, carbs: 30, fat: 4 } },
-  { name: '蝦餃', nameEn: 'Har Gow', brand: 'Dim Sum', servingSize: '3 pieces (90g)', nutrients: { calories: 160, protein: 8, carbs: 22, fat: 4 } },
-  { name: '豬扒包', nameEn: 'Pork Chop Bun', brand: 'Cha Chaan Teng', servingSize: '1 bun (200g)', nutrients: { calories: 520, protein: 24, carbs: 48, fat: 24 } },
-  { name: '港式奶茶', nameEn: 'HK Milk Tea', brand: 'Cha Chaan Teng', servingSize: '1 cup (300ml)', nutrients: { calories: 120, protein: 4, carbs: 18, fat: 4 } },
-  { name: '雞翼 (炸)', nameEn: 'Fried Chicken Wing', brand: 'Street Food', servingSize: '2 pieces (110g)', nutrients: { calories: 310, protein: 22, carbs: 8, fat: 22 } },
-  { name: '乾炒牛河', nameEn: 'Dry-Fried Beef Ho Fun', brand: 'Cha Chaan Teng', servingSize: '1 plate (400g)', nutrients: { calories: 720, protein: 30, carbs: 88, fat: 26 } },
-  { name: '西多士', nameEn: 'HK French Toast', brand: 'Cha Chaan Teng', servingSize: '2 slices (130g)', nutrients: { calories: 420, protein: 10, carbs: 45, fat: 22 } },
+  { name: '叉燒飯', nameEn: 'Char Siu Rice', brand: 'Cha Chaan Teng', servingSize: '1 plate (400g)', emoji: '🍖', nutrients: { calories: 640, protein: 28, carbs: 86, fat: 18 } },
+  { name: '雞蛋炒飯', nameEn: 'Egg Fried Rice', brand: 'Cha Chaan Teng', servingSize: '1 plate (350g)', emoji: '🍳', nutrients: { calories: 520, protein: 16, carbs: 78, fat: 16 } },
+  { name: '皮蛋瘦肉粥', nameEn: 'Century Egg & Pork Congee', brand: 'Cha Chaan Teng', servingSize: '1 bowl (400g)', emoji: '🍲', nutrients: { calories: 210, protein: 15, carbs: 30, fat: 4 } },
+  { name: '港式蛋撻', nameEn: 'HK Egg Tart', brand: 'Bakery', servingSize: '1 piece (80g)', emoji: '🥧', nutrients: { calories: 235, protein: 5, carbs: 27, fat: 12 } },
+  { name: '菠蘿包', nameEn: 'Pineapple Bun', brand: 'Bakery', servingSize: '1 piece (90g)', emoji: '🍞', nutrients: { calories: 290, protein: 6, carbs: 45, fat: 10 } },
+  { name: '腸粉 (鮮蝦)', nameEn: 'Shrimp Rice Noodle Roll', brand: 'Dim Sum', servingSize: '2 rolls (150g)', emoji: '🍱', nutrients: { calories: 190, protein: 9, carbs: 30, fat: 4 } },
+  { name: '蝦餃', nameEn: 'Har Gow', brand: 'Dim Sum', servingSize: '3 pieces (90g)', emoji: '🥟', nutrients: { calories: 160, protein: 8, carbs: 22, fat: 4 } },
+  { name: '豬扒包', nameEn: 'Pork Chop Bun', brand: 'Cha Chaan Teng', servingSize: '1 bun (200g)', emoji: '🥩', nutrients: { calories: 520, protein: 24, carbs: 48, fat: 24 } },
+  { name: '港式奶茶', nameEn: 'HK Milk Tea', brand: 'Cha Chaan Teng', servingSize: '1 cup (300ml)', emoji: '🧋', nutrients: { calories: 120, protein: 4, carbs: 18, fat: 4 } },
+  { name: '雞翼 (炸)', nameEn: 'Fried Chicken Wing', brand: 'Street Food', servingSize: '2 pieces (110g)', emoji: '🍗', nutrients: { calories: 310, protein: 22, carbs: 8, fat: 22 } },
+  { name: '乾炒牛河', nameEn: 'Dry-Fried Beef Ho Fun', brand: 'Cha Chaan Teng', servingSize: '1 plate (400g)', emoji: '🍜', nutrients: { calories: 720, protein: 30, carbs: 88, fat: 26 } },
+  { name: '西多士', nameEn: 'HK French Toast', brand: 'Cha Chaan Teng', servingSize: '2 slices (130g)', emoji: '🥞', nutrients: { calories: 420, protein: 10, carbs: 45, fat: 22 } },
 ]
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
@@ -45,11 +45,33 @@ function Spinner() {
   )
 }
 
+function FoodImage({ imageUrl, emoji, className }) {
+  const [imgError, setImgError] = useState(false)
+  const displayEmoji = emoji ?? '🍽️'
+  if (imageUrl && !imgError) {
+    return (
+      <img
+        src={imageUrl}
+        alt=""
+        className={`${className} object-cover`}
+        onError={() => setImgError(true)}
+      />
+    )
+  }
+  return (
+    <div className={`${className} flex items-center justify-center bg-[#FDF4EB]`}>
+      <span className="text-2xl leading-none select-none">{displayEmoji}</span>
+    </div>
+  )
+}
+
 function normaliseFoodData(food) {
   return {
     name: food.name ?? food.product_name ?? '',
     brand: food.brand ?? food.brands ?? food.nameEn ?? '',
     servingSize: food.servingSize ?? food.serving_size ?? food.quantity ?? food.serving ?? '',
+    imageUrl: food.imageUrl ?? null,
+    emoji: food.emoji ?? null,
     nutrients: {
       calories: food.nutrients?.calories ?? food.calories ?? food.nutriments?.energy_value ?? undefined,
       protein: food.nutrients?.protein ?? food.protein ?? food.nutriments?.proteins ?? undefined,
@@ -386,14 +408,17 @@ export default function FoodDatabase() {
                     type="button"
                     onClick={() => selectFood(food)}
                     aria-expanded={isSelected}
-                    className={`text-left rounded-[10px] border px-2.5 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                    className={`text-left rounded-[10px] border overflow-hidden transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
                       isSelected ? 'border-orange bg-orange/5' : 'border-border bg-white hover:border-orange/40'
                     }`}
                   >
-                    <p className="text-[12px] font-semibold text-ink1 leading-tight line-clamp-2">{fd.name}</p>
-                    {fd.nutrients.calories !== undefined && (
-                      <p className="text-[11px] text-orange font-medium mt-1">{fd.nutrients.calories} kcal</p>
-                    )}
+                    <FoodImage imageUrl={fd.imageUrl} emoji={fd.emoji} className="w-full aspect-square" />
+                    <div className="px-2 pt-1.5 pb-2">
+                      <p className="text-[12px] font-semibold text-ink1 leading-tight line-clamp-2">{fd.name}</p>
+                      {fd.nutrients.calories !== undefined && (
+                        <p className="text-[10px] text-orange font-medium mt-0.5">{fd.nutrients.calories} kcal</p>
+                      )}
+                    </div>
                   </button>
                 )
               })}
@@ -409,30 +434,35 @@ export default function FoodDatabase() {
                       type="button"
                       onClick={() => selectFood(food)}
                       aria-expanded={isSelected}
-                      className={`w-full text-left rounded-[12px] border px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                      className={`w-full text-left rounded-[12px] border px-3 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
                         isSelected
                           ? 'border-orange bg-orange/5'
                           : 'border-border bg-white hover:border-orange/40'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[14px] font-semibold text-ink1 leading-tight">{fd.name}</span>
-                        {fd.nutrients.calories !== undefined && (
-                          <span className="text-[12px] text-ink3 shrink-0">{fd.nutrients.calories} kcal</span>
-                        )}
-                      </div>
-                      {fd.brand ? <p className="text-[12px] text-ink2 mt-0.5">{fd.brand}</p> : null}
-                      {fd.servingSize ? <p className="text-[12px] text-ink3">{fd.servingSize}</p> : null}
-                      <div className="flex gap-2 mt-1.5 flex-wrap">
-                        {fd.nutrients.protein !== undefined && (
-                          <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">P {fd.nutrients.protein}g</span>
-                        )}
-                        {fd.nutrients.carbs !== undefined && (
-                          <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">C {fd.nutrients.carbs}g</span>
-                        )}
-                        {fd.nutrients.fat !== undefined && (
-                          <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">F {fd.nutrients.fat}g</span>
-                        )}
+                      <div className="flex gap-3">
+                        <FoodImage imageUrl={fd.imageUrl} emoji={fd.emoji} className="w-14 h-14 shrink-0 rounded-[8px]" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[14px] font-semibold text-ink1 leading-tight">{fd.name}</span>
+                            {fd.nutrients.calories !== undefined && (
+                              <span className="text-[12px] text-ink3 shrink-0">{fd.nutrients.calories} kcal</span>
+                            )}
+                          </div>
+                          {fd.brand ? <p className="text-[12px] text-ink2 mt-0.5">{fd.brand}</p> : null}
+                          {fd.servingSize ? <p className="text-[12px] text-ink3">{fd.servingSize}</p> : null}
+                          <div className="flex gap-2 mt-1.5 flex-wrap">
+                            {fd.nutrients.protein !== undefined && (
+                              <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">P {fd.nutrients.protein}g</span>
+                            )}
+                            {fd.nutrients.carbs !== undefined && (
+                              <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">C {fd.nutrients.carbs}g</span>
+                            )}
+                            {fd.nutrients.fat !== undefined && (
+                              <span className="text-[11px] text-ink3 bg-sand rounded-pill px-2 py-0.5">F {fd.nutrients.fat}g</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </button>
 
