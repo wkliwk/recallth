@@ -1727,6 +1727,27 @@ function AnalyserSheet({
                       </div>
                     </div>
                   )}
+                  {checkedFoods.size > 0 && (() => {
+                    const allParsed = [...parsedFoods, ...parsedSuggestions]
+                    const sel = allParsed.filter(f => checkedFoods.has(f.name))
+                    const tot = sel.reduce((a, f) => ({
+                      kcal: a.kcal + (Number(f.calories) || 0),
+                      protein: a.protein + (Number(f.protein) || 0),
+                      carbs: a.carbs + (Number(f.carbs) || 0),
+                      fat: a.fat + (Number(f.fat) || 0),
+                    }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+                    return (
+                      <div className="mt-3 rounded-[10px] bg-orange/8 border border-orange/20 px-4 py-3 flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-orange shrink-0">{t('nutritionTotal') || 'Total'}</span>
+                        <div className="flex gap-3 flex-wrap justify-end">
+                          <span className="text-[12px] font-semibold text-ink1">{Math.round(tot.kcal)} kcal</span>
+                          <span className="text-[12px] text-ink2">{Math.round(tot.protein)}g {t('nutritionProtein')}</span>
+                          <span className="text-[12px] text-ink2">{Math.round(tot.carbs)}g {t('nutritionCarbs')}</span>
+                          <span className="text-[12px] text-ink2">{Math.round(tot.fat)}g {t('nutritionFat')}</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <button
                     type="button"
                     onClick={onAddToLog}
