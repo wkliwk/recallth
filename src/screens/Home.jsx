@@ -255,7 +255,7 @@ export default function Home() {
             : STATS.map((s) => (
                 <div key={s.label} className="bg-white border border-border rounded-[12px] px-3 py-4 sm:px-4 flex flex-col gap-1">
                   <span className={`font-display text-[24px] sm:text-[28px] leading-none ${s.color}`}>{s.value}</span>
-                  <span className="text-[11px] sm:text-[12px] uppercase tracking-[0.06em] text-ink3 font-medium">{s.label}</span>
+                  <span className="text-[11px] sm:text-[12px] uppercase tracking-[0.03em] sm:tracking-[0.06em] text-ink3 font-medium">{s.label}</span>
                 </div>
               ))}
         </div>
