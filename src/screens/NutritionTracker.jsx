@@ -1733,10 +1733,10 @@ function AnalyserSheet({
                     const allParsed = [...parsedFoods, ...parsedSuggestions]
                     const sel = allParsed.filter(f => checkedFoods.has(f.name))
                     const tot = sel.reduce((a, f) => ({
-                      kcal: a.kcal + (Number(f.calories) || 0),
-                      protein: a.protein + (Number(f.protein) || 0),
-                      carbs: a.carbs + (Number(f.carbs) || 0),
-                      fat: a.fat + (Number(f.fat) || 0),
+                      kcal: a.kcal + (Number(f.nutrients?.calories ?? f.calories) || 0),
+                      protein: a.protein + (Number(f.nutrients?.protein ?? f.protein) || 0),
+                      carbs: a.carbs + (Number(f.nutrients?.carbs ?? f.carbs) || 0),
+                      fat: a.fat + (Number(f.nutrients?.fat ?? f.fat) || 0),
                     }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
                     return (
                       <div className="mt-3 rounded-[10px] bg-orange/8 border border-orange/20 px-4 py-3 flex items-center justify-between gap-3">
