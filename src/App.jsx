@@ -55,9 +55,10 @@ function OnboardingRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, isNewUser } = useAuth()
   if (isLoading) return null
-  if (isAuthenticated) return <Navigate to="/home" replace />
+  // Don't redirect new users — Auth.handleSubmit handles navigation to /onboarding
+  if (isAuthenticated && !isNewUser) return <Navigate to="/home" replace />
   return children
 }
 

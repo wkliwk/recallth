@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Goals from './onboarding/Goals'
 import Supplement from './onboarding/Supplement'
 import Schedule from './onboarding/Schedule'
 import { api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const TOTAL_STEPS = 3
 
 export default function Onboarding() {
   const navigate = useNavigate()
+  const { clearNewUser } = useAuth()
   const [step, setStep] = useState(0)
   const [goalsData, setGoalsData] = useState(null)
+
+  // Clear the new-user flag so PublicRoute resumes normal redirect behaviour
+  useEffect(() => { clearNewUser() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleGoalsNext(data) {
     setGoalsData(data)

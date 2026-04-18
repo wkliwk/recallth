@@ -94,7 +94,7 @@ export default function Auth() {
       const res = isLogin
         ? await api.auth.login(email, password)
         : await api.auth.register(name, email, password)
-      setAuth(res.data.token, res.data.email)
+      setAuth(res.data.token, res.data.email, !isLogin)
       navigate(isLogin ? '/home' : '/onboarding')
     } catch (err) {
       setError(err.message)
