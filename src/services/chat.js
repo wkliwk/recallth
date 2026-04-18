@@ -1,7 +1,7 @@
 import { request } from './api'
 
 export const chatService = {
-  send: (message, conversationId, { image, imageMimeType } = {}) => {
+  send: (message, conversationId, { image, imageMimeType, sessionTitle } = {}) => {
     const language = localStorage.getItem('recallth_language') || 'en'
     return request('/chat', {
       method: 'POST',
@@ -10,6 +10,7 @@ export const chatService = {
         language,
         ...(conversationId ? { conversationId } : {}),
         ...(image ? { image, imageMimeType } : {}),
+        ...(sessionTitle ? { sessionTitle } : {}),
       }),
     })
   },

@@ -63,7 +63,7 @@ export const api = {
     generate: (prompt) =>
       request('/chat', {
         method: 'POST',
-        body: JSON.stringify({ message: prompt }),
+        body: JSON.stringify({ message: prompt, sessionTitle: 'Doctor Prep' }),
       }),
   },
   settings: {
