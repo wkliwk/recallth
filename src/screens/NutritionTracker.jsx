@@ -1622,6 +1622,7 @@ function AnalyserSheet({
   aiError, addingToLog, onAiParse, onToggleFood, onAddToLog,
   manualName, setManualName, manualQty, setManualQty, manualUnit, setManualUnit,
   manualMealType, setManualMealType, manualSaving, manualError, onManualAdd,
+  aiPlaceholder,
   viewDate, t,
 }) {
   const [tab, setTab] = useState(defaultTab ?? 'ai')
@@ -2550,6 +2551,7 @@ export default function NutritionTracker() {
           manualMealType={manualMealType} setManualMealType={setManualMealType}
           manualSaving={manualSaving} manualError={manualError}
           onManualAdd={handleManualAdd}
+          aiPlaceholder={aiPlaceholder}
           viewDate={viewDate} t={t}
         />
 
@@ -3059,6 +3061,7 @@ export default function NutritionTracker() {
         manualMealType={manualMealType} setManualMealType={setManualMealType}
         manualSaving={manualSaving} manualError={manualError}
         onManualAdd={handleManualAdd}
+        aiPlaceholder={aiPlaceholder}
         viewDate={viewDate} t={t}
       />
 
