@@ -124,6 +124,7 @@ export const api = {
       body: JSON.stringify(config),
     }),
     days: (year, month) => request(`/nutrition/days?year=${year}&month=${month}`),
+    aiGoals: (goals, conditions, language) => request('/nutrition/ai-goals', { method: 'POST', body: JSON.stringify({ goals, conditions, language }) }),
     library: {
       list: () => request('/nutrition/library'),
       search: (q) => request(`/nutrition/library/search?q=${encodeURIComponent(q)}`),
