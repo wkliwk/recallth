@@ -25,6 +25,22 @@ You explain your supplements to ChatGPT every session. You don't know if your st
 
 ---
 
+## Core Product Principle — Killer Feature
+
+> **AI free text input is the #1 differentiator. Every input in Recallth must support natural language. Fixed dropdowns and chip-only options are forbidden as the primary input method.**
+
+Traditional health apps are rigid — users must pick from preset options that never quite fit their situation. Recallth's edge is that the AI understands whatever the user types, in their own words.
+
+**This applies to every input flow:**
+- Goals → user types "I want to build muscle and reduce uric acid", not pick from chips
+- Food logging → user types "兩塊多士同一杯港式奶茶", not select from a menu
+- Supplement search → user types naturally, AI interprets
+- Onboarding → conversational AI, not wizard forms
+
+Chips and presets may exist as **suggestions or shortcuts** to assist — never as the only path. If a PR replaces free text with fixed options, it is misaligned with product vision.
+
+---
+
 ## Design System
 
 Source of truth: `/Users/ricky/Dev/recallth/src/index.css`
