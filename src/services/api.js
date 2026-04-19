@@ -74,6 +74,7 @@ export const api = {
     checkIns: () => request('/goals/check-ins'),
     checkIn: (data) => request('/goals/check-in', { method: 'POST', body: JSON.stringify(data) }),
     interpret: (text) => request('/goals/interpret', { method: 'POST', body: JSON.stringify({ text }) }),
+    insights: (data) => request('/goals/insights', { method: 'POST', body: JSON.stringify(data) }),
   },
   history: {
     list: () => request('/chat/history'),
