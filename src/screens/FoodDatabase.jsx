@@ -37,6 +37,30 @@ const COMMON_HK_FOODS = [
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 
+const CATEGORIES = [
+  { key: null, labelKey: 'foodDbCategoryAll' },
+  { key: 'rice_noodles', labelKey: 'foodDbCategoryRiceNoodles' },
+  { key: 'protein', labelKey: 'foodDbCategoryProtein' },
+  { key: 'dim_sum', labelKey: 'foodDbCategoryDimSum' },
+  { key: 'soup', labelKey: 'foodDbCategorySoup' },
+  { key: 'bread_pastry', labelKey: 'foodDbCategoryBreadPastry' },
+  { key: 'drinks', labelKey: 'foodDbCategoryDrinks' },
+  { key: 'desserts', labelKey: 'foodDbCategoryDesserts' },
+  { key: 'snacks', labelKey: 'foodDbCategorySnacks' },
+  { key: 'fast_food', labelKey: 'foodDbCategoryFastFood' },
+  { key: 'whole_food', labelKey: 'foodDbCategoryWholeFood' },
+  { key: 'packaged', labelKey: 'foodDbCategoryPackaged' },
+]
+
+const FLAGS = [
+  { key: 'highProtein', labelKey: 'foodDbFlagHighProtein' },
+  { key: 'highFiber', labelKey: 'foodDbFlagHighFiber' },
+  { key: 'lowSugar', labelKey: 'foodDbFlagLowSugar' },
+  { key: 'lowSodium', labelKey: 'foodDbFlagLowSodium' },
+  { key: 'lowCalorie', labelKey: 'foodDbFlagLowCalorie' },
+  { key: 'highCalorie', labelKey: 'foodDbFlagHighCalorie' },
+]
+
 function Spinner() {
   return (
     <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -223,28 +247,37 @@ export default function FoodDatabase() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [viewMode, setViewMode] = useState('list') // 'list' | 'grid'
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [activeFlags, setActiveFlags] = useState([])
   const debounceRef = useRef(null)
 
   useEffect(() => {
-    if (!query.trim()) {
+    const hasFilters = activeCategory !== null || activeFlags.length > 0
+    if (!query.trim() && !hasFilters) {
       setResults(null)
       setSearchError(null)
       return
     }
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      doSearch(query.trim())
-    }, 500)
+      doSearch(query.trim(), activeCategory, activeFlags)
+    }, hasFilters && !query.trim() ? 0 : 500)
     return () => clearTimeout(debounceRef.current)
-  }, [query])
+  }, [query, activeCategory, activeFlags])
 
-  async function doSearch(q) {
+  async function doSearch(q, category, flags) {
     setSearching(true)
     setSearchError(null)
     setSelectedFood(null)
     try {
-      const res = await api.nutrition.search(q)
-      const products = res?.data?.products ?? res?.products ?? []
+      let products
+      if (category !== null || flags.length > 0) {
+        const res = await api.nutrition.foodDb.search({ q: q || ' ', category, flags })
+        products = res?.data?.results ?? []
+      } else {
+        const res = await api.nutrition.search(q)
+        products = res?.data?.products ?? res?.products ?? []
+      }
       setResults(products)
     } catch (err) {
       setSearchError(err.message || 'Search failed — please try again.')
@@ -367,6 +400,50 @@ export default function FoodDatabase() {
               </svg>
             </button>
           </div>
+        </div>
+
+        {/* Category pills */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {CATEGORIES.map((cat) => {
+            const active = activeCategory === cat.key
+            return (
+              <button
+                key={cat.key ?? 'all'}
+                type="button"
+                onClick={() => setActiveCategory(active ? null : cat.key)}
+                className={`shrink-0 px-3 py-[6px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                  active ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10'
+                }`}
+              >
+                {t(cat.labelKey)}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Nutrition flag chips */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {FLAGS.map((flag) => {
+            const active = activeFlags.includes(flag.key)
+            return (
+              <button
+                key={flag.key}
+                type="button"
+                onClick={() =>
+                  setActiveFlags((prev) =>
+                    active ? prev.filter((f) => f !== flag.key) : [...prev, flag.key]
+                  )
+                }
+                className={`shrink-0 px-3 py-[5px] rounded-pill text-[11px] font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange ${
+                  active
+                    ? 'bg-orange/10 border-orange text-orange'
+                    : 'bg-white border-border text-ink3 hover:border-orange/40'
+                }`}
+              >
+                {t(flag.labelKey)}
+              </button>
+            )
+          })}
         </div>
 
         {/* Section label */}
