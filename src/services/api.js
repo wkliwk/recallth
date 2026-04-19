@@ -116,6 +116,17 @@ export const api = {
     removeBatch: (ids) => Promise.all(ids.map((id) => request(`/nutrition/${id}`, { method: 'DELETE' }))),
     aiParse: (text, category) => request('/nutrition/parse', { method: 'POST', body: JSON.stringify({ text, category }) }),
     search: (q) => request(`/nutrition/search?q=${encodeURIComponent(q)}`),
+    foodDb: {
+      search: (params) => {
+        const p = new URLSearchParams()
+        if (params.q) p.set('q', params.q)
+        else p.set('q', ' ')
+        if (params.category) p.set('category', params.category)
+        if (params.flags?.length) p.set('flags', params.flags.join(','))
+        if (params.limit) p.set('limit', String(params.limit))
+        return request(`/nutrition/food-db/search?${p.toString()}`)
+      },
+    },
     ocr: (image, mimeType) => request('/nutrition/ocr', { method: 'POST', body: JSON.stringify({ image, mimeType }) }),
     summary: (date) => request(`/nutrition/summary${date ? `?date=${date}` : ''}`),
     getCategory: () => request('/nutrition/category'),

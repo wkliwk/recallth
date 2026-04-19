@@ -2335,7 +2335,7 @@ export default function NutritionTracker() {
       setParsedFoods([])
       setParsedSuggestions([])
       setCheckedFoods(new Set())
-      await Promise.all([fetchEntries(), fetchSummary()])
+      await Promise.all([fetchEntries(), fetchSummary(), fetchRecommendations()])
       bumpCalendar()
     } catch (err) {
       setAiError(err?.message ?? 'Failed to add to log — please try again')
@@ -2668,6 +2668,40 @@ export default function NutritionTracker() {
                   ) : null}
                 </DragOverlay>
               </DndContext>
+            )}
+
+            {/* Supplement recommendations */}
+            {(recLoading || (supplementRecs?.recommendations?.length ?? 0) > 0) && (
+              <div className="rounded-[14px] border border-border bg-white shadow-sm p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[16px] leading-none">💊</span>
+                  <p className="text-[13px] font-semibold text-ink1">{t('nutritionRecTitle')}</p>
+                </div>
+                {recLoading ? (
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="h-[52px]" />
+                    <Skeleton className="h-[52px]" />
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {(supplementRecs?.recommendations ?? []).map((rec) => (
+                      <div key={rec.supplement.id} className="flex items-start gap-3 p-3 rounded-[10px] bg-[#FDE8DE]">
+                        <span className="text-[18px] shrink-0 leading-none">💊</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-ink1">{rec.supplement.name}</p>
+                          {rec.supplement.dosage && (
+                            <p className="text-[11px] text-ink2">{rec.supplement.dosage}</p>
+                          )}
+                          <p className="text-[12px] text-ink2 mt-0.5">{rec.reason}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {supplementRecs?.allGapsFilled && (
+                      <p className="text-[12px] text-ink3 text-center py-1">{t('nutritionRecAllGood')}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
