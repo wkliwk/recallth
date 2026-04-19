@@ -101,6 +101,11 @@ export default function Goals() {
   const [noteDraft, setNoteDraft] = useState('')
   const [savingNote, setSavingNote] = useState(false)
 
+  // ── Insights state ───────────────────────────────────────────────────
+  const [insightsCache, setInsightsCache] = useState({}) // { [goalName]: { supporting, missing, summary } }
+  const [loadingInsights, setLoadingInsights] = useState(null) // goalName currently loading
+  const [insightsOpen, setInsightsOpen] = useState(null) // goalName currently expanded
+
   // ── Success fade timer ───────────────────────────────────────────────
   const successTimerRef = useRef(null)
 
@@ -227,6 +232,23 @@ export default function Goals() {
     }
   }
 
+  // ── Insights handler ─────────────────────────────────────────────────
+  async function handleViewInsights(goalName, goalNotes) {
+    if (insightsOpen === goalName) { setInsightsOpen(null); return }
+    setInsightsOpen(goalName)
+    if (insightsCache[goalName]) return
+    setLoadingInsights(goalName)
+    try {
+      const res = await api.goals.insights({ goalName, goalNotes })
+      const data = res?.data ?? res
+      setInsightsCache(prev => ({ ...prev, [goalName]: data }))
+    } catch {
+      setInsightsCache(prev => ({ ...prev, [goalName]: { error: true } }))
+    } finally {
+      setLoadingInsights(null)
+    }
+  }
+
   // ── Normalise goal entry to { emoji, name, notes } ──────────────────
   function normaliseGoal(g) {
     if (typeof g === 'string') return { emoji: '🎯', name: g, notes: '' }
@@ -342,6 +364,101 @@ export default function Goals() {
                         + {t('goalsAddNote')}
                       </button>
                     )}
+                  </div>
+                )}
+
+                {/* See supplement insights trigger */}
+                <div className="mt-2 ml-[35px]">
+                  <button
+                    type="button"
+                    onClick={() => handleViewInsights(name, notes)}
+                    className="text-[12px] text-orange hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-0 p-0"
+                    aria-expanded={insightsOpen === name}
+                    aria-controls={`insights-${name}`}
+                  >
+                    {t('goalsSeeInsights')} {insightsOpen === name ? '▴' : '▾'}
+                  </button>
+                </div>
+
+                {/* Insights panel */}
+                {insightsOpen === name && (
+                  <div
+                    id={`insights-${name}`}
+                    className="border-t border-[var(--color-border)] mt-3 pt-3 ml-[35px]"
+                  >
+                    {loadingInsights === name ? (
+                      <div>
+                        <Skeleton className="h-[14px] w-3/4 mb-2" />
+                        <Skeleton className="h-[14px] w-1/2 mb-2" />
+                        <p className="text-[12px] text-ink3 mt-1">{t('goalsInsightsLoading')}</p>
+                      </div>
+                    ) : insightsCache[name]?.error ? (
+                      <p className="text-[12px] text-[#C05A28]" role="alert">
+                        {t('goalsInsightsError')}
+                      </p>
+                    ) : insightsCache[name] ? (
+                      <div className="flex flex-col gap-3">
+                        {/* Supporting supplements */}
+                        <div>
+                          <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide mb-1.5">
+                            {t('goalsInsightsSupporting')}
+                          </p>
+                          {insightsCache[name].supporting?.length > 0 ? (
+                            <ul className="flex flex-col gap-1">
+                              {insightsCache[name].supporting.map((item) => (
+                                <li key={item.name} className="flex items-start gap-1.5">
+                                  <span className="text-[12px] leading-[1.5]" aria-hidden="true">✅</span>
+                                  <span className="text-[12px] font-medium text-ink1 leading-[1.5]">{item.name}</span>
+                                  {item.reason && (
+                                    <span className="text-[12px] text-ink2 leading-[1.5]">{item.reason}</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-[12px] text-ink2">{t('goalsInsightsNoneSupporting')}</p>
+                          )}
+                        </div>
+
+                        {/* Consider adding */}
+                        {insightsCache[name].missing?.length > 0 && (
+                          <div>
+                            <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide mb-1.5">
+                              {t('goalsInsightsMissing')}
+                            </p>
+                            <ul className="flex flex-col gap-1">
+                              {insightsCache[name].missing.map((item) => (
+                                <li key={item.name} className="flex items-start gap-1.5 flex-wrap">
+                                  <span className="text-[12px] leading-[1.5]" aria-hidden="true">➕</span>
+                                  <span className="text-[12px] font-medium text-ink1 leading-[1.5]">{item.name}</span>
+                                  {item.reason && (
+                                    <span className="text-[12px] text-ink2 leading-[1.5]">{item.reason}</span>
+                                  )}
+                                  <Link
+                                    to="/cabinet"
+                                    className="text-[12px] text-orange hover:opacity-80 transition-opacity leading-[1.5]"
+                                  >
+                                    {t('goalsAddToCabinet')}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* AI summary */}
+                        {insightsCache[name].summary && (
+                          <div>
+                            <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide mb-1">
+                              {t('goalsInsightsSummary')}
+                            </p>
+                            <p className="text-[13px] text-ink2 italic leading-relaxed">
+                              {insightsCache[name].summary}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
