@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Goals from './onboarding/Goals'
+import BodyStats from './onboarding/BodyStats'
 import Supplement from './onboarding/Supplement'
 import Schedule from './onboarding/Schedule'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
-const TOTAL_STEPS = 3
+// Steps: 0=Goals, 1=BodyStats, 2=Supplement, 3=Schedule
+const TOTAL_STEPS = 4
 
 export default function Onboarding() {
   const navigate = useNavigate()
   const { clearNewUser } = useAuth()
   const [step, setStep] = useState(0)
-  const [goalsData, setGoalsData] = useState(null)
 
   // Clear the new-user flag so PublicRoute resumes normal redirect behaviour
   useEffect(() => { clearNewUser() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleGoalsNext(data) {
-    setGoalsData(data)
     // Save goals to backend before advancing
     try {
       await api.profile.update({ goals: { primary: data.goals } })
@@ -28,12 +28,16 @@ export default function Onboarding() {
     setStep(1)
   }
 
-  function handleSupplementNext() {
+  function handleBodyStatsNext() {
     setStep(2)
   }
 
+  function handleSupplementNext() {
+    setStep(3)
+  }
+
   function handleSupplementSkip() {
-    setStep(2)
+    setStep(3)
   }
 
   function handleScheduleFinish() {
@@ -52,11 +56,23 @@ export default function Onboarding() {
 
   if (step === 1) {
     return (
+      <BodyStats
+        onNext={handleBodyStatsNext}
+        onBack={() => setStep(0)}
+        onSkip={handleBodyStatsNext}
+        stepIndex={1}
+        totalSteps={TOTAL_STEPS}
+      />
+    )
+  }
+
+  if (step === 2) {
+    return (
       <Supplement
         onNext={handleSupplementNext}
-        onBack={() => setStep(0)}
+        onBack={() => setStep(1)}
         onSkip={handleSupplementSkip}
-        stepIndex={1}
+        stepIndex={2}
         totalSteps={TOTAL_STEPS}
       />
     )
@@ -65,8 +81,8 @@ export default function Onboarding() {
   return (
     <Schedule
       onFinish={handleScheduleFinish}
-      onBack={() => setStep(1)}
-      stepIndex={2}
+      onBack={() => setStep(2)}
+      stepIndex={3}
       totalSteps={TOTAL_STEPS}
     />
   )
