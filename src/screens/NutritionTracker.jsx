@@ -1420,7 +1420,7 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
 const RING_R = 45
 const RING_CIRC = 2 * Math.PI * RING_R // ≈ 282.74
 
-function CalorieRingCard({ category, loading, summary, t, onOpenAlgo, onOpenProfileChat, categoryLabel }) {
+function CalorieRingCard({ category, categories, onCategoryChange, categoryLoading, onOpenCustomise, loading, summary, t, onOpenAlgo, onOpenProfileChat, categoryLabel }) {
   const calActual = summary?.nutrients?.calories?.actual ?? 0
   const calTarget = summary?.nutrients?.calories?.target ?? 0
   const calPct = calTarget > 0 ? Math.min(calActual / calTarget, 1) : 0
@@ -1452,10 +1452,14 @@ function CalorieRingCard({ category, loading, summary, t, onOpenAlgo, onOpenProf
   if (loading) {
     return (
       <div className="bg-white rounded-[20px] border border-border shadow-sm px-5 py-5 flex flex-col gap-3">
+        <div className="flex gap-2 mb-1">
+          <Skeleton className="h-[28px] w-[72px] rounded-full" />
+          <Skeleton className="h-[28px] w-[56px] rounded-full" />
+          <Skeleton className="h-[28px] w-[64px] rounded-full" />
+        </div>
         <div className="flex gap-5">
           <Skeleton className="w-[110px] h-[110px] rounded-full shrink-0" />
           <div className="flex-1 flex flex-col gap-2 pt-2">
-            <Skeleton className="h-[10px] w-1/2" />
             <Skeleton className="h-[40px]" />
             <Skeleton className="h-[40px]" />
             <Skeleton className="h-[40px]" />
@@ -1467,16 +1471,38 @@ function CalorieRingCard({ category, loading, summary, t, onOpenAlgo, onOpenProf
 
   return (
     <div className="bg-white rounded-[20px] border border-border shadow-sm px-5 py-5">
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[10px] uppercase tracking-widest text-ink3 font-semibold">今日目標</span>
-        {categoryLabel && (
-          <span className="text-[10px] uppercase tracking-wide text-white font-semibold bg-orange rounded-full px-[10px] py-[3px]">{categoryLabel}</span>
-        )}
-      </div>
+      {/* Category pills — goal mode selector */}
+      {categories && onCategoryChange && (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1" style={{ WebkitOverflowScrolling: 'touch' }} role="group" aria-label="Goal mode">
+          {categories.map(({ key, labelKey }) => {
+            const active = category === key
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onCategoryChange(key)}
+                aria-pressed={active}
+                disabled={categoryLoading}
+                className={[
+                  'shrink-0 px-[12px] py-[6px] rounded-full text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange',
+                  active ? 'bg-orange text-white shadow-sm' : 'bg-sand text-ink2 hover:bg-orange/10',
+                  categoryLoading ? 'opacity-60 cursor-wait' : '',
+                ].join(' ')}
+              >
+                {t(labelKey)}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {category === 'custom' && onOpenCustomise && (
+        <button type="button" onClick={onOpenCustomise} className="mb-2 flex items-center gap-1 text-[11px] text-orange font-medium hover:underline focus:outline-none">
+          <span>⚙</span> {t('nutritionCustomiseBtn')}
+        </button>
+      )}
 
       {/* Ring + macros row */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-5 mt-1">
         {/* Calorie ring */}
         <div className="relative shrink-0">
           <svg width="110" height="110" viewBox="0 0 110 110">
@@ -2491,9 +2517,13 @@ export default function NutritionTracker() {
           {/* ── LEFT COLUMN: summary + mode selector (sticky on desktop) ── */}
           <div className="flex flex-col gap-3 lg:sticky lg:top-[80px]">
 
-            {/* Calorie ring + macro chips */}
+            {/* Calorie ring + macro chips + goal mode pills */}
             <CalorieRingCard
               category={category}
+              categories={CATEGORIES}
+              onCategoryChange={handleSelectCategory}
+              categoryLoading={categoryLoading}
+              onOpenCustomise={() => customConfig?.aiSetupDone ? setCustomizeOpen(true) : setAiGoalSetupOpen(true)}
               loading={summaryLoading}
               summary={summary}
               t={t}
@@ -2501,37 +2531,6 @@ export default function NutritionTracker() {
               onOpenProfileChat={() => setProfileChatOpen(true)}
               categoryLabel={categoryLabel}
             />
-
-            {/* Goal mode selector */}
-            <div className="bg-white rounded-[16px] border border-border shadow-sm px-4 py-3">
-              <p className="text-[10px] uppercase tracking-widest text-ink3 font-semibold mb-2">{t('nutritionGoalMode')}</p>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {CATEGORIES.map(({ key, labelKey }) => {
-                  const active = category === key
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => handleSelectCategory(key)}
-                      aria-pressed={active}
-                      disabled={categoryLoading}
-                      className={[
-                        'shrink-0 px-[14px] py-[7px] rounded-pill text-[12px] font-medium transition-colors focus:outline-none',
-                        active ? 'bg-orange text-white' : 'bg-sand text-ink2 hover:bg-orange/10',
-                        categoryLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer',
-                      ].join(' ')}
-                    >
-                      {t(labelKey)}
-                    </button>
-                  )
-                })}
-              </div>
-              {category === 'custom' && (
-                <button type="button" onClick={() => customConfig?.aiSetupDone ? setCustomizeOpen(true) : setAiGoalSetupOpen(true)} className="mt-2 flex items-center gap-1.5 text-[12px] text-orange font-medium hover:underline">
-                  <span>⚙</span> {t('nutritionCustomiseBtn')}
-                </button>
-              )}
-            </div>
 
             {/* Disclaimer */}
             {showDisclaimer && (
