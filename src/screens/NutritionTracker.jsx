@@ -716,15 +716,16 @@ function MealGroup({
             {isExpanded && (
               <div className="px-4 pb-3 flex flex-col gap-[6px] bg-sand/20">
                 {entry.foods?.length > 0 ? entry.foods.map((food, idx) => {
-                  const kcal = food.nutrients?.calories ?? food.calories
                   const protein = food.nutrients?.protein ?? food.protein
                   const carbs = food.nutrients?.carbs ?? food.carbs
                   const fat = food.nutrients?.fat ?? food.fat
+                  const kcal = food.nutrients?.calories ?? food.calories
                   const macros = [
                     protein != null && `${t('nutritionProtein')} ${formatNum(protein)}g`,
                     carbs != null && `${t('nutritionCarbs')} ${formatNum(carbs)}g`,
                     fat != null && `${t('nutritionFat')} ${formatNum(fat)}g`,
                   ].filter(Boolean).join(' · ')
+                  const foodMetricVal = getFoodMetric(food, logMetric)
                   return (
                     <div key={food.name ?? idx} className="flex items-start justify-between gap-3 py-[6px] border-b border-border/50 last:border-0">
                       <div className="min-w-0">
@@ -736,8 +737,8 @@ function MealGroup({
                         </p>
                         {macros && <p className="text-[11px] text-ink3 mt-[2px]">{macros}</p>}
                       </div>
-                      {kcal != null && (
-                        <p className="text-[12px] text-ink2 shrink-0 font-medium">{formatNum(kcal)} kcal</p>
+                      {(logMetric === 'calories' ? kcal != null : true) && (
+                        <p className="text-[12px] text-ink2 shrink-0 font-medium">{formatNum(foodMetricVal)} {metricCfg.unit}</p>
                       )}
                     </div>
                   )
