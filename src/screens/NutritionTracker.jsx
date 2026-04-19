@@ -822,11 +822,15 @@ function AiGoalSetupModal({ open, onClose, onComplete }) {
   const language = localStorage.getItem('recallth_language') || 'en'
   const isChinese = language === 'zh-HK' || language === 'zh-TW'
 
-  const [step, setStep] = useState('goals') // 'goals' | 'loading' | 'result'
+  const [step, setStep] = useState('goals') // 'goals' | 'chat' | 'loading' | 'result'
   const [selectedGoals, setSelectedGoals] = useState([])
   const [selectedConditions, setSelectedConditions] = useState([])
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [messages, setMessages] = useState([]) // [{role: 'ai'|'user', content, suggestions?}]
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef(null)
 
   useEffect(() => {
     if (open) {
@@ -835,8 +839,15 @@ function AiGoalSetupModal({ open, onClose, onComplete }) {
       setSelectedConditions([])
       setResult(null)
       setError(null)
+      setMessages([])
+      setChatInput('')
+      setChatLoading(false)
     }
   }, [open])
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const GOALS_OPTIONS = isChinese
     ? [
@@ -882,12 +893,45 @@ function AiGoalSetupModal({ open, onClose, onComplete }) {
     setStep('loading')
     setError(null)
     try {
-      const res = await api.nutrition.aiGoals(selectedGoals, selectedConditions, language)
-      setResult(res.data)
-      setStep('result')
+      const res = await api.nutrition.aiGoals(selectedGoals, selectedConditions, language, 'conversational', [])
+      if (res.data.done) {
+        setResult(res.data)
+        setStep('result')
+      } else {
+        setMessages([{ role: 'ai', content: res.data.followUp, suggestions: res.data.suggestions }])
+        setStep('chat')
+      }
     } catch (err) {
       setError(err?.message ?? 'Failed to generate recommendations')
       setStep('goals')
+    }
+  }
+
+  const handleSendMessage = async (text) => {
+    const trimmed = (text ?? chatInput).trim()
+    if (!trimmed || chatLoading) return
+    setChatInput('')
+    const newMessages = [...messages, { role: 'user', content: trimmed }]
+    setMessages(newMessages)
+    setChatLoading(true)
+    try {
+      const res = await api.nutrition.aiGoals(
+        selectedGoals, selectedConditions, language, 'conversational',
+        newMessages.map(m => ({ role: m.role, content: m.content }))
+      )
+      setChatLoading(false)
+      if (res.data.done) {
+        setResult(res.data)
+        setStep('result')
+      } else {
+        setMessages(prev => [...prev, { role: 'ai', content: res.data.followUp, suggestions: res.data.suggestions }])
+      }
+    } catch {
+      setChatLoading(false)
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        content: isChinese ? '抱歉，出現錯誤，請再試。' : 'Something went wrong. Please try again.',
+      }])
     }
   }
 
@@ -987,6 +1031,50 @@ function AiGoalSetupModal({ open, onClose, onComplete }) {
           </div>
         )}
 
+        {/* Chat step */}
+        {step === 'chat' && (
+          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0">
+            {messages.map((msg, i) => (
+              <div key={i} className={['flex flex-col', msg.role === 'user' ? 'items-end' : 'items-start'].join(' ')}>
+                <div
+                  className={[
+                    'max-w-[78%] px-3 py-2 rounded-[14px] text-[13px] leading-relaxed',
+                    msg.role === 'user'
+                      ? 'bg-orange text-white rounded-br-[4px]'
+                      : 'bg-sand text-ink1 rounded-bl-[4px]',
+                  ].join(' ')}
+                >
+                  {msg.content}
+                </div>
+                {msg.role === 'ai' && msg.suggestions?.length > 0 && i === messages.length - 1 && !chatLoading && (
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    {msg.suggestions.map((s, si) => (
+                      <button
+                        key={si}
+                        type="button"
+                        onClick={() => handleSendMessage(s)}
+                        className="px-3 py-1.5 rounded-pill text-[12px] font-medium bg-white border border-orange/40 text-orange hover:bg-orange/5 transition-colors"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {chatLoading && (
+              <div className="flex items-start">
+                <div className="bg-sand rounded-[14px] rounded-bl-[4px] px-3 py-2.5 flex gap-1 items-center">
+                  <span className="w-1.5 h-1.5 bg-ink3 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-ink3 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-ink3 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+        )}
+
         {/* Loading step */}
         {step === 'loading' && (
           <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 gap-3">
@@ -1000,6 +1088,9 @@ function AiGoalSetupModal({ open, onClose, onComplete }) {
         {/* Result step */}
         {step === 'result' && result && (
           <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+            {result.goalDescription && (
+              <p className="text-[12px] text-ink3 italic">{result.goalDescription}</p>
+            )}
             <p className="text-[13px] text-ink2 leading-relaxed">
               {isChinese
                 ? 'AI 根據你嘅目標推薦以下追蹤方案。直接儲存，或點擊「自訂」微調。'
@@ -1041,6 +1132,30 @@ function AiGoalSetupModal({ open, onClose, onComplete }) {
               className="w-full py-2 text-[12px] text-ink3 hover:text-ink2"
             >
               {isChinese ? '跳過，手動設定' : 'Skip, set manually'}
+            </button>
+          </div>
+        )}
+
+        {step === 'chat' && (
+          <div className="px-4 py-3 border-t border-border flex gap-2 items-center">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+              placeholder={isChinese ? '或者自己輸入…' : 'Or type your answer…'}
+              disabled={chatLoading}
+              className="flex-1 bg-sand rounded-[10px] px-3 py-2 text-[13px] text-ink1 placeholder:text-ink3 outline-none disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => handleSendMessage()}
+              disabled={!chatInput.trim() || chatLoading}
+              className="w-8 h-8 rounded-full bg-orange text-white flex items-center justify-center disabled:opacity-40"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M13 7L1 1l2.5 6L1 13l12-6z" fill="currentColor"/>
+              </svg>
             </button>
           </div>
         )}
