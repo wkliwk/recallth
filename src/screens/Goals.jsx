@@ -96,6 +96,11 @@ export default function Goals() {
   const [saveError, setSaveError] = useState('')
   const [deleteError, setDeleteError] = useState('')
 
+  // ── Note editing state ───────────────────────────────────────────────
+  const [editingGoal, setEditingGoal] = useState(null) // name of goal being edited
+  const [noteDraft, setNoteDraft] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+
   // ── Success fade timer ───────────────────────────────────────────────
   const successTimerRef = useRef(null)
 
@@ -159,10 +164,11 @@ export default function Goals() {
 
     try {
       const existingNames = goals.map((g) => (typeof g === 'string' ? g : g.name))
-      const newNames = interpretedGoals
-        .map((g) => g.name)
-        .filter((n) => !existingNames.includes(n))
-      const merged = [...goals.map((g) => (typeof g === 'string' ? g : g.name)), ...newNames]
+      const newGoalObjects = interpretedGoals
+        .filter((g) => !existingNames.includes(g.name))
+        .map((g) => ({ name: g.name, emoji: g.emoji ?? '🎯', notes: '' }))
+      const existingObjects = goals.map((g) => normaliseGoal(g))
+      const merged = [...existingObjects, ...newGoalObjects]
 
       await api.profile.update({ goals: { primary: merged } })
 
@@ -183,10 +189,12 @@ export default function Goals() {
   // ── Delete handler ───────────────────────────────────────────────────
   async function handleDeleteGoal(nameToRemove) {
     setDeleteError('')
-    const updated = goals.filter((g) => {
-      const n = typeof g === 'string' ? g : g.name
-      return n !== nameToRemove
-    })
+    const updated = goals
+      .filter((g) => {
+        const n = typeof g === 'string' ? g : g.name
+        return n !== nameToRemove
+      })
+      .map((g) => normaliseGoal(g))
     setGoals(updated)
 
     try {
@@ -198,10 +206,31 @@ export default function Goals() {
     }
   }
 
-  // ── Normalise goal entry to { emoji, name } ──────────────────────────
+  // ── Save note handler ────────────────────────────────────────────────
+  async function handleSaveNote(goalName) {
+    setSavingNote(true)
+    const updatedGoals = goals.map((g) => {
+      const norm = normaliseGoal(g)
+      if (norm.name === goalName) return { ...norm, notes: noteDraft }
+      return norm
+    })
+
+    try {
+      await api.profile.update({ goals: { primary: updatedGoals } })
+      setGoals(updatedGoals)
+      setEditingGoal(null)
+      setNoteDraft('')
+    } catch (err) {
+      setDeleteError(err.message ?? t('goalsSaveError'))
+    } finally {
+      setSavingNote(false)
+    }
+  }
+
+  // ── Normalise goal entry to { emoji, name, notes } ──────────────────
   function normaliseGoal(g) {
-    if (typeof g === 'string') return { emoji: '🎯', name: g }
-    return { emoji: g.emoji ?? '🎯', name: g.name ?? String(g) }
+    if (typeof g === 'string') return { emoji: '🎯', name: g, notes: '' }
+    return { emoji: g.emoji ?? '🎯', name: g.name ?? String(g), notes: g.notes ?? '' }
   }
 
   return (
@@ -239,26 +268,82 @@ export default function Goals() {
       ) : (
         <div className="flex flex-col gap-3 mb-6">
           {goals.map((raw) => {
-            const { emoji, name } = normaliseGoal(raw)
+            const { emoji, name, notes } = normaliseGoal(raw)
+            const isEditing = editingGoal === name
             return (
               <div
                 key={name}
-                className="rounded-[14px] border border-[var(--color-border)] bg-white px-4 py-3 flex items-center justify-between"
+                className="rounded-[14px] border border-[var(--color-border)] bg-white px-4 py-3"
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-[20px] leading-none" aria-hidden="true">
-                    {emoji}
-                  </span>
-                  <span className="text-[14px] font-semibold text-ink1">{name}</span>
+                {/* Name row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[20px] leading-none" aria-hidden="true">
+                      {emoji}
+                    </span>
+                    <span className="text-[14px] font-semibold text-ink1">{name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGoal(name)}
+                    aria-label={`Remove goal: ${name}`}
+                    className="text-ink3 hover:text-red-500 transition-colors p-1 rounded cursor-pointer"
+                  >
+                    <TrashIcon />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteGoal(name)}
-                  aria-label={`Remove goal: ${name}`}
-                  className="text-ink3 hover:text-red-500 transition-colors p-1 rounded cursor-pointer"
-                >
-                  <TrashIcon />
-                </button>
+
+                {/* Notes section */}
+                {isEditing ? (
+                  <div className="mt-2 ml-[35px]">
+                    <textarea
+                      rows={2}
+                      value={noteDraft}
+                      onChange={(e) => setNoteDraft(e.target.value)}
+                      placeholder={t('goalsNotePlaceholder')}
+                      className="w-full border border-[var(--color-border)] rounded-[10px] px-3 py-[10px] text-[13px] text-ink1 placeholder:text-ink3 outline-none focus:border-orange transition-colors bg-white resize-none mb-2"
+                      autoFocus
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveNote(name)}
+                        disabled={savingNote}
+                        className="flex items-center gap-1.5 bg-orange text-white text-[12px] font-semibold rounded-[8px] px-3 py-[6px] hover:opacity-90 transition-opacity disabled:opacity-60 cursor-pointer"
+                      >
+                        {savingNote && <Spinner />}
+                        {savingNote ? t('goalsSavingNote') : t('goalsSaveNote')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingGoal(null); setNoteDraft('') }}
+                        className="text-[12px] text-ink2 hover:text-ink1 transition-colors cursor-pointer"
+                      >
+                        {t('goalsCancelNote')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 ml-[35px]">
+                    {notes ? (
+                      <button
+                        type="button"
+                        onClick={() => { setEditingGoal(name); setNoteDraft(notes) }}
+                        className="text-[13px] text-ink2 text-left hover:text-ink1 transition-colors cursor-pointer w-full"
+                      >
+                        {notes}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setEditingGoal(name); setNoteDraft('') }}
+                        className="text-[13px] text-ink3 hover:text-orange transition-colors cursor-pointer"
+                      >
+                        + {t('goalsAddNote')}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}
