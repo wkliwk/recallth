@@ -554,6 +554,7 @@ const TRANSLATIONS = {
     nutritionCollapse: 'Collapse',
     // ── Goal mode ────────────────────────────────────────────────────────
     nutritionGoalMode: 'Goal Mode',
+    nutritionDidYouMean: 'Did you mean?',
   },
 
   'zh-TW': {
@@ -1092,6 +1093,7 @@ const TRANSLATIONS = {
     nutritionViewMonth: '查看月份',
     nutritionCollapse: '收起',
     nutritionGoalMode: '目標模式',
+    nutritionDidYouMean: '是否指的是？',
   },
 
   'zh-HK': {
@@ -1630,6 +1632,7 @@ const TRANSLATIONS = {
     nutritionViewMonth: '睇月份',
     nutritionCollapse: '收起',
     nutritionGoalMode: '目標模式',
+    nutritionDidYouMean: '你係咪指？',
   },
 }
 

@@ -1741,6 +1741,7 @@ function AnalyserSheet({
   manualName, setManualName, manualQty, setManualQty, manualUnit, setManualUnit,
   manualMealType, setManualMealType, manualSaving, manualError, onManualAdd,
   aiPlaceholder,
+  disambigChips, onSelectChip,
   viewDate, t,
 }) {
   const [tab, setTab] = useState(defaultTab ?? 'ai')
@@ -1824,6 +1825,24 @@ function AnalyserSheet({
               {aiError && <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>}
               {parsedFoods.length > 0 && (
                 <div className="mt-4">
+                  {disambigChips?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[11px] text-ink3 mb-1.5">{t('nutritionDidYouMean')}</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {disambigChips.map((chip) => (
+                          <button
+                            key={chip.id}
+                            type="button"
+                            onClick={() => onSelectChip?.(chip)}
+                            className="flex items-center gap-1.5 px-3 py-[6px] rounded-pill bg-white border border-orange/40 text-[12px] text-ink1 font-medium hover:bg-orange/5 hover:border-orange transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                          >
+                            <span className="text-[10px] font-semibold text-orange uppercase">{chip.accuracyTier}</span>
+                            {chip.displayName ?? chip.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <p className="text-[12px] font-medium text-ink2 mb-1">{t('nutritionAiParsed').replace('{n}', parsedFoods.length)}</p>
                   <div className="border border-border rounded-[10px] overflow-hidden">
                     {parsedFoods.map((food) => (
@@ -2020,6 +2039,7 @@ export default function NutritionTracker() {
   const [aiParsing, setAiParsing] = useState(false)
   const [parsedFoods, setParsedFoods] = useState([])
   const [parsedSuggestions, setParsedSuggestions] = useState([])
+  const [disambigChips, setDisambigChips] = useState([]) // FoodDB tier A/B matches
   const [checkedFoods, setCheckedFoods] = useState(new Set())
   const [aiError, setAiError] = useState(null)
   const [addingToLog, setAddingToLog] = useState(false)
@@ -2283,6 +2303,7 @@ export default function NutritionTracker() {
     setAiError(null)
     setParsedFoods([])
     setParsedSuggestions([])
+    setDisambigChips([])
     setCheckedFoods(new Set())
     try {
       const res = await api.nutrition.aiParse(aiText.trim(), category)
@@ -2298,6 +2319,17 @@ export default function NutritionTracker() {
         input: aiText.trim(),
         output: foodList.map(f => f.name).join(', '),
       })
+      // Fire parallel FoodDB search for disambiguation
+      if (aiText.trim()) {
+        api.nutrition.foodDb.search({ q: aiText.trim(), limit: 3 })
+          .then((dbRes) => {
+            const hits = (dbRes?.data?.results ?? []).filter(
+              (r) => r.accuracyTier === 'A' || r.accuracyTier === 'B'
+            )
+            setDisambigChips(hits.slice(0, 3))
+          })
+          .catch(() => {})
+      }
     } catch (err) {
       setAiError(err?.message ?? 'Failed to parse — please try again')
     } finally {
@@ -2316,6 +2348,31 @@ export default function NutritionTracker() {
       }
       return next
     })
+  }
+
+  // ── Select disambiguation chip ────────────────────────────────────────────
+  function handleSelectChip(chip) {
+    // Build a food entry from the FoodDB item, scaled to default serving
+    const grams = chip.defaultServingGrams ?? 100
+    const scale = grams / 100
+    const round1 = (v) => Math.round(v * scale * 10) / 10
+    const foodEntry = {
+      name: chip.displayName ?? chip.name,
+      quantity: grams,
+      unit: chip.defaultServingUnit ?? 'g',
+      nutrients: {
+        calories: Math.round((chip.per100g?.calories ?? 0) * scale),
+        protein: round1(chip.per100g?.protein ?? 0),
+        carbs: round1(chip.per100g?.carbs ?? 0),
+        fat: round1(chip.per100g?.fat ?? 0),
+      },
+      _foodDbId: chip.id,
+    }
+    // Replace AI estimate with verified FoodDB entry, clear chips
+    setParsedFoods([foodEntry])
+    setParsedSuggestions([])
+    setCheckedFoods(new Set([foodEntry.name]))
+    setDisambigChips([])
   }
 
   // ── Add to log ────────────────────────────────────────────────────────────
@@ -2526,6 +2583,24 @@ export default function NutritionTracker() {
                     {aiError && <p className="mt-2 text-[12px] text-[#E11D48]" role="alert">{aiError}</p>}
                     {parsedFoods.length > 0 && (
                       <div className="mt-4">
+                        {disambigChips.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-[11px] text-ink3 mb-1.5">{t('nutritionDidYouMean')}</p>
+                            <div className="flex gap-2 flex-wrap">
+                              {disambigChips.map((chip) => (
+                                <button
+                                  key={chip.id}
+                                  type="button"
+                                  onClick={() => handleSelectChip(chip)}
+                                  className="flex items-center gap-1.5 px-3 py-[6px] rounded-pill bg-white border border-orange/40 text-[12px] text-ink1 font-medium hover:bg-orange/5 hover:border-orange transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                                >
+                                  <span className="text-[10px] font-semibold text-orange uppercase">{chip.accuracyTier}</span>
+                                  {chip.displayName ?? chip.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <p className="text-[12px] font-medium text-ink2 mb-1">{t('nutritionAiParsed').replace('{n}', parsedFoods.length)}</p>
                         <div className="border border-border rounded-[10px] overflow-hidden">
                           {parsedFoods.map((food) => <ParsedFoodRow key={food.name} food={food} checked={checkedFoods.has(food.name)} onToggle={toggleFood} />)}
@@ -2712,6 +2787,7 @@ export default function NutritionTracker() {
           manualSaving={manualSaving} manualError={manualError}
           onManualAdd={handleManualAdd}
           aiPlaceholder={aiPlaceholder}
+          disambigChips={disambigChips} onSelectChip={handleSelectChip}
           viewDate={viewDate} t={t}
         />
 
@@ -2941,6 +3017,24 @@ export default function NutritionTracker() {
                     )}
                     {parsedFoods.length > 0 && (
                       <div className="mt-4">
+                        {disambigChips.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-[11px] text-ink3 mb-1.5">{t('nutritionDidYouMean')}</p>
+                            <div className="flex gap-2 flex-wrap">
+                              {disambigChips.map((chip) => (
+                                <button
+                                  key={chip.id}
+                                  type="button"
+                                  onClick={() => handleSelectChip(chip)}
+                                  className="flex items-center gap-1.5 px-3 py-[6px] rounded-pill bg-white border border-orange/40 text-[12px] text-ink1 font-medium hover:bg-orange/5 hover:border-orange transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                                >
+                                  <span className="text-[10px] font-semibold text-orange uppercase">{chip.accuracyTier}</span>
+                                  {chip.displayName ?? chip.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <p className="text-[12px] font-medium text-ink2 mb-1">
                           {t('nutritionAiParsed').replace('{n}', parsedFoods.length)}
                         </p>
@@ -3243,6 +3337,7 @@ export default function NutritionTracker() {
         manualSaving={manualSaving} manualError={manualError}
         onManualAdd={handleManualAdd}
         aiPlaceholder={aiPlaceholder}
+        disambigChips={disambigChips} onSelectChip={handleSelectChip}
         viewDate={viewDate} t={t}
       />
 
