@@ -2425,6 +2425,27 @@ export default function NutritionTracker() {
                             </div>
                           </div>
                         )}
+                        {checkedFoods.size > 0 && (() => {
+                          const allParsed = [...parsedFoods, ...parsedSuggestions]
+                          const sel = allParsed.filter(f => checkedFoods.has(f.name))
+                          const tot = sel.reduce((a, f) => ({
+                            kcal: a.kcal + (Number(f.nutrients?.calories ?? f.calories) || 0),
+                            protein: a.protein + (Number(f.nutrients?.protein ?? f.protein) || 0),
+                            carbs: a.carbs + (Number(f.nutrients?.carbs ?? f.carbs) || 0),
+                            fat: a.fat + (Number(f.nutrients?.fat ?? f.fat) || 0),
+                          }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+                          return (
+                            <div className="mt-3 rounded-[10px] bg-orange/8 border border-orange/20 px-4 py-3 flex items-center justify-between gap-3">
+                              <span className="text-[12px] font-semibold text-orange shrink-0">{t('nutritionTotal') || 'Total'}</span>
+                              <div className="flex gap-3 flex-wrap justify-end">
+                                <span className="text-[12px] font-semibold text-ink1">{Math.round(tot.kcal)} kcal</span>
+                                <span className="text-[12px] text-ink2">{Math.round(tot.protein)}g {t('nutritionProtein')}</span>
+                                <span className="text-[12px] text-ink2">{Math.round(tot.carbs)}g {t('nutritionCarbs')}</span>
+                                <span className="text-[12px] text-ink2">{Math.round(tot.fat)}g {t('nutritionFat')}</span>
+                              </div>
+                            </div>
+                          )
+                        })()}
                         <button type="button" onClick={handleAddToLog} disabled={addingToLog || checkedFoods.size === 0}
                           className="mt-3 w-full rounded-[10px] border border-orange text-orange text-[13px] font-semibold py-[10px] hover:bg-orange/5 transition-colors disabled:opacity-60 focus:outline-none">
                           {addingToLog ? t('nutritionAdding') : t('nutritionConfirm')}
@@ -2840,6 +2861,27 @@ export default function NutritionTracker() {
                           </div>
                         )}
 
+                        {checkedFoods.size > 0 && (() => {
+                          const allParsed = [...parsedFoods, ...parsedSuggestions]
+                          const sel = allParsed.filter(f => checkedFoods.has(f.name))
+                          const tot = sel.reduce((a, f) => ({
+                            kcal: a.kcal + (Number(f.nutrients?.calories ?? f.calories) || 0),
+                            protein: a.protein + (Number(f.nutrients?.protein ?? f.protein) || 0),
+                            carbs: a.carbs + (Number(f.nutrients?.carbs ?? f.carbs) || 0),
+                            fat: a.fat + (Number(f.nutrients?.fat ?? f.fat) || 0),
+                          }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+                          return (
+                            <div className="mt-3 rounded-[10px] bg-orange/8 border border-orange/20 px-4 py-3 flex items-center justify-between gap-3">
+                              <span className="text-[12px] font-semibold text-orange shrink-0">{t('nutritionTotal') || 'Total'}</span>
+                              <div className="flex gap-3 flex-wrap justify-end">
+                                <span className="text-[12px] font-semibold text-ink1">{Math.round(tot.kcal)} kcal</span>
+                                <span className="text-[12px] text-ink2">{Math.round(tot.protein)}g {t('nutritionProtein')}</span>
+                                <span className="text-[12px] text-ink2">{Math.round(tot.carbs)}g {t('nutritionCarbs')}</span>
+                                <span className="text-[12px] text-ink2">{Math.round(tot.fat)}g {t('nutritionFat')}</span>
+                              </div>
+                            </div>
+                          )
+                        })()}
                         <button
                           type="button"
                           onClick={handleAddToLog}
