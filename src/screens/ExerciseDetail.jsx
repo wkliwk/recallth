@@ -411,13 +411,7 @@ function EditSheet({ session, onClose, onSaved, t }) {
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <button onClick={onClose} className="text-[14px] text-ink3 font-medium">{t('cancel')}</button>
           <p className="text-[16px] font-semibold text-ink1">{t('editSession')}</p>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="text-[14px] font-semibold text-orange disabled:opacity-50"
-          >
-            {saving ? t('saving') : t('save')}
-          </button>
+          <div className="w-10" />
         </div>
 
         {/* Scrollable form */}
