@@ -78,7 +78,7 @@ function Spinner() {
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Goals() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   // ── Profile / goals state ────────────────────────────────────────────
   const [goals, setGoals] = useState([])
@@ -239,7 +239,7 @@ export default function Goals() {
     if (insightsCache[goalName]) return
     setLoadingInsights(goalName)
     try {
-      const res = await api.goals.insights({ goalName, goalNotes })
+      const res = await api.goals.insights({ goalName, goalNotes, language })
       const data = res?.data ?? res
       setInsightsCache(prev => ({ ...prev, [goalName]: data }))
     } catch {
