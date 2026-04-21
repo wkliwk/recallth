@@ -2208,6 +2208,22 @@ export default function NutritionTracker() {
     }
   }, [viewDate])
 
+  // ── Supplement recommendations ────────────────────────────────────────────
+  const [supplementRecs, setSupplementRecs] = useState(null)
+  const [recLoading, setRecLoading] = useState(false)
+
+  const fetchRecommendations = useCallback(async () => {
+    setRecLoading(true)
+    try {
+      const res = await api.nutrition.recommendations(viewDate)
+      setSupplementRecs(res?.data ?? res ?? null)
+    } catch {
+      setSupplementRecs(null)
+    } finally {
+      setRecLoading(false)
+    }
+  }, [viewDate])
+
   // ── Fetch selected day's log ──────────────────────────────────────────────
   const fetchEntries = useCallback(async () => {
     setEntriesLoading(true)
@@ -2227,7 +2243,8 @@ export default function NutritionTracker() {
   useEffect(() => {
     fetchSummary()
     fetchEntries()
-  }, [fetchSummary, fetchEntries])
+    fetchRecommendations()
+  }, [fetchSummary, fetchEntries, fetchRecommendations])
 
   // ── Delete with undo ─────────────────────────────────────────────────────
   function handleRequestDelete(entry) {

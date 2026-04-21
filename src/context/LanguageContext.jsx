@@ -573,6 +573,8 @@ const TRANSLATIONS = {
     // ── Goal mode ────────────────────────────────────────────────────────
     nutritionGoalMode: 'Goal Mode',
     nutritionDidYouMean: 'Did you mean?',
+    nutritionRecTitle: 'Supplement Recommendations',
+    nutritionRecAllGood: 'Your supplements are covering all nutritional gaps today.',
   },
 
   'zh-TW': {
@@ -1130,6 +1132,8 @@ const TRANSLATIONS = {
     nutritionCollapse: '收起',
     nutritionGoalMode: '目標模式',
     nutritionDidYouMean: '是否指的是？',
+    nutritionRecTitle: '補充劑建議',
+    nutritionRecAllGood: '您今天的補充劑已涵蓋所有營養缺口。',
   },
 
   'zh-HK': {
@@ -1687,6 +1691,8 @@ const TRANSLATIONS = {
     nutritionCollapse: '收起',
     nutritionGoalMode: '目標模式',
     nutritionDidYouMean: '你係咪指？',
+    nutritionRecTitle: '補充劑建議',
+    nutritionRecAllGood: '你今日嘅補充劑已涵蓋所有營養缺口。',
   },
 }
 
