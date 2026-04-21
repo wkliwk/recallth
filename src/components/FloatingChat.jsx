@@ -28,15 +28,117 @@ function TypingIndicator() {
   )
 }
 
-function ChatPanel({ onClose, pageContext }) {
+function formatRelativeDate(iso) {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now - d
+  const diffDays = Math.floor(diffMs / 86400000)
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays}d ago`
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+// Map backend message format → frontend display format
+function mapBackendMessages(messages) {
+  return (messages || []).map(msg => ({
+    type: msg.role === 'user' ? 'user' : 'ai',
+    text: msg.content || '',
+    actions: msg.actions || [],
+  }))
+}
+
+function HistoryView({ onBack, onSelect, onNewChat, t }) {
+  const [conversations, setConversations] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await chatService.history()
+        setConversations(res?.data?.conversations || [])
+      } catch {
+        setConversations([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+        <button
+          onClick={onBack}
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink2 cursor-pointer"
+          aria-label="Back"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <p className="text-[14px] font-semibold text-ink1">{t('chatHistory')}</p>
+        <button
+          onClick={onNewChat}
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink2 cursor-pointer"
+          aria-label="New chat"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto">
+        {loading && (
+          <div className="flex flex-col gap-2 px-4 pt-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-16 rounded-[12px] bg-sand animate-pulse" />
+            ))}
+          </div>
+        )}
+        {!loading && conversations.length === 0 && (
+          <p className="text-[13px] text-ink3 text-center mt-12 px-4">{t('chatNoHistory')}</p>
+        )}
+        {!loading && conversations.map((conv) => (
+          <button
+            key={conv._id}
+            onClick={() => onSelect(conv._id)}
+            className="w-full text-left px-4 py-3 flex flex-col gap-[3px] hover:bg-sand transition-colors border-b border-border last:border-0 cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[13px] font-medium text-ink1 truncate flex-1">
+                {conv.title || t('chatUntitled')}
+              </p>
+              <p className="text-[11px] text-ink4 shrink-0">{formatRelativeDate(conv.createdAt)}</p>
+            </div>
+            {conv.summary && (
+              <p className="text-[12px] text-ink3 line-clamp-1">{conv.summary}</p>
+            )}
+            <p className="text-[11px] text-ink4">{conv.messageCount} {conv.messageCount === 1 ? 'message' : 'messages'}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ChatPanel({
+  onClose, pageContext,
+  conversationId, setConversationId,
+  messages, setMessages,
+  appliedActions, setAppliedActions,
+  contextInjected, setContextInjected,
+}) {
   const { t } = useLanguage()
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState([])
-  const [conversationId, setConversationId] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
-  const [imagePreview, setImagePreview] = useState(null) // { base64, mimeType, url }
-  const [appliedActions, setAppliedActions] = useState(new Set())
-  const [contextInjected, setContextInjected] = useState(false)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [view, setView] = useState('chat') // 'chat' | 'history'
+  const [loadingConversation, setLoadingConversation] = useState(false)
   const { showUsage } = useAiUsage()
   const bottomRef = useRef(null)
   const fileRef = useRef(null)
@@ -85,7 +187,7 @@ function ChatPanel({ onClose, pageContext }) {
     setMessages((m) => [...m, userMsg])
     setIsTyping(true)
 
-    // Prepend page context as a hidden system block on the first message of each chat session
+    // Prepend page context as hidden system block on first message of a new session
     let messageText = text || t('chatImagePrompt')
     if (pageContext?.systemPrompt && !contextInjected && !conversationId) {
       messageText = `${pageContext.systemPrompt}\n\n---\n\nUser: ${messageText}`
@@ -107,10 +209,7 @@ function ChatPanel({ onClose, pageContext }) {
         })
       }
     } catch {
-      setMessages((m) => [
-        ...m,
-        { type: 'ai', text: t('chatError') },
-      ])
+      setMessages((m) => [...m, { type: 'ai', text: t('chatError') }])
     } finally {
       setIsTyping(false)
     }
@@ -128,6 +227,65 @@ function ChatPanel({ onClose, pageContext }) {
     } catch { /* ignore */ }
   }
 
+  async function handleSelectConversation(id) {
+    setLoadingConversation(true)
+    try {
+      const res = await chatService.getConversation(id)
+      const conv = res?.data ?? res
+      setConversationId(conv._id)
+      setMessages(mapBackendMessages(conv.messages))
+      setContextInjected(true) // don't re-inject page context when resuming
+      setAppliedActions(new Set(
+        (conv.messages || []).flatMap((msg, mi) =>
+          (msg.actions || [])
+            .map((a, ai) => (a.applied ? `${mi}-${ai}` : null))
+            .filter(Boolean)
+        )
+      ))
+    } catch { /* ignore */ } finally {
+      setLoadingConversation(false)
+      setView('chat')
+    }
+  }
+
+  function handleNewChat() {
+    setConversationId(null)
+    setMessages([])
+    setAppliedActions(new Set())
+    setContextInjected(false)
+    setView('chat')
+  }
+
+  // History view
+  if (view === 'history') {
+    return (
+      <div
+        className="fixed inset-0 z-[60] flex justify-end"
+        style={{ background: 'rgba(42,34,26,0.25)' }}
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div
+          className="w-full md:w-[420px] h-full bg-white flex flex-col shadow-2xl"
+          style={{ animation: 'slideIn 0.22s ease-out' }}
+        >
+          <HistoryView
+            onBack={() => setView('chat')}
+            onSelect={handleSelectConversation}
+            onNewChat={handleNewChat}
+            t={t}
+          />
+        </div>
+        <style>{`
+          @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // Chat view
   return (
     <div
       className="fixed inset-0 z-[60] flex justify-end"
@@ -151,25 +309,46 @@ function ChatPanel({ onClose, pageContext }) {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink3 cursor-pointer"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <div className="flex items-center gap-1">
+            {/* History button */}
+            <button
+              onClick={() => setView('history')}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink3 cursor-pointer"
+              aria-label="Conversation history"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <polyline points="12 7 12 12 15 15"/>
+              </svg>
+            </button>
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink3 cursor-pointer"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-          {messages.length === 0 && !isTyping && (
+          {loadingConversation && (
+            <div className="flex flex-col gap-2 mt-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className={`h-10 rounded-[12px] bg-sand animate-pulse ${i % 2 === 0 ? 'ml-12' : 'mr-12'}`} />
+              ))}
+            </div>
+          )}
+          {!loadingConversation && messages.length === 0 && !isTyping && (
             <p className="text-[13px] text-ink3 text-center mt-8">
               {pageContext?.placeholder || t('chatAskAnything')}
             </p>
           )}
-          {messages.map((msg, i) => (
+          {!loadingConversation && messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.type === 'ai' && (
                 <div className="w-6 h-6 rounded-[8px] bg-orange-lt flex items-center justify-center shrink-0 mr-2 mt-1">
@@ -282,7 +461,6 @@ function ChatPanel({ onClose, pageContext }) {
           to   { transform: translateX(0);    opacity: 1; }
         }
       `}</style>
-
     </div>
   )
 }
@@ -296,6 +474,20 @@ export default function FloatingChat() {
     return saved ? JSON.parse(saved) : { x: window.innerWidth - 68, y: window.innerHeight - 140 }
   })
   const dragRef = useRef(null)
+
+  // Conversation state lives here so it survives ChatPanel open/close
+  const [conversationId, setConversationId] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [appliedActions, setAppliedActions] = useState(new Set())
+  const [contextInjected, setContextInjected] = useState(false)
+
+  // Clear conversation state when page context changes (navigated to different page)
+  useEffect(() => {
+    setConversationId(null)
+    setMessages([])
+    setAppliedActions(new Set())
+    setContextInjected(false)
+  }, [location.pathname])
 
   // Hide on /chat page (has its own chat UI)
   if (location.pathname === '/chat') return null
@@ -321,14 +513,8 @@ export default function FloatingChat() {
     const onUp = () => {
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('pointerup', onUp)
-      // Snap to nearest edge
-      const size = 48
-      const snapped = {
-        x: pos.x + size / 2 < window.innerWidth / 2 ? 16 : window.innerWidth - size - 16,
-        y: Math.max(16, Math.min(window.innerHeight - size - 16, pos.y)),
-      }
-      // Read latest pos from the DOM since state may be stale
       setPos((prev) => {
+        const size = 48
         const sx = prev.x + size / 2 < window.innerWidth / 2 ? 16 : window.innerWidth - size - 16
         const sy = Math.max(16, Math.min(window.innerHeight - size - 16, prev.y))
         const final = { x: sx, y: sy }
@@ -355,7 +541,20 @@ export default function FloatingChat() {
           <SparkleIcon size={18} color="white" />
         </div>
       )}
-      {open && <ChatPanel onClose={() => setOpen(false)} pageContext={pageContext} />}
+      {open && (
+        <ChatPanel
+          onClose={() => setOpen(false)}
+          pageContext={pageContext}
+          conversationId={conversationId}
+          setConversationId={setConversationId}
+          messages={messages}
+          setMessages={setMessages}
+          appliedActions={appliedActions}
+          setAppliedActions={setAppliedActions}
+          contextInjected={contextInjected}
+          setContextInjected={setContextInjected}
+        />
+      )}
     </>
   )
 }
