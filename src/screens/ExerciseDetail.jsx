@@ -108,6 +108,7 @@ function intensityColor(intensity) {
 function buildExerciseSystemPrompt(session, name, t) {
   const lines = [
     `[Page context — Exercise Session]`,
+    `Session ID: ${session._id}`,
     `Activity: ${name}`,
     `Date: ${session.date}`,
     `Duration: ${session.durationMinutes} minutes`,
