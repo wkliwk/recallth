@@ -118,7 +118,14 @@ function buildExerciseSystemPrompt(session, name, t) {
   if (session.exercises?.length > 0) {
     lines.push(`Exercises:`)
     session.exercises.forEach((ex) => {
-      lines.push(`  - ${ex.name}: ${ex.sets} sets × ${ex.reps} reps${ex.weightKg ? ` @ ${ex.weightKg} kg` : ''}`)
+      if (ex.type === 'cardio') {
+        const parts = []
+        if (ex.durationMin) parts.push(`${ex.durationMin} min`)
+        if (ex.distanceKm) parts.push(`${ex.distanceKm} km`)
+        lines.push(`  - ${ex.name} (cardio)${parts.length ? ': ' + parts.join(', ') : ''}`)
+      } else {
+        lines.push(`  - ${ex.name}: ${ex.sets} sets × ${ex.reps} reps${ex.weightKg ? ` @ ${ex.weightKg} kg` : ''}`)
+      }
     })
   }
   if (session.notes) lines.push(`Notes: ${session.notes}`)
@@ -140,30 +147,60 @@ function StatCard({ icon, label, value }) {
 
 function ExerciseRow({ row, onSave, onDelete }) {
   const [name, setName] = useState(row.name || '')
+  const [type, setType] = useState(row.type || 'strength')
+  // strength fields
   const [sets, setSets] = useState(String(row.sets ?? ''))
   const [reps, setReps] = useState(String(row.reps ?? ''))
   const [weight, setWeight] = useState(String(row.weightKg ?? ''))
+  // cardio fields
+  const [duration, setDuration] = useState(String(row.durationMin ?? ''))
+  const [distance, setDistance] = useState(String(row.distanceKm ?? ''))
   const cur = useRef({})
-  cur.current = { name, sets, reps, weight }
+  cur.current = { name, type, sets, reps, weight, duration, distance }
 
-  function handleBlur() {
+  function handleBlur() { onSave(cur.current) }
+  function onKey(e) { if (e.key === 'Enter') e.target.blur() }
+
+  function toggleType() {
+    const next = cur.current.type === 'strength' ? 'cardio' : 'strength'
+    setType(next)
+    cur.current = { ...cur.current, type: next }
     onSave(cur.current)
   }
 
-  function onKey(e) {
-    if (e.key === 'Enter') e.target.blur()
-  }
-
-  const cell = 'text-[13px] bg-transparent text-center w-full outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums'
-  const nameCls = 'text-[14px] bg-transparent w-full outline-none focus:bg-sand rounded-[4px] py-0.5 px-1 text-ink1 placeholder:text-ink3/50 min-w-0'
+  const numCls = 'text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-10'
+  const nameCls = 'text-[14px] bg-transparent flex-1 outline-none focus:bg-sand rounded-[4px] py-0.5 px-1 text-ink1 placeholder:text-ink3/50 min-w-0'
+  const unitLbl = 'text-[10px] text-ink3 shrink-0'
 
   return (
-    <div className="grid grid-cols-[1fr_44px_44px_56px_28px] items-center px-3 py-1 border-b border-[#EDE8E0] last:border-0">
+    <div className="flex items-center px-3 py-2 gap-1.5 border-b border-[#EDE8E0] last:border-0">
+      <button
+        onClick={toggleType}
+        className="text-[14px] shrink-0 w-5 text-center leading-none select-none"
+        title={type === 'strength' ? 'Switch to cardio' : 'Switch to strength'}
+      >
+        {type === 'strength' ? '💪' : '🏃'}
+      </button>
       <input className={nameCls} value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="Exercise" />
-      <input className={cell} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <input className={cell} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <input className={cell} type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <button onClick={onDelete} className="text-ink3/60 hover:text-red-500 transition-colors text-[18px] leading-none flex items-center justify-center">×</button>
+      {type === 'strength' ? (
+        <>
+          <input className={numCls} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>s</span>
+          <span className="text-ink3 text-[11px]">×</span>
+          <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>r</span>
+          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>kg</span>
+        </>
+      ) : (
+        <>
+          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>min</span>
+          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>km</span>
+        </>
+      )}
+      <button onClick={onDelete} className="text-ink3/60 hover:text-red-500 transition-colors text-[18px] leading-none flex items-center justify-center shrink-0 ml-0.5">×</button>
     </div>
   )
 }
@@ -173,9 +210,12 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
     (initialExercises ?? []).map(ex => ({
       id: Math.random(),
       name: ex.name || '',
+      type: ex.type || 'strength',
       sets: ex.sets ?? '',
       reps: ex.reps ?? '',
       weightKg: ex.weightKg ?? '',
+      durationMin: ex.durationMin ?? '',
+      distanceKm: ex.distanceKm ?? '',
     }))
   )
   const [saving, setSaving] = useState(false)
@@ -183,14 +223,23 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   const saveRows = useCallback(async (updatedRows) => {
     setSaving(true)
     try {
-      const exercises = updatedRows
-        .filter(r => r.name.trim())
-        .map(r => ({
+      const exercises = updatedRows.filter(r => r.name.trim()).map(r => {
+        if (r.type === 'cardio') {
+          return {
+            name: r.name.trim(),
+            type: 'cardio',
+            ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
+            ...(r.distanceKm !== '' ? { distanceKm: Number(r.distanceKm) } : {}),
+          }
+        }
+        return {
           name: r.name.trim(),
+          type: 'strength',
           sets: Number(r.sets) || 1,
           reps: Number(r.reps) || 1,
           ...(r.weightKg !== '' && r.weightKg != null && !isNaN(Number(r.weightKg)) ? { weightKg: Number(r.weightKg) } : {}),
-        }))
+        }
+      })
       const res = await api.exercise.update(sessionId, { exercises })
       onSaved(res.data ?? res)
     } finally {
@@ -199,7 +248,16 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   }, [sessionId, onSaved])
 
   function handleRowSave(i, cur) {
-    const updated = rows.map((r, idx) => idx === i ? { ...r, name: cur.name, sets: cur.sets, reps: cur.reps, weightKg: cur.weight } : r)
+    const updated = rows.map((r, idx) => idx === i ? {
+      ...r,
+      name: cur.name,
+      type: cur.type,
+      sets: cur.sets,
+      reps: cur.reps,
+      weightKg: cur.weight,
+      durationMin: cur.duration,
+      distanceKm: cur.distance,
+    } : r)
     setRows(updated)
     saveRows(updated)
   }
@@ -211,18 +269,16 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   }
 
   function addRow() {
-    setRows(prev => [...prev, { id: Math.random(), name: '', sets: '', reps: '', weightKg: '' }])
+    setRows(prev => [...prev, { id: Math.random(), name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationMin: '', distanceKm: '' }])
   }
 
   return (
     <div className="bg-white rounded-[16px] shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-[1fr_44px_44px_56px_28px] items-center px-3 pt-3 pb-2 border-b border-[#EDE8E0]">
-        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide px-1">Exercise</p>
-        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide text-center">Sets</p>
-        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide text-center">Reps</p>
-        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide text-center">kg</p>
-        <div />
+      <div className="flex items-center px-3 pt-3 pb-2 border-b border-[#EDE8E0] gap-1.5">
+        <div className="w-5 shrink-0" />
+        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide flex-1 px-1">Exercise</p>
+        <p className="text-[10px] text-ink3/60 italic">tap 💪🏃 to switch type</p>
       </div>
       {rows.map((row, i) => (
         <ExerciseRow
