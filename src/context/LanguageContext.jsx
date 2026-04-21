@@ -372,6 +372,8 @@ const TRANSLATIONS = {
     stackBuilderExGoal1: 'Better sleep',
     stackBuilderExGoal2: 'Muscle building',
     stackBuilderExGoal3: 'More energy',
+    stackBuilderSavedGoalsLabel: 'Your saved goals',
+    stackBuilderOrType: 'Or enter a new goal',
     // ── Notifications ───────────────────────────────────────────────────
     notificationsTitle: 'Notifications',
     notificationsSub: 'Manage reminders, digests and your timezone.',
@@ -937,6 +939,8 @@ const TRANSLATIONS = {
     stackBuilderExGoal1: '改善睡眠',
     stackBuilderExGoal2: '增肌',
     stackBuilderExGoal3: '提升精力',
+    stackBuilderSavedGoalsLabel: '你的已儲存目標',
+    stackBuilderOrType: '或輸入新目標',
     // ── Notifications ───────────────────────────────────────────────────
     notificationsTitle: '通知設定',
     notificationsSub: '管理提醒、摘要和時區。',
@@ -1496,6 +1500,8 @@ const TRANSLATIONS = {
     stackBuilderExGoal1: '瞓好啲',
     stackBuilderExGoal2: '增肌',
     stackBuilderExGoal3: '精力多啲',
+    stackBuilderSavedGoalsLabel: '你嘅已儲存目標',
+    stackBuilderOrType: '或者輸入新目標',
     // ── Notifications ───────────────────────────────────────────────────
     notificationsTitle: '通知設定',
     notificationsSub: '管理提醒、摘要同時區。',

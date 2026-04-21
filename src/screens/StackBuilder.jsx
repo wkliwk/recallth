@@ -148,7 +148,7 @@ function parseStackResponse(text) {
 }
 
 // ── Stack Builder prompt ─────────────────────────────────────────────────────
-function buildPrompt(goal, profile, cabinetItems) {
+function buildPrompt(goals, profile, cabinetItems) {
   const profileSummary = profile
     ? {
         body: profile.body,
@@ -165,7 +165,11 @@ function buildPrompt(goal, profile, cabinetItems) {
     dosage: i.dosage,
   }))
 
-  return `You are an expert supplement advisor. The user has set this goal: "${goal}".
+  const goalsText = goals.length === 1
+    ? `"${goals[0]}"`
+    : goals.map((g) => `"${g}"`).join(', ')
+
+  return `You are an expert supplement advisor. The user has set these goals: ${goalsText}.
 
 USER PROFILE:
 ${JSON.stringify(profileSummary, null, 2)}
@@ -173,12 +177,12 @@ ${JSON.stringify(profileSummary, null, 2)}
 CURRENT SUPPLEMENT CABINET:
 ${JSON.stringify(cabinetSummary, null, 2)}
 
-Based on the goal, profile, and existing cabinet, recommend a personalised supplement stack in 3 tiers:
-- Essential: core supplements with strong evidence for this goal
-- Beneficial: supplements that meaningfully support this goal
+Based on the goals, profile, and existing cabinet, recommend a personalised supplement stack in 3 tiers:
+- Essential: core supplements with strong evidence for these goals
+- Beneficial: supplements that meaningfully support these goals
 - Optional: supplements with modest or indirect benefit
 
-For each supplement include: name, a 1-sentence rationale, and a suggested dose.
+For each supplement include: name, a 1-sentence rationale (mention which goal it supports if multiple), and a suggested dose.
 Do NOT recommend supplements already in the cabinet as new additions — but you may include them if they are critical.
 
 Return ONLY valid JSON (no markdown, no extra text) in this exact structure:
@@ -193,6 +197,8 @@ Return ONLY valid JSON (no markdown, no extra text) in this exact structure:
 export default function StackBuilder() {
   const { t } = useLanguage()
   const [goal, setGoal] = useState('')
+  const [selectedGoals, setSelectedGoals] = useState([]) // chips selected from saved goals
+  const [savedGoals, setSavedGoals] = useState([]) // loaded from profile
   const [status, setStatus] = useState('idle') // idle | loading | success | error
   const [tiers, setTiers] = useState(null)
   const [cabinetNames, setCabinetNames] = useState(new Set())
@@ -210,7 +216,10 @@ export default function StackBuilder() {
         const items = cabinetRes.data ?? cabinetRes ?? []
         setCabinetItems(items)
         setCabinetNames(new Set(items.map((i) => (i.name ?? '').toLowerCase())))
-        setProfile(profileRes.data ?? profileRes)
+        const prof = profileRes.data ?? profileRes
+        setProfile(prof)
+        const primary = prof?.goals?.primary ?? []
+        setSavedGoals(Array.isArray(primary) ? primary : [])
       } catch {
         // Non-fatal — proceed with empty context
       }
@@ -218,17 +227,33 @@ export default function StackBuilder() {
     loadContext()
   }, [])
 
+  function toggleGoal(name) {
+    setSelectedGoals((prev) =>
+      prev.includes(name) ? prev.filter((g) => g !== name) : [...prev, name]
+    )
+  }
+
+  // Combined goals: selected chips + free-form text (if filled)
+  function getActiveGoals() {
+    const combined = [...selectedGoals]
+    const trimmed = goal.trim()
+    if (trimmed && !combined.includes(trimmed)) combined.push(trimmed)
+    return combined
+  }
+
   const handleSubmit = useCallback(
     async (e) => {
       e?.preventDefault()
-      if (!goal.trim()) return
+      const activeGoals = getActiveGoals()
+      if (activeGoals.length === 0) return
 
       setStatus('loading')
       setTiers(null)
 
       try {
-        const message = buildPrompt(goal.trim(), profile, cabinetItems)
-        const res = await chatService.send(message, undefined, { sessionTitle: `Stack Builder: ${goal.trim().slice(0, 50)}` })
+        const message = buildPrompt(activeGoals, profile, cabinetItems)
+        const sessionTitle = `Stack Builder: ${activeGoals.slice(0, 2).join(', ').slice(0, 50)}`
+        const res = await chatService.send(message, undefined, { sessionTitle })
         const text = res?.data?.message?.content ?? ''
         const parsed = parseStackResponse(text)
 
@@ -243,7 +268,8 @@ export default function StackBuilder() {
         setStatus('error')
       }
     },
-    [goal, profile, cabinetItems]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [goal, selectedGoals, profile, cabinetItems]
   )
 
   const handleAddToStack = useCallback(
@@ -262,20 +288,52 @@ export default function StackBuilder() {
         {t('stackBuilderSub')}
       </p>
 
+      {/* Saved goals chips */}
+      {savedGoals.length > 0 && (
+        <div className="mb-5">
+          <p className="text-[12px] font-semibold text-ink3 uppercase tracking-wide mb-2">
+            {t('stackBuilderSavedGoalsLabel')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {savedGoals.map((raw) => {
+              const name = typeof raw === 'string' ? raw : (raw.name ?? String(raw))
+              const emoji = typeof raw === 'string' ? null : (raw.emoji ?? null)
+              const active = selectedGoals.includes(name)
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => toggleGoal(name)}
+                  disabled={status === 'loading'}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-[7px] text-[13px] font-medium border transition-colors cursor-pointer disabled:opacity-50
+                    ${active
+                      ? 'bg-orange text-white border-orange'
+                      : 'bg-white text-ink2 border-border hover:border-orange/40 hover:bg-orange/5'
+                    }`}
+                >
+                  {emoji && <span aria-hidden="true">{emoji}</span>}
+                  {name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Goal input */}
       <form onSubmit={handleSubmit} className="flex gap-2 mb-8">
         <input
           type="text"
           value={goal}
           onChange={(e) => setGoal(e.target.value)}
-          placeholder={t('stackBuilderPlaceholder')}
+          placeholder={savedGoals.length > 0 ? t('stackBuilderOrType') : t('stackBuilderPlaceholder')}
           className="flex-1 rounded-[12px] border border-border bg-white px-4 py-[11px] text-[14px] text-ink1 placeholder-ink4 outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 transition-colors"
           aria-label="Health goal"
           disabled={status === 'loading'}
         />
         <button
           type="submit"
-          disabled={!goal.trim() || status === 'loading'}
+          disabled={(selectedGoals.length === 0 && !goal.trim()) || status === 'loading'}
           className="rounded-[12px] bg-orange px-5 py-[11px] text-[14px] font-semibold text-white disabled:opacity-40 active:opacity-80 transition-opacity"
           aria-label="Generate stack recommendations"
         >
@@ -295,18 +353,20 @@ export default function StackBuilder() {
           <p className="text-[13px] text-ink3 max-w-[340px] leading-[1.6]">
             {t('stackBuilderEmptySub')}
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            {[t('stackBuilderExGoal1'), t('stackBuilderExGoal2'), t('stackBuilderExGoal3')].map((ex) => (
-              <button
-                key={ex}
-                type="button"
-                onClick={() => setGoal(ex)}
-                className="rounded-full bg-sand border border-border text-[12px] text-ink2 px-4 py-[7px] hover:border-orange/40 hover:bg-orange/5 transition-colors cursor-pointer"
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
+          {savedGoals.length === 0 && (
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {[t('stackBuilderExGoal1'), t('stackBuilderExGoal2'), t('stackBuilderExGoal3')].map((ex) => (
+                <button
+                  key={ex}
+                  type="button"
+                  onClick={() => setGoal(ex)}
+                  className="rounded-full bg-sand border border-border text-[12px] text-ink2 px-4 py-[7px] hover:border-orange/40 hover:bg-orange/5 transition-colors cursor-pointer"
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
