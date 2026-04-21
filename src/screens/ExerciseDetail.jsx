@@ -159,53 +159,64 @@ function displayToKg(val, unit) {
   return val
 }
 
+const TYPE_ORDER = ['strength', 'cardio', 'stretch', 'hiit']
+const TYPE_CONFIG = {
+  strength: { label: 'Str',  full: 'Strength', chipCls: 'bg-orange/10 text-orange' },
+  cardio:   { label: 'Crd',  full: 'Cardio',   chipCls: 'bg-blue-500/10 text-blue-600' },
+  stretch:  { label: 'Stch', full: 'Stretch',  chipCls: 'bg-emerald-500/10 text-emerald-700' },
+  hiit:     { label: 'HIIT', full: 'HIIT',     chipCls: 'bg-red-500/10 text-red-600' },
+}
+
 function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
   const [name, setName] = useState(row.name || '')
   const [type, setType] = useState(row.type || 'strength')
-  // strength fields
   const [sets, setSets] = useState(String(row.sets ?? ''))
   const [reps, setReps] = useState(String(row.reps ?? ''))
+  const [rounds, setRounds] = useState(String(row.rounds ?? ''))
   const [weight, setWeight] = useState(kgToDisplay(row.weightKg, unit))
-  // cardio fields
   const [duration, setDuration] = useState(String(row.durationMin ?? ''))
   const [distance, setDistance] = useState(String(row.distanceKm ?? ''))
   const cur = useRef({})
-  cur.current = { name, type, sets, reps, weight, duration, distance, unit }
+  cur.current = { name, type, sets, reps, rounds, weight, duration, distance, unit }
 
   function handleBlur() { onSave(cur.current) }
   function onKey(e) { if (e.key === 'Enter') e.target.blur() }
 
-  function toggleType() {
-    const next = cur.current.type === 'strength' ? 'cardio' : 'strength'
+  function cycleType() {
+    const next = TYPE_ORDER[(TYPE_ORDER.indexOf(cur.current.type) + 1) % TYPE_ORDER.length]
     setType(next)
     cur.current = { ...cur.current, type: next }
     onSave(cur.current)
   }
 
-  const numCls = 'text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-9'
-  const nameCls = 'text-[14px] bg-transparent flex-1 outline-none focus:bg-sand rounded-[4px] py-0.5 px-1 text-ink1 placeholder:text-ink3/50 min-w-0'
-  const unitLbl = 'text-[10px] text-ink3 shrink-0'
-  const numWide = 'text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-16'
+  const numCls = 'w-9 text-center bg-transparent text-[13px] text-ink2 tabular-nums outline-none focus:bg-sand/60 rounded-[6px] px-0.5 py-0.5 transition-colors'
+  const numWide = 'w-12 text-center bg-transparent text-[13px] text-ink2 tabular-nums outline-none focus:bg-sand/60 rounded-[6px] px-0.5 py-0.5 transition-colors'
+  const nameCls = 'flex-1 min-w-0 bg-transparent text-[14px] font-medium text-ink1 placeholder:text-ink3/50 outline-none focus:bg-sand/60 rounded-[6px] px-1.5 py-0.5 transition-colors'
+  const unitLbl = 'text-[11px] text-ink3 shrink-0 leading-none'
+  const sep = <span className="text-ink3/40 text-[11px] shrink-0">×</span>
+
+  const { label, chipCls } = TYPE_CONFIG[type] ?? TYPE_CONFIG.strength
 
   return (
-    <div className="flex items-center px-3 py-2.5 gap-1.5 border-b border-[#EDE8E0] last:border-0">
+    <div className="flex items-center px-4 py-3 gap-2 border-b border-[#EDE8E0] last:border-0 min-h-[52px]">
       <button
-        onClick={toggleType}
-        className="text-[14px] shrink-0 w-5 text-center leading-none select-none"
-        title={type === 'strength' ? 'Switch to cardio' : 'Switch to strength'}
+        onClick={cycleType}
+        className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold leading-none transition-colors select-none ${chipCls}`}
+        title={TYPE_CONFIG[type]?.full ?? type}
       >
-        {type === 'strength' ? '💪' : '🏃'}
+        {label}
       </button>
-      <input className={nameCls} value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="Exercise" />
-      {type === 'strength' ? (
+      <input className={nameCls} value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="Exercise name" />
+      {type === 'strength' && (
         <>
           <input className={numCls} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-          <span className="text-ink3/50 text-[11px]">×</span>
+          {sep}
           <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <input className={numWide} type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <span className={unitLbl}>{unit}</span>
         </>
-      ) : (
+      )}
+      {type === 'cardio' && (
         <>
           <input className={numWide} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <span className={unitLbl}>min</span>
@@ -213,7 +224,26 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
           <span className={unitLbl}>km</span>
         </>
       )}
-      <button onClick={onDelete} className="text-ink3/40 hover:text-red-400 transition-colors text-[16px] leading-none flex items-center justify-center shrink-0 w-5">×</button>
+      {type === 'stretch' && (
+        <>
+          <input className={numWide} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>min</span>
+        </>
+      )}
+      {type === 'hiit' && (
+        <>
+          <input className={numCls} type="number" min="1" value={rounds} onChange={e => setRounds(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>rds</span>
+          {sep}
+          <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <input className={numWide} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>min</span>
+        </>
+      )}
+      <button
+        onClick={onDelete}
+        className="shrink-0 w-6 h-6 flex items-center justify-center text-ink3/40 hover:text-red-400 rounded-full hover:bg-red-50 transition-colors text-[16px] leading-none"
+      >×</button>
     </div>
   )
 }
@@ -227,6 +257,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       type: ex.type || 'strength',
       sets: ex.sets ?? '',
       reps: ex.reps ?? '',
+      rounds: ex.rounds ?? '',
       weightKg: ex.weightKg ?? '',
       durationMin: ex.durationMin ?? '',
       distanceKm: ex.distanceKm ?? '',
@@ -234,27 +265,27 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   )
   const [saving, setSaving] = useState(false)
 
-  function toggleUnit() {
-    const next = unit === 'kg' ? 'lbs' : 'kg'
-    setUnit(next)
-    localStorage.setItem('recallth_weight_unit', next)
-  }
-
   const saveRows = useCallback(async (updatedRows) => {
     setSaving(true)
     try {
       const exercises = updatedRows.filter(r => r.name.trim()).map(r => {
-        if (r.type === 'cardio') {
-          return {
-            name: r.name.trim(),
-            type: 'cardio',
-            ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
-            ...(r.distanceKm !== '' ? { distanceKm: Number(r.distanceKm) } : {}),
-          }
+        if (r.type === 'cardio') return {
+          name: r.name.trim(), type: 'cardio',
+          ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
+          ...(r.distanceKm !== '' ? { distanceKm: Number(r.distanceKm) } : {}),
+        }
+        if (r.type === 'stretch') return {
+          name: r.name.trim(), type: 'stretch',
+          ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
+        }
+        if (r.type === 'hiit') return {
+          name: r.name.trim(), type: 'hiit',
+          rounds: Number(r.rounds) || 1,
+          reps: Number(r.reps) || 1,
+          ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
         }
         return {
-          name: r.name.trim(),
-          type: 'strength',
+          name: r.name.trim(), type: 'strength',
           sets: Number(r.sets) || 1,
           reps: Number(r.reps) || 1,
           ...(r.weightKg !== '' && r.weightKg != null && !isNaN(Number(r.weightKg)) ? { weightKg: Number(r.weightKg) } : {}),
@@ -268,16 +299,12 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   }, [sessionId, onSaved])
 
   function handleRowSave(i, cur) {
-    // Sync row state only — no API call (user must press Save)
     setRows(prev => prev.map((r, idx) => idx === i ? {
       ...r,
-      name: cur.name,
-      type: cur.type,
-      sets: cur.sets,
-      reps: cur.reps,
+      name: cur.name, type: cur.type,
+      sets: cur.sets, reps: cur.reps, rounds: cur.rounds,
       weightKg: displayToKg(cur.weight, cur.unit),
-      durationMin: cur.duration,
-      distanceKm: cur.distance,
+      durationMin: cur.duration, distanceKm: cur.distance,
     } : r))
   }
 
@@ -288,22 +315,28 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   }
 
   function addRow() {
-    setRows(prev => [...prev, { id: Math.random(), name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationMin: '', distanceKm: '' }])
+    setRows(prev => [...prev, { id: Math.random(), name: '', type: 'strength', sets: '', reps: '', rounds: '', weightKg: '', durationMin: '', distanceKm: '' }])
   }
 
   return (
     <div className="bg-white rounded-[16px] shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center px-3 pt-3 pb-2 border-b border-[#EDE8E0] gap-1.5">
-        <div className="w-5 shrink-0" />
-        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide flex-1 px-1">Exercise</p>
-        <button
-          onClick={toggleUnit}
-          className="text-[11px] font-semibold text-orange border border-orange/50 rounded-full px-2.5 py-0.5 shrink-0 tabular-nums"
-        >
-          {unit}
-        </button>
+      <div className="flex items-center justify-between px-4 h-12 border-b border-[#EDE8E0]">
+        <p className="text-[15px] font-semibold text-ink1">Exercises</p>
+        <div className="flex items-center bg-sand rounded-full p-0.5">
+          <button
+            onClick={() => { setUnit('kg'); localStorage.setItem('recallth_weight_unit', 'kg') }}
+            className={`px-3 py-1 rounded-full text-[12px] font-semibold transition-all ${unit === 'kg' ? 'bg-orange text-white shadow-sm' : 'text-ink3'}`}
+          >kg</button>
+          <button
+            onClick={() => { setUnit('lbs'); localStorage.setItem('recallth_weight_unit', 'lbs') }}
+            className={`px-3 py-1 rounded-full text-[12px] font-semibold transition-all ${unit === 'lbs' ? 'bg-orange text-white shadow-sm' : 'text-ink3'}`}
+          >lbs</button>
+        </div>
       </div>
+      {rows.length === 0 && (
+        <p className="text-[13px] text-ink3 text-center py-6">No exercises yet</p>
+      )}
       {rows.map((row, i) => (
         <ExerciseRow
           key={`${row.id}-${unit}`}
@@ -313,20 +346,19 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
           onDelete={() => handleDelete(i)}
         />
       ))}
-      <div className="flex border-t border-[#EDE8E0]">
+      <div className="border-t border-[#EDE8E0]">
         <button
           onClick={addRow}
-          className="flex-1 py-3 text-[13px] text-orange font-medium flex items-center justify-center gap-1 hover:bg-sand/40 transition-colors"
+          className="w-full py-3 text-[13px] font-medium text-orange flex items-center justify-center gap-1.5 hover:bg-sand/30 transition-colors border-b border-[#EDE8E0]"
         >
-          <span className="text-[15px] leading-none">+</span> Add exercise
+          <span className="text-[17px] leading-none font-light">+</span> Add exercise
         </button>
-        <div className="w-px bg-[#EDE8E0]" />
         <button
           onClick={() => saveRows(rows)}
           disabled={saving}
-          className="flex-1 py-3 text-[13px] font-semibold text-white bg-orange rounded-br-[16px] disabled:opacity-60 hover:bg-orange/90 transition-colors"
+          className="w-full py-3.5 text-[14px] font-semibold text-white bg-orange disabled:opacity-60 hover:bg-orange/90 active:bg-orange/80 transition-colors rounded-b-[16px]"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving…' : 'Save changes'}
         </button>
       </div>
     </div>
