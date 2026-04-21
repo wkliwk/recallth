@@ -546,6 +546,11 @@ export default function ExerciseDetail() {
       placeholder: t('chatExerciseContextPlaceholder'),
       data: session,
       systemPrompt: buildExerciseSystemPrompt(session, name, t),
+      onActionApplied: ({ type, data }) => {
+        if (type === 'add_exercise_set' && data?.updated) {
+          setSession(prev => ({ ...prev, exercises: data.updated }))
+        }
+      },
     })
   }, [session])
 
@@ -665,6 +670,7 @@ export default function ExerciseDetail() {
         {/* Gym exercises — inline editable table */}
         {(session.activityType === 'gym' || session.exercises?.length > 0) && (
           <ExerciseTable
+            key={`${session._id}-${(session.exercises ?? []).length}`}
             sessionId={session._id}
             initialExercises={session.exercises ?? []}
             onSaved={(updated) => setSession(updated)}

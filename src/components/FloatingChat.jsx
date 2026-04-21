@@ -292,7 +292,10 @@ function ChatPanel({
         messageIndex,
         actionIndex,
       })
-      if (res.success) setAppliedActions((prev) => new Set([...prev, actionKey]))
+      if (res.success) {
+        setAppliedActions((prev) => new Set([...prev, actionKey]))
+        pageContext?.onActionApplied?.({ type: action.type, data: res.data })
+      }
     } catch { /* ignore */ }
   }
 
