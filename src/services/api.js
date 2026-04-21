@@ -137,6 +137,7 @@ export const api = {
       body: JSON.stringify(config),
     }),
     days: (year, month) => request(`/nutrition/days?year=${year}&month=${month}`),
+    recommendations: (date) => request(`/nutrition/recommendations${date ? `?date=${date}` : ''}`),
     aiGoals: (goals, conditions, language, mode, messages) => request('/nutrition/ai-goals', { method: 'POST', body: JSON.stringify({ goals, conditions, language, ...(mode ? { mode, messages } : {}) }) }),
     library: {
       list: () => request('/nutrition/library'),
