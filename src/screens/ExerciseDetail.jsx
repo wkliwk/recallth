@@ -338,7 +338,7 @@ function EditSheet({ session, onClose, onSaved, t }) {
         </div>
 
         {/* Scrollable form */}
-        <div className="flex-1 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom,0px)+24px)] flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-5 pb-6 flex flex-col gap-5">
 
           {/* Activity type */}
           <div className="flex flex-col gap-2">
@@ -487,8 +487,10 @@ function EditSheet({ session, onClose, onSaved, t }) {
           </div>
 
           {error && <p className="text-[13px] text-[#C05A28]">{error}</p>}
+        </div>
 
-          {/* Full-width confirm button at bottom */}
+        {/* Sticky footer — always visible */}
+        <div className="px-5 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-3 shrink-0 border-t border-sand">
           <button
             onClick={handleSave}
             disabled={saving}
