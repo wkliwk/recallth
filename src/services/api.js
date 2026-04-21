@@ -146,4 +146,11 @@ export const api = {
       remove: (id) => request(`/nutrition/library/${id}`, { method: 'DELETE' }),
     },
   },
+  exercise: {
+    list: () => request('/exercise'),
+    create: (data) => request('/exercise', { method: 'POST', body: JSON.stringify(data) }),
+    get: (id) => request(`/exercise/${id}`),
+    update: (id, data) => request(`/exercise/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id) => request(`/exercise/${id}`, { method: 'DELETE' }),
+  },
 }
