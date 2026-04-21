@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { chatService } from '../services/chat'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
+import { useChatPage } from '../context/ChatPageContext'
 
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
   return (
@@ -27,7 +28,7 @@ function TypingIndicator() {
   )
 }
 
-function ChatPanel({ onClose }) {
+function ChatPanel({ onClose, pageContext }) {
   const { t } = useLanguage()
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
@@ -35,6 +36,7 @@ function ChatPanel({ onClose }) {
   const [isTyping, setIsTyping] = useState(false)
   const [imagePreview, setImagePreview] = useState(null) // { base64, mimeType, url }
   const [appliedActions, setAppliedActions] = useState(new Set())
+  const [contextInjected, setContextInjected] = useState(false)
   const { showUsage } = useAiUsage()
   const bottomRef = useRef(null)
   const fileRef = useRef(null)
@@ -83,8 +85,15 @@ function ChatPanel({ onClose }) {
     setMessages((m) => [...m, userMsg])
     setIsTyping(true)
 
+    // Prepend page context as a hidden system block on the first message of each chat session
+    let messageText = text || t('chatImagePrompt')
+    if (pageContext?.systemPrompt && !contextInjected && !conversationId) {
+      messageText = `${pageContext.systemPrompt}\n\n---\n\nUser: ${messageText}`
+      setContextInjected(true)
+    }
+
     try {
-      const res = await chatService.send(text || t('chatImagePrompt'), conversationId, imgData)
+      const res = await chatService.send(messageText, conversationId, imgData)
       if (res.success && res.data) {
         setConversationId(res.data.conversationId)
         setMessages((m) => [...m, {
@@ -137,7 +146,9 @@ function ChatPanel({ onClose }) {
             </div>
             <div>
               <p className="text-[14px] font-semibold text-ink1">{t('askAI')}</p>
-              <p className="text-[11px] text-ink3">{t('askAISubtitle')}</p>
+              <p className="text-[11px] text-ink3">
+                {pageContext?.title ? pageContext.title : t('askAISubtitle')}
+              </p>
             </div>
           </div>
           <button
@@ -155,7 +166,7 @@ function ChatPanel({ onClose }) {
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
           {messages.length === 0 && !isTyping && (
             <p className="text-[13px] text-ink3 text-center mt-8">
-              {t('chatAskAnything')}
+              {pageContext?.placeholder || t('chatAskAnything')}
             </p>
           )}
           {messages.map((msg, i) => (
@@ -247,7 +258,7 @@ function ChatPanel({ onClose }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
               onPaste={handlePaste}
-              placeholder={t('chatAskAnything')}
+              placeholder={pageContext?.placeholder || t('chatAskAnything')}
               className="flex-1 text-[13px] text-ink1 placeholder:text-ink4 outline-none bg-transparent"
               autoFocus
             />
@@ -279,6 +290,7 @@ function ChatPanel({ onClose }) {
 export default function FloatingChat() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const { pageContext } = useChatPage()
   const [pos, setPos] = useState(() => {
     const saved = localStorage.getItem('recallth_fab_pos')
     return saved ? JSON.parse(saved) : { x: window.innerWidth - 68, y: window.innerHeight - 140 }
@@ -343,7 +355,7 @@ export default function FloatingChat() {
           <SparkleIcon size={18} color="white" />
         </div>
       )}
-      {open && <ChatPanel onClose={() => setOpen(false)} />}
+      {open && <ChatPanel onClose={() => setOpen(false)} pageContext={pageContext} />}
     </>
   )
 }
