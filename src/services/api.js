@@ -152,5 +152,6 @@ export const api = {
     get: (id) => request(`/exercise/${id}`),
     update: (id, data) => request(`/exercise/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id) => request(`/exercise/${id}`, { method: 'DELETE' }),
+    parse: (text) => request('/exercise/parse', { method: 'POST', body: JSON.stringify({ text }) }),
   },
 }
