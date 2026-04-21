@@ -145,18 +145,32 @@ function StatCard({ icon, label, value }) {
   )
 }
 
-function ExerciseRow({ row, onSave, onDelete }) {
+const KG_TO_LBS = 2.20462
+
+function kgToDisplay(kg, unit) {
+  if (kg === '' || kg == null || isNaN(Number(kg))) return ''
+  if (unit === 'lbs') return String(Math.round(Number(kg) * KG_TO_LBS * 10) / 10)
+  return String(kg)
+}
+
+function displayToKg(val, unit) {
+  if (val === '' || val == null || isNaN(Number(val))) return ''
+  if (unit === 'lbs') return String(Math.round(Number(val) / KG_TO_LBS * 100) / 100)
+  return val
+}
+
+function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
   const [name, setName] = useState(row.name || '')
   const [type, setType] = useState(row.type || 'strength')
   // strength fields
   const [sets, setSets] = useState(String(row.sets ?? ''))
   const [reps, setReps] = useState(String(row.reps ?? ''))
-  const [weight, setWeight] = useState(String(row.weightKg ?? ''))
+  const [weight, setWeight] = useState(kgToDisplay(row.weightKg, unit))
   // cardio fields
   const [duration, setDuration] = useState(String(row.durationMin ?? ''))
   const [distance, setDistance] = useState(String(row.distanceKm ?? ''))
   const cur = useRef({})
-  cur.current = { name, type, sets, reps, weight, duration, distance }
+  cur.current = { name, type, sets, reps, weight, duration, distance, unit }
 
   function handleBlur() { onSave(cur.current) }
   function onKey(e) { if (e.key === 'Enter') e.target.blur() }
@@ -189,8 +203,8 @@ function ExerciseRow({ row, onSave, onDelete }) {
           <span className="text-ink3 text-[11px]">×</span>
           <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <span className={unitLbl}>r</span>
-          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-          <span className={unitLbl}>kg</span>
+          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <span className={unitLbl}>{unit}</span>
         </>
       ) : (
         <>
@@ -206,6 +220,7 @@ function ExerciseRow({ row, onSave, onDelete }) {
 }
 
 function ExerciseTable({ sessionId, initialExercises, onSaved }) {
+  const [unit, setUnit] = useState(() => localStorage.getItem('recallth_weight_unit') || 'kg')
   const [rows, setRows] = useState(
     (initialExercises ?? []).map(ex => ({
       id: Math.random(),
@@ -219,6 +234,12 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
     }))
   )
   const [saving, setSaving] = useState(false)
+
+  function toggleUnit() {
+    const next = unit === 'kg' ? 'lbs' : 'kg'
+    setUnit(next)
+    localStorage.setItem('recallth_weight_unit', next)
+  }
 
   const saveRows = useCallback(async (updatedRows) => {
     setSaving(true)
@@ -254,7 +275,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       type: cur.type,
       sets: cur.sets,
       reps: cur.reps,
-      weightKg: cur.weight,
+      weightKg: displayToKg(cur.weight, cur.unit),
       durationMin: cur.duration,
       distanceKm: cur.distance,
     } : r)
@@ -278,12 +299,18 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       <div className="flex items-center px-3 pt-3 pb-2 border-b border-[#EDE8E0] gap-1.5">
         <div className="w-5 shrink-0" />
         <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide flex-1 px-1">Exercise</p>
-        <p className="text-[10px] text-ink3/60 italic">tap 💪🏃 to switch type</p>
+        <button
+          onClick={toggleUnit}
+          className="text-[11px] font-semibold text-orange border border-orange/50 rounded-full px-2.5 py-0.5 shrink-0 tabular-nums"
+        >
+          {unit}
+        </button>
       </div>
       {rows.map((row, i) => (
         <ExerciseRow
-          key={row.id}
+          key={`${row.id}-${unit}`}
           row={row}
+          unit={unit}
           onSave={(cur) => handleRowSave(i, cur)}
           onDelete={() => handleDelete(i)}
         />
