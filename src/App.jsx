@@ -26,6 +26,8 @@ import Goals from './screens/Goals'
 import Notifications from './screens/Notifications'
 import Bloodwork from './screens/Bloodwork'
 import NutritionTracker from './screens/NutritionTracker'
+import Exercise from './screens/Exercise'
+import ExerciseNew from './screens/ExerciseNew'
 import NutritionAdd from './screens/NutritionAdd'
 import NutritionDetail from './screens/NutritionDetail'
 import FoodDatabase from './screens/FoodDatabase'
@@ -91,6 +93,8 @@ function AppRoutes() {
       <Route path="/nutrition/add"     element={<ProtectedRoute><NutritionAdd /></ProtectedRoute>} />
       <Route path="/nutrition/food-db" element={<ProtectedRoute><FoodDatabase /></ProtectedRoute>} />
       <Route path="/nutrition/:id"     element={<ProtectedRoute><NutritionDetail /></ProtectedRoute>} />
+      <Route path="/exercise"          element={<ProtectedRoute><Exercise /></ProtectedRoute>} />
+      <Route path="/exercise/new"      element={<ProtectedRoute><ExerciseNew /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

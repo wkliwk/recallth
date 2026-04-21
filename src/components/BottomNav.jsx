@@ -32,6 +32,15 @@ const SHORTCUTS = [
       </svg>
     ),
   },
+  {
+    labelKey: 'exercise',
+    path: '/exercise',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6.5 6.5h11M6.5 17.5h11M4 12h16M2 8.5h2M2 15.5h2M20 8.5h2M20 15.5h2"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function BottomNav({ onMenuOpen }) {
