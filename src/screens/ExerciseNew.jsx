@@ -87,7 +87,7 @@ export default function ExerciseNew() {
           }))
         if (validExercises.length > 0) payload.exercises = validExercises
       }
-      await api.post('/exercise', payload)
+      await api.exercise.create(payload)
       navigate('/exercise')
     } catch {
       setError('Failed to save. Please try again.')
