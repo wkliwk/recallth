@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { AiUsageProvider } from './context/AiUsageContext'
+import { ChatPageProvider } from './context/ChatPageContext'
 import AiUsageBadge from './components/AiUsageBadge'
 import { useAiUsage } from './context/AiUsageContext'
 import WebShell from './components/WebShell'
@@ -113,10 +114,12 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <LanguageProvider>
-          <AiUsageProvider>
-            <AppRoutes />
-            <GlobalAiUsageBadge />
-          </AiUsageProvider>
+          <ChatPageProvider>
+            <AiUsageProvider>
+              <AppRoutes />
+              <GlobalAiUsageBadge />
+            </AiUsageProvider>
+          </ChatPageProvider>
         </LanguageProvider>
       </AuthProvider>
     </BrowserRouter>

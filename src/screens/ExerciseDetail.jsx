@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useChatPage } from '../context/ChatPageContext'
 
 const ACTIVITY_ICONS = {
   running: (
@@ -100,6 +101,26 @@ function intensityColor(intensity) {
   return 'bg-sand text-ink2'
 }
 
+function buildExerciseSystemPrompt(session, name, t) {
+  const lines = [
+    `[Page context — Exercise Session]`,
+    `Activity: ${name}`,
+    `Date: ${session.date}`,
+    `Duration: ${session.durationMinutes} minutes`,
+    `Intensity: ${session.intensity || 'unknown'}`,
+  ]
+  if (session.distanceKm > 0) lines.push(`Distance: ${session.distanceKm} km`)
+  if (session.exercises?.length > 0) {
+    lines.push(`Exercises:`)
+    session.exercises.forEach((ex) => {
+      lines.push(`  - ${ex.name}: ${ex.sets} sets × ${ex.reps} reps${ex.weightKg ? ` @ ${ex.weightKg} kg` : ''}`)
+    })
+  }
+  if (session.notes) lines.push(`Notes: ${session.notes}`)
+  lines.push(`\nThe user is viewing this specific exercise session and may ask questions about their performance, improvement, or the workout itself. Answer in the same language the user writes in.`)
+  return lines.join('\n')
+}
+
 function StatCard({ icon, label, value }) {
   return (
     <div className="bg-sand rounded-[12px] px-4 py-3 flex items-center gap-3">
@@ -116,6 +137,7 @@ export default function ExerciseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { setChatContext, clearChatContext } = useChatPage()
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -127,7 +149,8 @@ export default function ExerciseDetail() {
       setLoading(true)
       try {
         const res = await api.exercise.get(id)
-        setSession(res.data ?? res)
+        const data = res.data ?? res
+        setSession(data)
       } catch {
         setError('Session not found.')
       } finally {
@@ -135,7 +158,20 @@ export default function ExerciseDetail() {
       }
     }
     load()
+    return () => clearChatContext()
   }, [id])
+
+  // Register page context once session data is loaded
+  useEffect(() => {
+    if (!session) return
+    const name = activityLabel(session.activityType, session.activityLabel, t)
+    setChatContext({
+      title: name,
+      placeholder: t('chatExerciseContextPlaceholder'),
+      data: session,
+      systemPrompt: buildExerciseSystemPrompt(session, name, t),
+    })
+  }, [session])
 
   async function handleDelete() {
     setDeleting(true)
