@@ -487,6 +487,15 @@ function EditSheet({ session, onClose, onSaved, t }) {
           </div>
 
           {error && <p className="text-[13px] text-[#C05A28]">{error}</p>}
+
+          {/* Full-width confirm button at bottom */}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-3.5 rounded-full bg-orange text-white font-semibold text-[15px] disabled:opacity-60"
+          >
+            {saving ? t('saving') : t('save')}
+          </button>
         </div>
       </div>
 
