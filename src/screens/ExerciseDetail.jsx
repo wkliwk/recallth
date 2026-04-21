@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
@@ -134,6 +134,113 @@ function StatCard({ icon, label, value }) {
         <p className="text-[11px] text-ink3">{label}</p>
         <p className="text-[15px] font-semibold text-ink1">{value}</p>
       </div>
+    </div>
+  )
+}
+
+function ExerciseRow({ row, onSave, onDelete }) {
+  const [name, setName] = useState(row.name || '')
+  const [sets, setSets] = useState(String(row.sets ?? ''))
+  const [reps, setReps] = useState(String(row.reps ?? ''))
+  const [weight, setWeight] = useState(String(row.weightKg ?? ''))
+  const cur = useRef({})
+  cur.current = { name, sets, reps, weight }
+
+  function handleBlur() {
+    onSave(cur.current)
+  }
+
+  function onKey(e) {
+    if (e.key === 'Enter') e.target.blur()
+  }
+
+  const cell = 'text-[13px] bg-transparent text-center w-full outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums'
+  const nameCls = 'text-[14px] bg-transparent w-full outline-none focus:bg-sand rounded-[4px] py-0.5 px-1 text-ink1 placeholder:text-ink3/50 min-w-0'
+
+  return (
+    <div className="grid grid-cols-[1fr_44px_44px_56px_28px] items-center px-3 py-1 border-b border-[#EDE8E0] last:border-0">
+      <input className={nameCls} value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="Exercise" />
+      <input className={cell} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <input className={cell} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <input className={cell} type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <button onClick={onDelete} className="text-ink3/60 hover:text-red-500 transition-colors text-[18px] leading-none flex items-center justify-center">×</button>
+    </div>
+  )
+}
+
+function ExerciseTable({ sessionId, initialExercises, onSaved }) {
+  const [rows, setRows] = useState(
+    (initialExercises ?? []).map(ex => ({
+      id: Math.random(),
+      name: ex.name || '',
+      sets: ex.sets ?? '',
+      reps: ex.reps ?? '',
+      weightKg: ex.weightKg ?? '',
+    }))
+  )
+  const [saving, setSaving] = useState(false)
+
+  const saveRows = useCallback(async (updatedRows) => {
+    setSaving(true)
+    try {
+      const exercises = updatedRows
+        .filter(r => r.name.trim())
+        .map(r => ({
+          name: r.name.trim(),
+          sets: Number(r.sets) || 1,
+          reps: Number(r.reps) || 1,
+          ...(r.weightKg !== '' && r.weightKg != null && !isNaN(Number(r.weightKg)) ? { weightKg: Number(r.weightKg) } : {}),
+        }))
+      const res = await api.exercise.update(sessionId, { exercises })
+      onSaved(res.data ?? res)
+    } finally {
+      setSaving(false)
+    }
+  }, [sessionId, onSaved])
+
+  function handleRowSave(i, cur) {
+    const updated = rows.map((r, idx) => idx === i ? { ...r, name: cur.name, sets: cur.sets, reps: cur.reps, weightKg: cur.weight } : r)
+    setRows(updated)
+    saveRows(updated)
+  }
+
+  function handleDelete(i) {
+    const updated = rows.filter((_, idx) => idx !== i)
+    setRows(updated)
+    saveRows(updated)
+  }
+
+  function addRow() {
+    setRows(prev => [...prev, { id: Math.random(), name: '', sets: '', reps: '', weightKg: '' }])
+  }
+
+  return (
+    <div className="bg-white rounded-[16px] shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="grid grid-cols-[1fr_44px_44px_56px_28px] items-center px-3 pt-3 pb-2 border-b border-[#EDE8E0]">
+        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide px-1">Exercise</p>
+        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide text-center">Sets</p>
+        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide text-center">Reps</p>
+        <p className="text-[11px] font-semibold text-ink3 uppercase tracking-wide text-center">kg</p>
+        <div />
+      </div>
+      {rows.map((row, i) => (
+        <ExerciseRow
+          key={row.id}
+          row={row}
+          onSave={(cur) => handleRowSave(i, cur)}
+          onDelete={() => handleDelete(i)}
+        />
+      ))}
+      <button
+        onClick={addRow}
+        className="w-full py-2.5 text-[13px] text-orange font-medium flex items-center justify-center gap-1 border-t border-[#EDE8E0] hover:bg-sand/40 transition-colors cursor-pointer"
+      >
+        <span className="text-[16px] leading-none">+</span> Add exercise
+      </button>
+      {saving && (
+        <p className="text-[10px] text-ink3 text-center py-1 border-t border-[#EDE8E0]">Saving…</p>
+      )}
     </div>
   )
 }
@@ -546,19 +653,13 @@ export default function ExerciseDetail() {
           )}
         </div>
 
-        {/* Gym exercises */}
-        {session.exercises?.length > 0 && (
-          <div className="bg-white rounded-[16px] p-4 shadow-sm flex flex-col gap-3">
-            <p className="text-[13px] font-semibold text-ink2 uppercase tracking-wide">{t('exercises')}</p>
-            {session.exercises.map((ex, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-[#EDE8E0] last:border-0">
-                <p className="text-[14px] font-medium text-ink1">{ex.name}</p>
-                <p className="text-[13px] text-ink3">
-                  {ex.sets} × {ex.reps}{ex.weightKg ? ` @ ${ex.weightKg} kg` : ''}
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* Gym exercises — inline editable table */}
+        {(session.activityType === 'gym' || session.exercises?.length > 0) && (
+          <ExerciseTable
+            sessionId={session._id}
+            initialExercises={session.exercises ?? []}
+            onSaved={(updated) => setSession(updated)}
+          />
         )}
 
         {/* Notes */}
