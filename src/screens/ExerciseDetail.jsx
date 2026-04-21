@@ -66,6 +66,16 @@ const GymIcon = (
   </svg>
 )
 
+const ACTIVITY_LABELS = {
+  gym: 'Gym', running: 'Running', swimming: 'Swimming', basketball: 'Basketball',
+  badminton: 'Badminton', cycling: 'Cycling', yoga: 'Yoga', hiking: 'Hiking', other: 'Other',
+}
+const INTENSITY_LABELS = { easy: 'Easy', moderate: 'Moderate', hard: 'Hard' }
+const DISTANCE_TYPES = new Set(['running', 'swimming', 'cycling', 'hiking'])
+
+const inputClass = 'w-full bg-sand border-0 rounded-[12px] px-4 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 outline-none focus:ring-2 focus:ring-orange transition-all'
+const numInputClass = 'bg-sand border-0 rounded-[10px] px-3 py-2 text-[14px] text-ink1 outline-none focus:ring-2 focus:ring-orange w-[72px] text-center'
+
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -74,15 +84,9 @@ function formatDate(iso) {
 function activityLabel(type, label, t) {
   if (type === 'other' && label) return label
   const map = {
-    gym: t('activityGym'),
-    running: t('activityRunning'),
-    swimming: t('activitySwimming'),
-    basketball: t('activityBasketball'),
-    badminton: t('activityBadminton'),
-    cycling: t('activityCycling'),
-    yoga: t('activityYoga'),
-    hiking: t('activityHiking'),
-    other: t('activityOther'),
+    gym: t('activityGym'), running: t('activityRunning'), swimming: t('activitySwimming'),
+    basketball: t('activityBasketball'), badminton: t('activityBadminton'), cycling: t('activityCycling'),
+    yoga: t('activityYoga'), hiking: t('activityHiking'), other: t('activityOther'),
   }
   return map[type] || type
 }
@@ -133,6 +137,261 @@ function StatCard({ icon, label, value }) {
   )
 }
 
+function EditSheet({ session, onClose, onSaved, t }) {
+  const [activityType, setActivityType] = useState(session.activityType || 'gym')
+  const [customLabel, setCustomLabel] = useState(session.activityLabel || '')
+  const [date, setDate] = useState(session.date || '')
+  const [duration, setDuration] = useState(String(session.durationMinutes || ''))
+  const [intensity, setIntensity] = useState(session.intensity || 'moderate')
+  const [distanceKm, setDistanceKm] = useState(session.distanceKm ? String(session.distanceKm) : '')
+  const [exercises, setExercises] = useState(
+    session.exercises?.length
+      ? session.exercises.map(ex => ({
+          name: ex.name || '',
+          sets: String(ex.sets || ''),
+          reps: String(ex.reps || ''),
+          weightKg: ex.weightKg != null ? String(ex.weightKg) : '',
+        }))
+      : [{ name: '', sets: '', reps: '', weightKg: '' }]
+  )
+  const [notes, setNotes] = useState(session.notes || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  function addExercise() {
+    setExercises(prev => [...prev, { name: '', sets: '', reps: '', weightKg: '' }])
+  }
+  function removeExercise(i) {
+    setExercises(prev => prev.filter((_, idx) => idx !== i))
+  }
+  function updateExercise(i, field, value) {
+    setExercises(prev => prev.map((ex, idx) => idx === i ? { ...ex, [field]: value } : ex))
+  }
+
+  async function handleSave() {
+    const dur = Number(duration)
+    if (!dur || dur <= 0) { setError('Duration is required.'); return }
+
+    const payload = {
+      activityType,
+      activityLabel: activityType === 'other' ? customLabel.trim() || undefined : undefined,
+      date,
+      durationMinutes: dur,
+      intensity,
+      notes: notes.trim() || undefined,
+    }
+
+    if (DISTANCE_TYPES.has(activityType) && distanceKm) {
+      payload.distanceKm = Number(distanceKm)
+    }
+    if (activityType === 'gym') {
+      const valid = exercises.filter(ex => ex.name.trim()).map(ex => ({
+        name: ex.name.trim(),
+        sets: Number(ex.sets) || 1,
+        reps: Number(ex.reps) || 1,
+        weightKg: ex.weightKg ? Number(ex.weightKg) : undefined,
+      }))
+      if (valid.length) payload.exercises = valid
+    }
+
+    setError('')
+    setSaving(true)
+    try {
+      const res = await api.exercise.update(session._id, payload)
+      onSaved(res.data ?? res)
+    } catch {
+      setError('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'rgba(42,34,26,0.35)' }}>
+      <div
+        className="flex-1"
+        onClick={onClose}
+      />
+      <div
+        className="bg-page rounded-t-[24px] flex flex-col"
+        style={{ maxHeight: '90dvh', animation: 'slideUp 0.25s ease-out' }}
+      >
+        {/* Sheet header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+          <button onClick={onClose} className="text-[14px] text-ink3 font-medium">{t('cancel')}</button>
+          <p className="text-[16px] font-semibold text-ink1">{t('editSession')}</p>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="text-[14px] font-semibold text-orange disabled:opacity-50"
+          >
+            {saving ? t('saving') : t('save')}
+          </button>
+        </div>
+
+        {/* Scrollable form */}
+        <div className="flex-1 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom,0px)+24px)] flex flex-col gap-5">
+
+          {/* Activity type */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('activityType')}</label>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(ACTIVITY_LABELS).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setActivityType(value)}
+                  className={`px-4 py-2 rounded-full text-[13px] font-medium transition-colors ${
+                    activityType === value ? 'bg-orange text-white' : 'bg-sand text-ink2'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {activityType === 'other' && (
+              <input
+                type="text"
+                className={inputClass + ' mt-1'}
+                placeholder="Activity name..."
+                value={customLabel}
+                onChange={e => setCustomLabel(e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* Date */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">Date</label>
+            <input type="date" className={inputClass} value={date} onChange={e => setDate(e.target.value)} />
+          </div>
+
+          {/* Duration */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('duration')}</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number" min="1"
+                className={numInputClass + ' w-24'}
+                placeholder="60"
+                value={duration}
+                onChange={e => setDuration(e.target.value)}
+              />
+              <span className="text-[14px] text-ink2">min</span>
+            </div>
+          </div>
+
+          {/* Intensity */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('intensity')}</label>
+            <div className="flex gap-2">
+              {Object.entries(INTENSITY_LABELS).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setIntensity(value)}
+                  className={`px-4 py-2 rounded-full text-[13px] font-medium transition-colors ${
+                    intensity === value ? 'bg-orange text-white' : 'bg-sand text-ink2'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Distance */}
+          {DISTANCE_TYPES.has(activityType) && (
+            <div className="flex flex-col gap-2">
+              <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('distance')}</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" step="0.1"
+                  className={numInputClass + ' w-24'}
+                  placeholder="5.0"
+                  value={distanceKm}
+                  onChange={e => setDistanceKm(e.target.value)}
+                />
+                <span className="text-[14px] text-ink2">km</span>
+              </div>
+            </div>
+          )}
+
+          {/* Gym exercises */}
+          {activityType === 'gym' && (
+            <div className="flex flex-col gap-3">
+              <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('exercises')}</label>
+              {exercises.map((ex, i) => (
+                <div key={i} className="bg-white rounded-[14px] p-4 flex flex-col gap-3 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      className={inputClass + ' flex-1'}
+                      placeholder="Exercise name"
+                      value={ex.name}
+                      onChange={e => updateExercise(i, 'name', e.target.value)}
+                    />
+                    {exercises.length > 1 && (
+                      <button
+                        onClick={() => removeExercise(i)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-sand text-ink3 shrink-0"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <input type="number" min="1" className={numInputClass} placeholder="3" value={ex.sets} onChange={e => updateExercise(i, 'sets', e.target.value)} />
+                      <span className="text-[12px] text-ink3">sets</span>
+                    </div>
+                    <span className="text-ink3">×</span>
+                    <div className="flex items-center gap-1">
+                      <input type="number" min="1" className={numInputClass} placeholder="10" value={ex.reps} onChange={e => updateExercise(i, 'reps', e.target.value)} />
+                      <span className="text-[12px] text-ink3">reps</span>
+                    </div>
+                    <span className="text-ink3">@</span>
+                    <div className="flex items-center gap-1">
+                      <input type="number" min="0" step="0.5" className={numInputClass} placeholder="60" value={ex.weightKg} onChange={e => updateExercise(i, 'weightKg', e.target.value)} />
+                      <span className="text-[12px] text-ink3">kg</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={addExercise}
+                className="text-[13px] font-medium text-orange bg-orange/10 rounded-[12px] px-4 py-3 text-center"
+              >
+                {t('addExercise')}
+              </button>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('notes')}</label>
+            <textarea
+              className={inputClass + ' resize-none h-20'}
+              placeholder="Optional notes..."
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+            />
+          </div>
+
+          {error && <p className="text-[13px] text-[#C05A28]">{error}</p>}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export default function ExerciseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -143,6 +402,7 @@ export default function ExerciseDetail() {
   const [error, setError] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -161,7 +421,6 @@ export default function ExerciseDetail() {
     return () => clearChatContext()
   }, [id])
 
-  // Register page context once session data is loaded
   useEffect(() => {
     if (!session) return
     const name = activityLabel(session.activityType, session.activityLabel, t)
@@ -228,18 +487,30 @@ export default function ExerciseDetail() {
           </button>
           <h1 className="text-[18px] font-semibold text-ink1">{name}</h1>
         </div>
-        <button
-          onClick={() => setConfirmDelete(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-sand text-ink3"
-          aria-label="Delete"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-            <path d="M9 6V4h6v2"/>
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowEdit(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-sand text-ink2"
+            aria-label="Edit"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-sand text-ink3"
+            aria-label="Delete"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+              <path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5 max-w-[640px]">
@@ -297,6 +568,19 @@ export default function ExerciseDetail() {
           </div>
         )}
       </div>
+
+      {/* Edit sheet */}
+      {showEdit && (
+        <EditSheet
+          session={session}
+          t={t}
+          onClose={() => setShowEdit(false)}
+          onSaved={(updated) => {
+            setSession(updated)
+            setShowEdit(false)
+          }}
+        />
+      )}
 
       {/* Delete confirmation sheet */}
       {confirmDelete && (
