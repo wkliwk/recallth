@@ -182,12 +182,13 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
     onSave(cur.current)
   }
 
-  const numCls = 'text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-10'
+  const numCls = 'text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-9'
   const nameCls = 'text-[14px] bg-transparent flex-1 outline-none focus:bg-sand rounded-[4px] py-0.5 px-1 text-ink1 placeholder:text-ink3/50 min-w-0'
   const unitLbl = 'text-[10px] text-ink3 shrink-0'
+  const numWide = 'text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-16'
 
   return (
-    <div className="flex items-center px-3 py-2 gap-1.5 border-b border-[#EDE8E0] last:border-0">
+    <div className="flex items-center px-3 py-2.5 gap-1.5 border-b border-[#EDE8E0] last:border-0">
       <button
         onClick={toggleType}
         className="text-[14px] shrink-0 w-5 text-center leading-none select-none"
@@ -199,22 +200,20 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
       {type === 'strength' ? (
         <>
           <input className={numCls} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-          <span className={unitLbl}>s</span>
-          <span className="text-ink3 text-[11px]">×</span>
+          <span className="text-ink3/50 text-[11px]">×</span>
           <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-          <span className={unitLbl}>r</span>
-          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <input className={numWide} type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <span className={unitLbl}>{unit}</span>
         </>
       ) : (
         <>
-          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <input className={numWide} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <span className={unitLbl}>min</span>
-          <input className="text-[13px] bg-transparent text-center outline-none focus:bg-sand rounded-[4px] py-0.5 px-0.5 tabular-nums w-12" type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+          <input className={numWide} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
           <span className={unitLbl}>km</span>
         </>
       )}
-      <button onClick={onDelete} className="text-ink3/60 hover:text-red-500 transition-colors text-[18px] leading-none flex items-center justify-center shrink-0 ml-0.5">×</button>
+      <button onClick={onDelete} className="text-ink3/40 hover:text-red-400 transition-colors text-[16px] leading-none flex items-center justify-center shrink-0 w-5">×</button>
     </div>
   )
 }
@@ -269,7 +268,8 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   }, [sessionId, onSaved])
 
   function handleRowSave(i, cur) {
-    const updated = rows.map((r, idx) => idx === i ? {
+    // Sync row state only — no API call (user must press Save)
+    setRows(prev => prev.map((r, idx) => idx === i ? {
       ...r,
       name: cur.name,
       type: cur.type,
@@ -278,9 +278,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       weightKg: displayToKg(cur.weight, cur.unit),
       durationMin: cur.duration,
       distanceKm: cur.distance,
-    } : r)
-    setRows(updated)
-    saveRows(updated)
+    } : r))
   }
 
   function handleDelete(i) {
@@ -315,15 +313,22 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
           onDelete={() => handleDelete(i)}
         />
       ))}
-      <button
-        onClick={addRow}
-        className="w-full py-2.5 text-[13px] text-orange font-medium flex items-center justify-center gap-1 border-t border-[#EDE8E0] hover:bg-sand/40 transition-colors cursor-pointer"
-      >
-        <span className="text-[16px] leading-none">+</span> Add exercise
-      </button>
-      {saving && (
-        <p className="text-[10px] text-ink3 text-center py-1 border-t border-[#EDE8E0]">Saving…</p>
-      )}
+      <div className="flex border-t border-[#EDE8E0]">
+        <button
+          onClick={addRow}
+          className="flex-1 py-3 text-[13px] text-orange font-medium flex items-center justify-center gap-1 hover:bg-sand/40 transition-colors"
+        >
+          <span className="text-[15px] leading-none">+</span> Add exercise
+        </button>
+        <div className="w-px bg-[#EDE8E0]" />
+        <button
+          onClick={() => saveRows(rows)}
+          disabled={saving}
+          className="flex-1 py-3 text-[13px] font-semibold text-white bg-orange rounded-br-[16px] disabled:opacity-60 hover:bg-orange/90 transition-colors"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </div>
     </div>
   )
 }
