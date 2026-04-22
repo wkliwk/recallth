@@ -331,31 +331,59 @@ function AlgorithmCard({ summary, onOpenProfileChat }) {
 // ── Mobile collapsible calendar ───────────────────────────────────────────────
 function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
   const [open, setOpen] = useState(false)
+  const isToday = viewDate === todayStr
   return (
     <div className="lg:hidden rounded-[14px] border border-border bg-white overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 focus:outline-none"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange">
+      <div className="flex items-center px-2 py-1.5">
+        {/* ‹ prev day */}
+        <button
+          type="button"
+          onClick={() => onSelectDate(offsetDate(viewDate, -1))}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none shrink-0"
+          aria-label="Previous day"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
+        {/* date label — tap to expand calendar */}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-1 focus:outline-none"
+          aria-expanded={open}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange shrink-0">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
             <line x1="16" y1="2" x2="16" y2="6" />
             <line x1="8" y1="2" x2="8" y2="6" />
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
-          <span className="text-[13px] font-semibold text-ink1">{dateLabel}</span>
-        </div>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round"
-          className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`}
+          <span className={`text-[13px] font-semibold ${isToday ? 'text-orange' : 'text-ink1'}`}>{dateLabel}</span>
+          <svg
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            className={`text-ink3 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {/* › next day */}
+        <button
+          type="button"
+          onClick={() => onSelectDate(offsetDate(viewDate, 1))}
+          disabled={isToday}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none shrink-0 disabled:opacity-30"
+          aria-label="Next day"
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+
       {open && (
         <div className="px-4 pb-4 border-t border-border">
           <div className="pt-3">
