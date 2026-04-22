@@ -707,6 +707,7 @@ function MealGroup({
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
+  const tapRef = useRef(null)
 
   const { setNodeRef } = useDroppable({ id: mealType })
 
@@ -815,7 +816,22 @@ function MealGroup({
               {/* Drag handle — tap to open action sheet, drag to reorder */}
               <div
                 {...dragHandleProps}
-                onClick={(e) => { e.stopPropagation(); onRequestAction?.(entry) }}
+                onPointerDown={(e) => {
+                  dragHandleProps.onPointerDown?.(e)
+                  tapRef.current = { x: e.clientX, y: e.clientY, id: entry._id }
+                }}
+                onPointerUp={(e) => {
+                  const tap = tapRef.current
+                  tapRef.current = null
+                  if (!tap || tap.id !== entry._id) return
+                  const dx = Math.abs(e.clientX - tap.x)
+                  const dy = Math.abs(e.clientY - tap.y)
+                  if (dx < 8 && dy < 8) {
+                    e.stopPropagation()
+                    onRequestAction?.(entry)
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
                 className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink3 hover:text-ink1 transition-colors"
                 aria-label={t('nutritionDragHandle')}
               >
@@ -883,36 +899,21 @@ function MealGroup({
                   <p className="text-[12px] text-ink3 py-2">{t('nutritionNoFoodDetails')}</p>
                 )}
 
-                {/* Actions row — move to date + delete */}
+                {/* Delete — confirm step */}
                 {!isConfirming ? (
-                  <div className="mt-1 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onRequestAction?.(entry)}
-                      className="flex-1 flex items-center justify-center gap-[5px] rounded-[10px] border border-border text-ink2 text-[12px] font-medium py-[8px] hover:bg-sand/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                      {t('nutritionMoveToDate')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteClick(entry)}
-                      className="flex-1 flex items-center justify-center gap-[5px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                        <path d="M10 11v6M14 11v6" />
-                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                      </svg>
-                      {t('nutritionDeleteRecord')}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(entry)}
+                    className="mt-1 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                    {t('nutritionDeleteRecord')}
+                  </button>
                 ) : (
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-[12px] text-ink2 flex-1">{t('nutritionDeleteEntry')}</span>
