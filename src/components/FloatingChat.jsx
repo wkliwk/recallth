@@ -4,6 +4,7 @@ import { chatService } from '../services/chat'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import { useChatPage } from '../context/ChatPageContext'
+import { renderMarkdown } from '../utils/renderMarkdown'
 
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
   return (
@@ -13,74 +14,6 @@ function SparkleIcon({ size = 20, color = 'currentColor' }) {
   )
 }
 
-function renderInline(text, baseKey = 0) {
-  const parts = []
-  const regex = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g
-  let last = 0
-  let k = baseKey
-  let match
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) parts.push(text.slice(last, match.index))
-    const m = match[0]
-    if (m.startsWith('**')) parts.push(<strong key={k++}>{m.slice(2, -2)}</strong>)
-    else if (m.startsWith('*')) parts.push(<em key={k++}>{m.slice(1, -1)}</em>)
-    else if (m.startsWith('`')) parts.push(<code key={k++} className="bg-ink1/10 px-[3px] rounded text-[11.5px] font-mono">{m.slice(1, -1)}</code>)
-    last = match.index + m.length
-  }
-  if (last < text.length) parts.push(text.slice(last))
-  return parts
-}
-
-function renderMarkdown(text) {
-  if (!text) return null
-  const lines = text.split('\n')
-  const nodes = []
-  let listItems = []
-  let listOrdered = false
-  let k = 0
-
-  function flushList() {
-    if (!listItems.length) return
-    const Tag = listOrdered ? 'ol' : 'ul'
-    nodes.push(
-      <Tag key={k++} className={`${listOrdered ? 'list-decimal' : 'list-disc'} pl-5 my-1 space-y-0.5`}>
-        {listItems.map((item, i) => <li key={i}>{renderInline(item, i * 100)}</li>)}
-      </Tag>
-    )
-    listItems = []
-  }
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    const trimmed = line.trim()
-
-    if (trimmed === '' || trimmed === '---' || trimmed === '___') {
-      flushList()
-      continue
-    }
-    if (trimmed.startsWith('### ')) {
-      flushList()
-      nodes.push(<p key={k++} className="font-semibold text-[13px] mt-2 mb-0.5 leading-snug">{renderInline(trimmed.slice(4), k * 100)}</p>)
-    } else if (trimmed.startsWith('## ')) {
-      flushList()
-      nodes.push(<p key={k++} className="font-semibold text-[13.5px] mt-2 mb-0.5 leading-snug">{renderInline(trimmed.slice(3), k * 100)}</p>)
-    } else if (trimmed.startsWith('# ')) {
-      flushList()
-      nodes.push(<p key={k++} className="font-bold text-[14px] mt-2 mb-0.5 leading-snug">{renderInline(trimmed.slice(2), k * 100)}</p>)
-    } else if (/^[-*] /.test(trimmed)) {
-      listOrdered = false
-      listItems.push(trimmed.slice(2))
-    } else if (/^\d+\. /.test(trimmed)) {
-      listOrdered = true
-      listItems.push(trimmed.replace(/^\d+\. /, ''))
-    } else {
-      flushList()
-      nodes.push(<p key={k++} className="leading-[1.55]">{renderInline(trimmed, k * 100)}</p>)
-    }
-  }
-  flushList()
-  return <div className="flex flex-col gap-[3px]">{nodes}</div>
-}
 
 function TypingIndicator() {
   return (
