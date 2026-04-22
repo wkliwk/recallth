@@ -50,7 +50,7 @@ function mapBackendMessages(messages) {
   }))
 }
 
-function HistoryView({ onBack, onSelect, onNewChat, t }) {
+function HistoryView({ onBack, onSelect, onNewChat, activeConversationId, onActiveDeleted, t }) {
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -67,6 +67,13 @@ function HistoryView({ onBack, onSelect, onNewChat, t }) {
     }
     load()
   }, [])
+
+  async function handleDelete(e, id) {
+    e.stopPropagation()
+    setConversations(prev => prev.filter(c => c._id !== id))
+    try { await chatService.deleteConversation(id) } catch { /* ignore */ }
+    if (id === activeConversationId) onActiveDeleted()
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -98,22 +105,35 @@ function HistoryView({ onBack, onSelect, onNewChat, t }) {
           <p className="text-[13px] text-ink3 text-center mt-12 px-4">{t('chatNoHistory')}</p>
         )}
         {!loading && conversations.map((conv) => (
-          <button
-            key={conv._id}
-            onClick={() => onSelect(conv._id)}
-            className="w-full text-left px-4 py-3 flex flex-col gap-[3px] hover:bg-sand transition-colors border-b border-border last:border-0 cursor-pointer"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] font-medium text-ink1 truncate flex-1">
-                {conv.title || t('chatUntitled')}
-              </p>
-              <p className="text-[11px] text-ink4 shrink-0">{formatRelativeDate(conv.createdAt)}</p>
-            </div>
-            {conv.summary && (
-              <p className="text-[12px] text-ink3 line-clamp-1">{conv.summary}</p>
-            )}
-            <p className="text-[11px] text-ink4">{conv.messageCount} {conv.messageCount === 1 ? 'message' : 'messages'}</p>
-          </button>
+          <div key={conv._id} className="group relative border-b border-border last:border-0">
+            <button
+              onClick={() => onSelect(conv._id)}
+              className="w-full text-left px-4 py-3 pr-10 flex flex-col gap-[3px] hover:bg-sand transition-colors cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[13px] font-medium text-ink1 truncate flex-1">
+                  {conv.title || t('chatUntitled')}
+                </p>
+                <p className="text-[11px] text-ink4 shrink-0">{formatRelativeDate(conv.createdAt)}</p>
+              </div>
+              {conv.summary && (
+                <p className="text-[12px] text-ink3 line-clamp-1">{conv.summary}</p>
+              )}
+              <p className="text-[11px] text-ink4">{conv.messageCount} {conv.messageCount === 1 ? 'message' : 'messages'}</p>
+            </button>
+            <button
+              onClick={(e) => handleDelete(e, conv._id)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-ink4 hover:text-[#C62828] hover:bg-[#D32F2F]/10 transition-all opacity-40 md:opacity-0 md:group-hover:opacity-100 cursor-pointer"
+              aria-label="Delete conversation"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </div>
         ))}
       </div>
     </div>
@@ -351,6 +371,8 @@ function ChatPanel({
             onBack={() => setView('chat')}
             onSelect={handleSelectConversation}
             onNewChat={handleNewChat}
+            activeConversationId={conversationId}
+            onActiveDeleted={handleNewChat}
             t={t}
           />
         </div>
