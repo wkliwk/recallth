@@ -6,6 +6,7 @@ import { useAiUsage } from '../context/AiUsageContext'
 import { useChatPage } from '../context/ChatPageContext'
 import { renderMarkdown } from '../utils/renderMarkdown'
 
+
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -146,6 +147,7 @@ function ChatPanel({
   messages, setMessages,
   appliedActions, setAppliedActions,
   contextInjected, setContextInjected,
+  pendingSend, onPendingSendConsumed,
 }) {
   const { t } = useLanguage()
   const [input, setInput] = useState('')
@@ -220,12 +222,12 @@ function ChatPanel({
     }
   }, [processFile])
 
-  const send = async () => {
-    const text = input.trim()
+  const send = useCallback(async (overrideText) => {
+    const text = (overrideText ?? input).trim()
     if (!text && !imagePreview) return
     const imgData = imagePreview ? { image: imagePreview.base64, imageMimeType: imagePreview.mimeType } : undefined
     const userMsg = { type: 'user', text: text || t('chatSentImage'), image: imagePreview?.url }
-    setInput('')
+    if (!overrideText) setInput('')
     setImagePreview(null)
     setMessages((m) => [...m, userMsg])
     setIsTyping(true)
@@ -256,7 +258,16 @@ function ChatPanel({
     } finally {
       setIsTyping(false)
     }
-  }
+  }, [input, imagePreview, pageContext, contextInjected, conversationId, t])
+
+  // Auto-send when panel opens with a pending message (from quick actions)
+  const autoSentRef = useRef(false)
+  useEffect(() => {
+    if (!pendingSend || autoSentRef.current) return
+    autoSentRef.current = true
+    onPendingSendConsumed()
+    send(pendingSend)
+  }, []) // intentionally only on mount
 
   const handleApplyAction = async (action, actionKey, messageIndex, actionIndex) => {
     if (appliedActions.has(actionKey)) return
@@ -598,7 +609,7 @@ function ChatPanel({
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && send()}
+              onKeyDown={(e) => e.key === 'Enter' && send(undefined)}
               onPaste={handlePaste}
               placeholder={pageContext?.placeholder || t('chatAskAnything')}
               className="flex-1 text-[13px] text-ink1 placeholder:text-ink4 outline-none bg-transparent"
@@ -631,7 +642,8 @@ function ChatPanel({
 export default function FloatingChat() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
-  const { pageContext } = useChatPage()
+  const { pageContext, chatRequest, clearChatRequest } = useChatPage()
+  const [pendingSend, setPendingSend] = useState(null)
   const [pos, setPos] = useState(() => {
     const saved = localStorage.getItem('recallth_fab_pos')
     return saved ? JSON.parse(saved) : { x: window.innerWidth - 68, y: window.innerHeight - 140 }
@@ -651,6 +663,18 @@ export default function FloatingChat() {
     setAppliedActions(new Set())
     setContextInjected(false)
   }, [location.pathname])
+
+  // Open chat and queue a message when a quick action is triggered
+  useEffect(() => {
+    if (!chatRequest) return
+    setOpen(true)
+    setConversationId(null)
+    setMessages([])
+    setAppliedActions(new Set())
+    setContextInjected(false)
+    setPendingSend(chatRequest.message)
+    clearChatRequest()
+  }, [chatRequest])
 
   // Hide on /chat page (has its own chat UI)
   if (location.pathname === '/chat') return null
@@ -716,6 +740,8 @@ export default function FloatingChat() {
           setAppliedActions={setAppliedActions}
           contextInjected={contextInjected}
           setContextInjected={setContextInjected}
+          pendingSend={pendingSend}
+          onPendingSendConsumed={() => setPendingSend(null)}
         />
       )}
     </>

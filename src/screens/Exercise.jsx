@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import FAB from '../components/FAB'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
+import { useChatPage } from '../context/ChatPageContext'
 
 // ── Activity config ────────────────────────────────────────────────────────────
 const ACTIVITY_TYPES = ['gym', 'running', 'swimming', 'basketball', 'badminton', 'cycling', 'yoga', 'hiking', 'other']
@@ -218,6 +219,85 @@ function WeekSection({ label, sessions, onCardClick, t }) {
   )
 }
 
+// ── Quick AI action pills ─────────────────────────────────────────────────────
+function QuickActions({ sessions, openChat }) {
+  function handleAnalyze() {
+    const today = new Date().toISOString().slice(0, 10)
+    const todaySessions = sessions.filter(s => s.date === today)
+    let msg
+    if (todaySessions.length === 0) {
+      msg = '請根據我最近嘅運動記錄，分析我嘅訓練表現，幫我指出有咩好嘅地方同可以改善嘅地方。用廣東話回覆。'
+    } else {
+      const lines = todaySessions.map(s => `- ${s.activityType}${s.durationMinutes ? ` ${s.durationMinutes} 分鐘` : ''}${s.intensity ? `（${s.intensity}）` : ''}`).join('\n')
+      msg = `請分析我今日（${today}）嘅運動表現，幫我指出表現幾好同有咩可以改善。用廣東話回覆。\n\n今日訓練：\n${lines}`
+    }
+    openChat(msg)
+  }
+
+  function handlePlanTomorrow() {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = tomorrow.toISOString().slice(0, 10)
+    const recent = sessions.slice(0, 5)
+    const lines = recent.map(s => `- ${s.date}: ${s.activityType}${s.durationMinutes ? ` ${s.durationMinutes} 分鐘` : ''}${s.intensity ? `（${s.intensity}）` : ''}`).join('\n')
+    const msg = `根據我最近嘅訓練記錄，幫我建議聽日（${tomorrowStr}）應該做咩運動、份量幾多、強度幾多。用廣東話回覆。\n\n最近訓練：\n${lines}`
+    openChat(msg)
+  }
+
+  return (
+    <div className="flex gap-2 flex-wrap">
+      <button
+        onClick={handleAnalyze}
+        className="flex items-center gap-[6px] px-3 py-[7px] rounded-full bg-orange/10 text-orange text-[12px] font-medium hover:bg-orange/20 transition-colors cursor-pointer"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        分析今日表現
+      </button>
+      <button
+        onClick={handlePlanTomorrow}
+        className="flex items-center gap-[6px] px-3 py-[7px] rounded-full bg-sand text-ink2 text-[12px] font-medium hover:bg-border transition-colors cursor-pointer"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        建議明日計劃
+      </button>
+    </div>
+  )
+}
+
+// ── Planned session card (demo) ───────────────────────────────────────────────
+function PlannedSessionCard({ session, t }) {
+  const label = session.activityType === 'other' && session.activityLabel
+    ? session.activityLabel
+    : activityLabel(session.activityType, t)
+  return (
+    <div className="w-full text-left bg-orange/5 border border-orange/25 rounded-[14px] px-4 py-3 flex items-center gap-3">
+      <span className="w-9 h-9 rounded-full bg-orange/15 flex items-center justify-center text-orange shrink-0">
+        <ActivityIcon type={session.activityType} />
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-[14px] font-medium text-ink1 capitalize leading-tight">{label}</p>
+          <span className="text-[10px] font-medium px-[6px] py-[2px] rounded-full bg-orange/15 text-orange">計劃中</span>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        {session.durationMinutes > 0 && (
+          <p className="text-[12px] text-ink2 font-medium">{session.durationMinutes} min</p>
+        )}
+        {session.intensity && <IntensityBadge intensity={session.intensity} t={t} />}
+      </div>
+      <button className="shrink-0 bg-orange text-white rounded-[8px] px-[10px] py-[5px] text-[12px] font-medium flex items-center gap-1 hover:bg-orange-dk transition-colors cursor-pointer">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        開始
+      </button>
+    </div>
+  )
+}
+
 // ── Weekly summary ────────────────────────────────────────────────────────────
 function WeeklySummary({ sessions, t }) {
   const now = new Date()
@@ -298,9 +378,19 @@ function EmptyState({ onLog, t }) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
+// Demo mock planned session — shows tomorrow's suggested workout
+const DEMO_PLANNED = {
+  _id: 'demo-plan-1',
+  activityType: 'running',
+  durationMinutes: 30,
+  intensity: 'easy',
+  status: 'planned',
+}
+
 export default function Exercise() {
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { openChat } = useChatPage()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -365,7 +455,15 @@ export default function Exercise() {
         {!loading && !error && hasSessions && (
           <>
             <WeeklySummary sessions={sessions} t={t} />
+            <QuickActions sessions={sessions} openChat={openChat} />
             <FilterChips sessions={sessions} active={filter} onChange={setFilter} t={t} />
+
+            {/* UPCOMING — demo mock planned session */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[12px] font-medium text-ink3 uppercase tracking-wide px-1">即將到來</p>
+              <PlannedSessionCard session={DEMO_PLANNED} t={t} />
+            </div>
+
             {filtered.length === 0 ? (
               <p className="text-[13px] text-ink3 text-center py-8">{t('noSessionsForFilter')}</p>
             ) : (
