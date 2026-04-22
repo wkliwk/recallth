@@ -717,6 +717,62 @@ function DraggableEntry({ entry, children, onTap }) {
   )
 }
 
+// ── Date drop chip (one droppable day) ───────────────────────────────────────
+function DateDropChip({ date, viewDate }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `date-${date}` })
+  const today = todayISO()
+  const isToday = date === today
+  const isCurrentView = date === viewDate
+  const d = new Date(date + 'T00:00:00')
+  const dayNum = d.getDate()
+  const monthNum = d.getMonth() + 1
+  const dayNames = ['日', '一', '二', '三', '四', '五', '六']
+  const dayName = dayNames[d.getDay()]
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={[
+        'flex flex-col items-center justify-center min-w-[48px] h-[60px] rounded-[14px] border-2 transition-all duration-150 select-none shrink-0',
+        isOver
+          ? 'bg-orange border-orange text-white scale-110 shadow-md'
+          : isCurrentView
+            ? 'bg-orange/10 border-orange/50 text-ink1'
+            : 'bg-white border-border text-ink2',
+      ].join(' ')}
+    >
+      <span className="text-[10px] font-medium leading-tight">
+        {isToday ? '今日' : `週${dayName}`}
+      </span>
+      <span className="text-[17px] font-bold leading-tight">{dayNum}</span>
+      <span className="text-[9px] opacity-60 leading-tight">{monthNum}月</span>
+    </div>
+  )
+}
+
+// ── Date drop strip (slides in during drag) ───────────────────────────────────
+function DateDropStrip({ visible, viewDate }) {
+  const today = todayISO()
+  // today-3 … today+3, 7 chips
+  const dates = Array.from({ length: 7 }, (_, i) => offsetDate(today, i - 3))
+
+  return (
+    <div
+      className={[
+        'overflow-hidden transition-all duration-200',
+        visible ? 'max-h-24 opacity-100 mb-2' : 'max-h-0 opacity-0',
+      ].join(' ')}
+    >
+      <div className="flex gap-2 px-1 pt-1 pb-2 overflow-x-auto">
+        <p className="self-center text-[11px] text-ink3 shrink-0 pr-1">拖到:</p>
+        {dates.map((date) => (
+          <DateDropChip key={date} date={date} viewDate={viewDate} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function MealGroup({
   mealType,
   entries = [],
@@ -2493,29 +2549,42 @@ export default function NutritionTracker() {
   }
 
   function handleDragOver({ over }) {
-    setOverMealType(over ? over.id : null)
+    // Only highlight meal groups, not date chips
+    if (over && !over.id.startsWith('date-')) {
+      setOverMealType(over.id)
+    } else {
+      setOverMealType(null)
+    }
   }
 
   async function handleDragEnd({ active, over }) {
     setActiveEntryId(null)
     setOverMealType(null)
     if (!over) return
-    const newMealType = over.id
-    const entry = entries.find((e) => e._id === active.id)
-    if (!entry || entry.mealType === newMealType) return
 
-    // Optimistic update — move entry immediately in local state
+    const entry = entries.find((e) => e._id === active.id)
+    if (!entry) return
+
+    // ── Drop onto a date chip ──────────────────────────────────────────────
+    if (over.id.startsWith('date-')) {
+      const newDate = over.id.slice(5) // 'date-YYYY-MM-DD' → 'YYYY-MM-DD'
+      if (newDate === viewDate) return  // same day, no-op
+      await handleChangeDate(entry, newDate)
+      return
+    }
+
+    // ── Drop onto a meal type (reorder/move between meals) ─────────────────
+    const newMealType = over.id
+    if (entry.mealType === newMealType) return
+
     const originalMealType = entry.mealType
     setEntries((prev) =>
       prev.map((e) => e._id === entry._id ? { ...e, mealType: newMealType } : e)
     )
-
     try {
       await api.nutrition.update(entry._id, { mealType: newMealType })
-      // Refresh summary totals in background (no spinner needed)
       fetchSummary().catch(() => {})
     } catch {
-      // Revert on failure
       setEntries((prev) =>
         prev.map((e) => e._id === entry._id ? { ...e, mealType: originalMealType } : e)
       )
@@ -2926,6 +2995,7 @@ export default function NutritionTracker() {
               </div>
             ) : (
               <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+                <DateDropStrip visible={!!activeEntryId} viewDate={viewDate} />
                 <div className="flex flex-col gap-3">
                   {MEAL_ORDER.map((mt) => (
                     <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
@@ -3517,6 +3587,7 @@ export default function NutritionTracker() {
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
                 >
+                  <DateDropStrip visible={!!activeEntryId} viewDate={viewDate} />
                   <div className="flex flex-col gap-3">
                     {MEAL_ORDER.map((mt) => (
                       <MealGroup
