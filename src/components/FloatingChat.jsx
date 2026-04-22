@@ -208,6 +208,8 @@ function ChatPanel({
   const [imagePreview, setImagePreview] = useState(null)
   const [view, setView] = useState('chat') // 'chat' | 'history'
   const [loadingConversation, setLoadingConversation] = useState(false)
+  const [editingIndex, setEditingIndex] = useState(null)
+  const [editingText, setEditingText] = useState('')
   const { showUsage } = useAiUsage()
   const bottomRef = useRef(null)
   const fileRef = useRef(null)
@@ -328,6 +330,52 @@ function ChatPanel({
     setView('chat')
   }
 
+  function handleStartEdit(index, text) {
+    setEditingIndex(index)
+    setEditingText(text)
+  }
+
+  function handleCancelEdit() {
+    setEditingIndex(null)
+    setEditingText('')
+  }
+
+  async function handleConfirmEdit() {
+    const trimmed = editingText.trim()
+    if (!trimmed) return
+    const prior = messages.slice(0, editingIndex)
+    const userMsg = { type: 'user', text: trimmed }
+    setEditingIndex(null)
+    setEditingText('')
+    setMessages([...prior, userMsg])
+    setConversationId(null)
+    setContextInjected(false)
+    setAppliedActions(new Set())
+    setIsTyping(true)
+
+    let messageText = trimmed
+    if (pageContext?.systemPrompt) {
+      messageText = `${pageContext.systemPrompt}\n\n---\n\nUser: ${messageText}`
+    }
+
+    try {
+      const res = await chatService.send(messageText, null)
+      if (res.success && res.data) {
+        setConversationId(res.data.conversationId)
+        setMessages(m => [...m, {
+          type: 'ai',
+          text: res.data.message?.content ?? t('chatNoResponse'),
+          actions: res.data.actions || [],
+        }])
+        if (res.data.aiUsage) showUsage(res.data.aiUsage, 'chat', { input: trimmed, output: res.data.message?.content })
+      }
+    } catch {
+      setMessages(m => [...m, { type: 'ai', text: t('chatError') }])
+    } finally {
+      setIsTyping(false)
+    }
+  }
+
   // History view
   if (view === 'history') {
     return (
@@ -421,51 +469,93 @@ function ChatPanel({
             </p>
           )}
           {!loadingConversation && messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={i} className={`flex items-end gap-1 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
               {msg.type === 'ai' && (
-                <div className="w-6 h-6 rounded-[8px] bg-orange-lt flex items-center justify-center shrink-0 mr-2 mt-1">
+                <div className="w-6 h-6 rounded-[8px] bg-orange-lt flex items-center justify-center shrink-0 mr-1 mb-1">
                   <SparkleIcon size={12} color="#E07B4A" />
                 </div>
               )}
-              <div
-                className={`max-w-[78%] rounded-[16px] px-4 py-[10px] text-[13px] leading-[1.55] ${
-                  msg.type === 'user'
-                    ? 'bg-orange text-white rounded-br-[4px]'
-                    : 'bg-sand text-ink1 rounded-bl-[4px]'
-                }`}
-              >
-                {msg.image && (
-                  <img src={msg.image} alt="Attached" className="w-full max-w-[160px] rounded-[8px] mb-2" />
-                )}
-                {msg.type === 'ai'
-                  ? renderMarkdown(msg.text)
-                  : <span className="whitespace-pre-wrap">{msg.text}</span>
-                }
-                {msg.actions?.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-ink1/10 flex flex-col gap-1">
-                    <span className="text-[10px] font-semibold text-ink2 uppercase tracking-wide">{t('chatQuickActions')}</span>
-                    {msg.actions.map((action, ai) => {
-                      const actionKey = `${i}-${ai}`
-                      const applied = appliedActions.has(actionKey)
-                      return (
-                        <button
-                          key={ai}
-                          onClick={() => handleApplyAction(action, actionKey, i, ai)}
-                          disabled={applied}
-                          className={`flex items-center gap-1.5 text-left text-[11px] rounded-[8px] px-2 py-[6px] transition-all cursor-pointer ${
-                            applied
-                              ? 'bg-[#D4ECD8] text-[#2C5A38]'
-                              : 'bg-orange/10 text-orange hover:bg-orange/20'
-                          }`}
-                        >
-                          {applied ? '✓' : '+'}
-                          <span>{action.label}</span>
-                        </button>
-                      )
-                    })}
+              {msg.type === 'user' && editingIndex === i ? (
+                <div className="max-w-[85%] flex flex-col gap-2 w-full">
+                  <textarea
+                    autoFocus
+                    value={editingText}
+                    onChange={e => setEditingText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleConfirmEdit() }
+                      if (e.key === 'Escape') handleCancelEdit()
+                    }}
+                    rows={Math.max(2, editingText.split('\n').length)}
+                    className="w-full rounded-[16px] rounded-br-[4px] px-4 py-[10px] text-[13px] leading-[1.55] bg-orange/10 text-ink1 border border-orange/40 outline-none resize-none"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={handleCancelEdit} className="px-3 py-1.5 text-[12px] text-ink3 hover:text-ink1 transition-colors cursor-pointer">
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmEdit}
+                      disabled={!editingText.trim()}
+                      className="px-3 py-1.5 text-[12px] bg-orange text-white rounded-[8px] disabled:opacity-40 cursor-pointer hover:bg-orange-dk transition-colors"
+                    >
+                      Send
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <>
+                  {msg.type === 'user' && (
+                    <button
+                      onClick={() => handleStartEdit(i, msg.text)}
+                      className="opacity-40 md:opacity-0 md:group-hover:opacity-100 mb-1 w-5 h-5 rounded-full flex items-center justify-center text-ink4 hover:text-ink2 transition-all cursor-pointer shrink-0"
+                      aria-label="Edit message"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                  )}
+                  <div
+                    className={`max-w-[78%] rounded-[16px] px-4 py-[10px] text-[13px] leading-[1.55] ${
+                      msg.type === 'user'
+                        ? 'bg-orange text-white rounded-br-[4px]'
+                        : 'bg-sand text-ink1 rounded-bl-[4px]'
+                    }`}
+                  >
+                    {msg.image && (
+                      <img src={msg.image} alt="Attached" className="w-full max-w-[160px] rounded-[8px] mb-2" />
+                    )}
+                    {msg.type === 'ai'
+                      ? renderMarkdown(msg.text)
+                      : <span className="whitespace-pre-wrap">{msg.text}</span>
+                    }
+                    {msg.actions?.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-ink1/10 flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold text-ink2 uppercase tracking-wide">{t('chatQuickActions')}</span>
+                        {msg.actions.map((action, ai) => {
+                          const actionKey = `${i}-${ai}`
+                          const applied = appliedActions.has(actionKey)
+                          return (
+                            <button
+                              key={ai}
+                              onClick={() => handleApplyAction(action, actionKey, i, ai)}
+                              disabled={applied}
+                              className={`flex items-center gap-1.5 text-left text-[11px] rounded-[8px] px-2 py-[6px] transition-all cursor-pointer ${
+                                applied
+                                  ? 'bg-[#D4ECD8] text-[#2C5A38]'
+                                  : 'bg-orange/10 text-orange hover:bg-orange/20'
+                              }`}
+                            >
+                              {applied ? '✓' : '+'}
+                              <span>{action.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           ))}
           {isTyping && <TypingIndicator />}
