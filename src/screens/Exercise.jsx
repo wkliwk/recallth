@@ -268,8 +268,8 @@ function QuickActions({ sessions, openChat }) {
   )
 }
 
-// ── Planned session card (demo) ───────────────────────────────────────────────
-function PlannedSessionCard({ session, t }) {
+// ── Planned session card ──────────────────────────────────────────────────────
+function PlannedSessionCard({ session, onStart, t }) {
   const label = session.activityType === 'other' && session.activityLabel
     ? session.activityLabel
     : activityLabel(session.activityType, t)
@@ -290,7 +290,10 @@ function PlannedSessionCard({ session, t }) {
         )}
         {session.intensity && <IntensityBadge intensity={session.intensity} t={t} />}
       </div>
-      <button className="shrink-0 bg-orange text-white rounded-[8px] px-[10px] py-[5px] text-[12px] font-medium flex items-center gap-1 hover:bg-orange-dk transition-colors cursor-pointer">
+      <button
+        onClick={onStart}
+        className="shrink-0 bg-orange text-white rounded-[8px] px-[10px] py-[5px] text-[12px] font-medium flex items-center gap-1 hover:bg-orange-dk transition-colors cursor-pointer"
+      >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         開始
       </button>
@@ -378,15 +381,6 @@ function EmptyState({ onLog, t }) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-// Demo mock planned session — shows tomorrow's suggested workout
-const DEMO_PLANNED = {
-  _id: 'demo-plan-1',
-  activityType: 'running',
-  durationMinutes: 30,
-  intensity: 'easy',
-  status: 'planned',
-}
-
 export default function Exercise() {
   const navigate = useNavigate()
   const { t } = useLanguage()
@@ -412,7 +406,9 @@ export default function Exercise() {
     load()
   }, [])
 
-  const filtered = filter === 'all' ? sessions : sessions.filter(s => s.activityType === filter)
+  const planned = sessions.filter(s => s.status === 'planned')
+  const completed = sessions.filter(s => s.status !== 'planned')
+  const filtered = filter === 'all' ? completed : completed.filter(s => s.activityType === filter)
   const { thisWeek, lastWeek, older } = groupSessionsByWeek(filtered)
   const hasSessions = sessions.length > 0
 
@@ -454,15 +450,24 @@ export default function Exercise() {
 
         {!loading && !error && hasSessions && (
           <>
-            <WeeklySummary sessions={sessions} t={t} />
-            <QuickActions sessions={sessions} openChat={openChat} />
-            <FilterChips sessions={sessions} active={filter} onChange={setFilter} t={t} />
+            <WeeklySummary sessions={completed} t={t} />
+            <QuickActions sessions={completed} openChat={openChat} />
+            <FilterChips sessions={completed} active={filter} onChange={setFilter} t={t} />
 
-            {/* UPCOMING — demo mock planned session */}
-            <div className="flex flex-col gap-3">
-              <p className="text-[12px] font-medium text-ink3 uppercase tracking-wide px-1">即將到來</p>
-              <PlannedSessionCard session={DEMO_PLANNED} t={t} />
-            </div>
+            {/* UPCOMING — real planned sessions */}
+            {planned.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <p className="text-[12px] font-medium text-ink3 uppercase tracking-wide px-1">即將到來</p>
+                {planned.map(s => (
+                  <PlannedSessionCard
+                    key={s._id}
+                    session={s}
+                    onStart={() => navigate(`/exercise/new?plan=${s._id}`)}
+                    t={t}
+                  />
+                ))}
+              </div>
+            )}
 
             {filtered.length === 0 ? (
               <p className="text-[13px] text-ink3 text-center py-8">{t('noSessionsForFilter')}</p>

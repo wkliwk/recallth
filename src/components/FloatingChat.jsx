@@ -544,6 +544,7 @@ function ChatPanel({
                         {msg.actions.map((action, ai) => {
                           const actionKey = `${i}-${ai}`
                           const applied = appliedActions.has(actionKey)
+                          const isPlan = action.type === 'plan_exercise'
                           return (
                             <button
                               key={ai}
@@ -552,10 +553,12 @@ function ChatPanel({
                               className={`flex items-center gap-1.5 text-left text-[11px] rounded-[8px] px-2 py-[6px] transition-all cursor-pointer ${
                                 applied
                                   ? 'bg-[#D4ECD8] text-[#2C5A38]'
-                                  : 'bg-orange/10 text-orange hover:bg-orange/20'
+                                  : isPlan
+                                    ? 'bg-[#1976D2]/10 text-[#1565C0] hover:bg-[#1976D2]/20'
+                                    : 'bg-orange/10 text-orange hover:bg-orange/20'
                               }`}
                             >
-                              {applied ? '✓' : '+'}
+                              {applied ? '✓' : isPlan ? '📅' : '+'}
                               <span>{action.label}</span>
                             </button>
                           )

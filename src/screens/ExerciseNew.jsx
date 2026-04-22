@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -40,6 +40,8 @@ function todayISO() {
 export default function ExerciseNew() {
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const [searchParams] = useSearchParams()
+  const planId = searchParams.get('plan') // planned session to complete
 
   // AI input state
   const [text, setText] = useState('')
@@ -60,6 +62,22 @@ export default function ExerciseNew() {
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+
+  // Pre-fill form from planned session
+  useEffect(() => {
+    if (!planId) return
+    api.exercise.get(planId).then(res => {
+      const s = res?.data ?? res
+      if (!s) return
+      setActivityType(s.activityType || 'gym')
+      setActivityLabel(s.activityLabel || '')
+      setDate(s.date || todayISO())
+      setDuration(s.durationMinutes ? String(s.durationMinutes) : '')
+      setIntensity(s.intensity || 'moderate')
+      setNotes(s.notes || '')
+      setShowManual(true)
+    }).catch(() => {})
+  }, [planId])
 
   async function handleParse() {
     if (!text.trim()) return
@@ -144,6 +162,10 @@ export default function ExerciseNew() {
     setSaving(true)
     try {
       await api.exercise.create(payload)
+      // Delete the planned session now that it's been completed
+      if (planId) {
+        await api.exercise.remove(planId).catch(() => {})
+      }
       navigate('/exercise')
     } catch {
       setSaveError('Failed to save. Please try again.')
