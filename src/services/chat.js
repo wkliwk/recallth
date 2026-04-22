@@ -21,4 +21,5 @@ export const chatService = {
       method: 'POST',
       body: JSON.stringify({ type, data, conversationId, messageIndex, actionIndex }),
     }),
+  deleteConversation: (id) => request(`/chat/${id}`, { method: 'DELETE' }),
 }
