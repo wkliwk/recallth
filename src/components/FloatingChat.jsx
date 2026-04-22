@@ -135,9 +135,36 @@ function ChatPanel({
   const [loadingConversation, setLoadingConversation] = useState(false)
   const [editingIndex, setEditingIndex] = useState(null)
   const [editingText, setEditingText] = useState('')
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('recallth_chat_width')
+    return saved ? Math.max(320, Math.min(720, parseInt(saved))) : 420
+  })
   const { showUsage } = useAiUsage()
   const bottomRef = useRef(null)
   const fileRef = useRef(null)
+
+  function handleResizePointerDown(e) {
+    e.preventDefault()
+    const el = e.currentTarget
+    el.setPointerCapture(e.pointerId)
+    const startX = e.clientX
+    const startWidth = panelWidth
+    const onMove = (ev) => {
+      setPanelWidth(Math.max(320, Math.min(720, startWidth + (startX - ev.clientX))))
+    }
+    const onUp = (ev) => {
+      el.removeEventListener('pointermove', onMove)
+      el.removeEventListener('pointerup', onUp)
+      const final = Math.max(320, Math.min(720, startWidth + (startX - ev.clientX)))
+      localStorage.setItem('recallth_chat_width', String(final))
+    }
+    el.addEventListener('pointermove', onMove)
+    el.addEventListener('pointerup', onUp)
+  }
+
+  const panelStyle = {
+    width: window.innerWidth >= 768 ? panelWidth : '100%',
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -310,9 +337,16 @@ function ChatPanel({
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className="w-full md:w-[420px] h-full bg-white flex flex-col shadow-2xl"
-          style={{ animation: 'slideIn 0.22s ease-out' }}
+          className="h-full bg-white flex flex-col shadow-2xl relative"
+          style={{ animation: 'slideIn 0.22s ease-out', ...panelStyle }}
         >
+          {/* Resize handle — desktop only */}
+          <div
+            className="hidden md:block absolute left-0 top-0 bottom-0 w-2 cursor-col-resize group z-10 select-none"
+            onPointerDown={handleResizePointerDown}
+          >
+            <div className="absolute left-[3px] top-1/2 -translate-y-1/2 w-[3px] h-10 rounded-full bg-ink4/20 group-hover:bg-orange/50 transition-colors" />
+          </div>
           <HistoryView
             onBack={() => setView('chat')}
             onSelect={handleSelectConversation}
@@ -338,9 +372,16 @@ function ChatPanel({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full md:w-[420px] h-full bg-white flex flex-col shadow-2xl"
-        style={{ animation: 'slideIn 0.22s ease-out' }}
+        className="h-full bg-white flex flex-col shadow-2xl relative"
+        style={{ animation: 'slideIn 0.22s ease-out', ...panelStyle }}
       >
+        {/* Resize handle — desktop only */}
+        <div
+          className="hidden md:block absolute left-0 top-0 bottom-0 w-2 cursor-col-resize group z-10 select-none"
+          onPointerDown={handleResizePointerDown}
+        >
+          <div className="absolute left-[3px] top-1/2 -translate-y-1/2 w-[3px] h-10 rounded-full bg-ink4/20 group-hover:bg-orange/50 transition-colors" />
+        </div>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
