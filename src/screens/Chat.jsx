@@ -6,6 +6,7 @@ import ChatBubble from '../components/ChatBubble'
 import InputPill from '../components/InputPill'
 import { chatService } from '../services/chat'
 import { api } from '../services/api'
+import { renderMarkdown } from '../utils/renderMarkdown'
 
 // ── Typing indicator ─────────────────────────────────────────────────────────
 function TypingIndicator() {
@@ -526,7 +527,10 @@ export default function Chat() {
                 {msg.image && (
                   <img src={msg.image} alt="Attached" className="w-full max-w-[200px] rounded-[8px] mb-2" />
                 )}
-                <span className="whitespace-pre-wrap">{msg.text}</span>
+                {msg.type === 'ai'
+                  ? renderMarkdown(msg.text)
+                  : <span className="whitespace-pre-wrap">{msg.text}</span>
+                }
                 {msg.actions?.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-[6px]">
                     <span className="text-[11px] font-semibold text-ink2 uppercase tracking-wide">
