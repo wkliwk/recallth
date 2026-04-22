@@ -572,6 +572,113 @@ function BatchDeleteModal({ open, count, deleting, t, onConfirm, onCancel }) {
   )
 }
 
+// ── Food entry action sheet ───────────────────────────────────────────────────
+function EntryActionSheet({ entry, open, todayStr, onClose, onRequestDelete, onChangeDate }) {
+  const [datePicking, setDatePicking] = useState(false)
+  const [dateVal, setDateVal] = useState('')
+
+  useEffect(() => {
+    if (open && entry) {
+      setDatePicking(false)
+      setDateVal(entry.date ?? todayStr ?? '')
+    }
+  }, [open, entry, todayStr])
+
+  if (!open || !entry) return null
+
+  const names = entry.foods?.map((f) => f.name).join(', ') ?? entry.rawText ?? '—'
+
+  function handleDelete() {
+    onRequestDelete?.(entry)
+    onClose()
+  }
+
+  function handleMove() {
+    if (!dateVal || dateVal === entry.date) { onClose(); return }
+    onChangeDate?.(entry, dateVal)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50" onPointerDown={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40" />
+      {/* Sheet */}
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[20px] px-4 pt-3 pb-10 max-w-lg mx-auto"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {/* Handle bar */}
+        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-3" />
+        {/* Entry name */}
+        <p className="text-[12px] text-ink3 font-medium text-center truncate px-4 mb-4">{names}</p>
+
+        {datePicking ? (
+          <div className="flex flex-col gap-3">
+            <input
+              type="date"
+              value={dateVal}
+              max={todayStr}
+              onChange={(e) => setDateVal(e.target.value)}
+              className="w-full rounded-[12px] border border-border text-[15px] text-ink1 px-4 py-3 bg-white focus:outline-none focus:border-orange"
+            />
+            <button
+              type="button"
+              onClick={handleMove}
+              className="w-full py-[15px] rounded-[14px] bg-orange text-white text-[15px] font-semibold"
+            >
+              Move
+            </button>
+            <button
+              type="button"
+              onClick={() => setDatePicking(false)}
+              className="w-full py-3 text-[14px] text-ink2 font-medium"
+            >
+              ← Back
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setDatePicking(true)}
+              className="w-full flex items-center gap-3 px-4 py-[14px] rounded-[14px] bg-sand/60 text-[15px] text-ink1 font-medium hover:bg-sand transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Move to date
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="w-full flex items-center gap-3 px-4 py-[14px] rounded-[14px] bg-red-50 text-[15px] text-red-500 font-medium hover:bg-red-100 transition-colors"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-3 text-[14px] text-ink3 font-medium mt-1"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Meal group card ───────────────────────────────────────────────────────────
 function DraggableEntry({ entry, children }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: entry._id })
@@ -588,8 +695,7 @@ function MealGroup({
   entries = [],
   t,
   onRequestDelete,
-  onChangeDate,
-  todayStr,
+  onRequestAction,
   logMetric = 'calories',
   isDropTarget = false,
   selectMode = false,
@@ -601,8 +707,6 @@ function MealGroup({
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
-  const [changingDateId, setChangingDateId] = useState(null)
-  const [datePickerVal, setDatePickerVal] = useState('')
 
   const { setNodeRef } = useDroppable({ id: mealType })
 
@@ -626,22 +730,6 @@ function MealGroup({
     setConfirmingId(null)
     setExpandedId(null)
     onRequestDelete?.(entry)
-  }
-
-  function handleChangeDateClick(entry) {
-    setConfirmingId(null)
-    setChangingDateId(entry._id)
-    setDatePickerVal(entry.date ?? todayStr ?? '')
-  }
-
-  function handleConfirmChangeDate(entry) {
-    if (!datePickerVal || datePickerVal === entry.date) {
-      setChangingDateId(null)
-      return
-    }
-    setChangingDateId(null)
-    setExpandedId(null)
-    onChangeDate?.(entry, datePickerVal)
   }
 
   const allSelected = entries.length > 0 && entries.every((e) => selectedIds?.has(e._id))
@@ -724,10 +812,11 @@ function MealGroup({
           <div className="border-b border-border last:border-0">
             {/* Entry row — drag handle + tap to expand */}
             <div className="flex items-center">
-              {/* Drag handle */}
+              {/* Drag handle — tap to open action sheet, drag to reorder */}
               <div
                 {...dragHandleProps}
-                className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink4 hover:text-ink3"
+                onClick={(e) => { e.stopPropagation(); onRequestAction?.(entry) }}
+                className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink3 hover:text-ink1 transition-colors"
                 aria-label={t('nutritionDragHandle')}
               >
                 <svg width="12" height="14" viewBox="0 0 10 14" fill="currentColor">
@@ -794,49 +883,8 @@ function MealGroup({
                   <p className="text-[12px] text-ink3 py-2">{t('nutritionNoFoodDetails')}</p>
                 )}
 
-                {/* Move to date */}
-                {changingDateId === entry._id ? (
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      type="date"
-                      value={datePickerVal}
-                      max={todayStr}
-                      onChange={(e) => setDatePickerVal(e.target.value)}
-                      className="flex-1 rounded-[8px] border border-border text-[12px] text-ink1 px-2 py-[6px] bg-white focus:outline-none focus:border-orange"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setChangingDateId(null)}
-                      className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-ink2 bg-sand hover:bg-border transition-colors focus:outline-none"
-                    >
-                      {t('cancelButton')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleConfirmChangeDate(entry)}
-                      className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-white bg-orange hover:bg-orange/90 transition-colors focus:outline-none"
-                    >
-                      Move
-                    </button>
-                  </div>
-                ) : !isConfirming && (
-                  <button
-                    type="button"
-                    onClick={() => handleChangeDateClick(entry)}
-                    className="mt-2 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-border text-ink2 text-[12px] font-medium py-[8px] hover:bg-sand/60 transition-colors focus:outline-none"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                    Move to date
-                  </button>
-                )}
-
                 {/* Delete — confirm step */}
-                {changingDateId !== entry._id && (!isConfirming ? (
+                {!isConfirming ? (
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(entry)}
@@ -868,7 +916,7 @@ function MealGroup({
                       {t('journalDelete')}
                     </button>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -2362,6 +2410,11 @@ export default function NutritionTracker() {
     // entry reappears automatically since it's filtered back in
   }
 
+  // ── Action sheet ─────────────────────────────────────────────────────────
+  const [actionEntry, setActionEntry] = useState(null)
+  function handleRequestAction(entry) { setActionEntry(entry) }
+  function handleCloseAction() { setActionEntry(null) }
+
   // ── Change date handler ───────────────────────────────────────────────────
   async function handleChangeDate(entry, newDate) {
     // Optimistic: remove from current view (it's moving to a different date)
@@ -2839,7 +2892,7 @@ export default function NutritionTracker() {
               <div className="flex flex-col gap-3">
                 {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
                   <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
-                    onRequestDelete={handleRequestDelete} onChangeDate={handleChangeDate} todayStr={todayStr} logMetric={logMetric}
+                    onRequestDelete={handleRequestDelete} onRequestAction={handleRequestAction} logMetric={logMetric}
                     isDropTarget={false} selectMode={true}
                     selectedIds={selectedIds} onToggleSelect={handleToggleSelect} onSelectAll={handleSelectAll} />
                 ))}
@@ -2849,7 +2902,7 @@ export default function NutritionTracker() {
                 <div className="flex flex-col gap-3">
                   {MEAL_ORDER.map((mt) => (
                     <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
-                      onRequestDelete={handleRequestDelete} onChangeDate={handleChangeDate} todayStr={todayStr} logMetric={logMetric}
+                      onRequestDelete={handleRequestDelete} onRequestAction={handleRequestAction} logMetric={logMetric}
                       isDropTarget={overMealType === mt}
                       onAddFood={(mt) => openAnalyser('ai', mt)} />
                   ))}
@@ -3420,8 +3473,7 @@ export default function NutritionTracker() {
                       entries={mealGroups[mt] ?? []}
                       t={t}
                       onRequestDelete={handleRequestDelete}
-                      onChangeDate={handleChangeDate}
-                      todayStr={todayStr}
+                      onRequestAction={handleRequestAction}
                       logMetric={logMetric}
                       isDropTarget={false}
                       selectMode={true}
@@ -3446,8 +3498,7 @@ export default function NutritionTracker() {
                         entries={mealGroups[mt] ?? []}
                         t={t}
                         onRequestDelete={handleRequestDelete}
-                        onChangeDate={handleChangeDate}
-                        todayStr={todayStr}
+                        onRequestAction={handleRequestAction}
                         logMetric={logMetric}
                         isDropTarget={overMealType === mt}
                         onAddFood={(mt) => openAnalyser('ai', mt)}
@@ -3544,6 +3595,16 @@ export default function NutritionTracker() {
         open={profileChatOpen}
         onClose={() => setProfileChatOpen(false)}
         onComplete={() => { fetchSummary() }}
+      />
+
+      {/* ── Food entry action sheet ── */}
+      <EntryActionSheet
+        entry={actionEntry}
+        open={!!actionEntry}
+        todayStr={todayStr}
+        onClose={handleCloseAction}
+        onRequestDelete={handleRequestDelete}
+        onChangeDate={handleChangeDate}
       />
 
       {/* ── Undo delete toast ── */}
