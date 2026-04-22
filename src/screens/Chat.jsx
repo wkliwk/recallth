@@ -170,6 +170,8 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [appliedActions, setAppliedActions] = useState(new Set())
+  const [editingIndex, setEditingIndex] = useState(null)
+  const [editingText, setEditingText] = useState('')
 
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -295,6 +297,46 @@ export default function Chat() {
     setConversationId(null)
     setConversationTitle('')
     setIsTyping(false)
+  }
+
+  function handleStartEdit(index, text) {
+    setEditingIndex(index)
+    setEditingText(text)
+  }
+
+  function handleCancelEdit() {
+    setEditingIndex(null)
+    setEditingText('')
+  }
+
+  async function handleConfirmEdit() {
+    const trimmed = editingText.trim()
+    if (!trimmed) return
+    const prior = messages.slice(0, editingIndex)
+    const userMsg = { type: 'user', text: trimmed }
+    setEditingIndex(null)
+    setEditingText('')
+    setMessages([...prior, userMsg])
+    setConversationId(null)
+    setConversationTitle('')
+    setAppliedActions(new Set())
+    setIsTyping(true)
+
+    try {
+      const res = await chatService.send(trimmed, null)
+      if (res.success && res.data) {
+        setConversationId(res.data.conversationId)
+        setMessages(m => [...m, {
+          type: 'ai',
+          text: res.data.message?.content ?? t('chatNoResponse'),
+          actions: res.data.actions || [],
+        }])
+      }
+    } catch {
+      setMessages(m => [...m, { type: 'ai', text: t('chatError') }])
+    } finally {
+      setIsTyping(false)
+    }
   }
 
   const handleDelete = async (id) => {
@@ -426,61 +468,103 @@ export default function Chat() {
   const chatMessages = (
     <div className="flex-1 flex flex-col gap-3 px-4 py-4 overflow-y-auto">
       {messages.map((msg, i) => (
-        <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+        <div key={i} className={`flex items-end gap-1 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
           {msg.type === 'ai' && (
-            <div className="w-7 h-7 rounded-full bg-orange flex items-center justify-center shrink-0 mr-2 mt-1">
+            <div className="w-7 h-7 rounded-full bg-orange flex items-center justify-center shrink-0 mr-1 mb-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
               </svg>
             </div>
           )}
-          <div
-            className={`max-w-[78%] rounded-[16px] px-4 py-[10px] text-[13px] leading-[1.6] ${
-              msg.type === 'user'
-                ? 'bg-orange text-white rounded-br-[4px]'
-                : 'bg-white border border-border text-ink1 rounded-bl-[4px]'
-            }`}
-          >
-            {msg.image && (
-              <img src={msg.image} alt="Attached" className="w-full max-w-[200px] rounded-[8px] mb-2" />
-            )}
-            <span className="whitespace-pre-wrap">{msg.text}</span>
-            {msg.actions?.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-[6px]">
-                <span className="text-[11px] font-semibold text-ink2 uppercase tracking-wide">
-                  {t('chatQuickActions') || 'Quick actions'}
-                </span>
-                {msg.actions.map((action, ai) => {
-                  const actionKey = `${i}-${ai}`
-                  const applied = appliedActions.has(actionKey)
-                  return (
-                    <button
-                      key={ai}
-                      onClick={() => handleApplyAction(action, actionKey, i, ai)}
-                      disabled={applied}
-                      className={`flex items-center gap-2 text-left text-[12px] rounded-[10px] px-3 py-[8px] transition-all cursor-pointer ${
-                        applied
-                          ? 'bg-[#D4ECD8] text-[#2C5A38] border border-[#2C5A38]/20'
-                          : 'bg-orange/10 text-orange border border-orange/20 hover:bg-orange/20'
-                      }`}
-                    >
-                      {applied ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <line x1="12" y1="5" x2="12" y2="19"/>
-                          <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                      )}
-                      <span>{applied ? `${action.label} ✓` : action.label}</span>
-                    </button>
-                  )
-                })}
+          {msg.type === 'user' && editingIndex === i ? (
+            <div className="max-w-[78%] flex flex-col gap-2 w-full">
+              <textarea
+                autoFocus
+                value={editingText}
+                onChange={e => setEditingText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleConfirmEdit() }
+                  if (e.key === 'Escape') handleCancelEdit()
+                }}
+                rows={Math.max(2, editingText.split('\n').length)}
+                className="w-full rounded-[16px] rounded-br-[4px] px-4 py-[10px] text-[13px] leading-[1.6] bg-orange/10 text-ink1 border border-orange/40 outline-none resize-none"
+              />
+              <div className="flex gap-2 justify-end">
+                <button onClick={handleCancelEdit} className="px-3 py-1.5 text-[12px] text-ink3 hover:text-ink1 transition-colors cursor-pointer">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmEdit}
+                  disabled={!editingText.trim()}
+                  className="px-3 py-1.5 text-[12px] bg-orange text-white rounded-[8px] disabled:opacity-40 cursor-pointer hover:bg-orange-dk transition-colors"
+                >
+                  Send
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              {msg.type === 'user' && (
+                <button
+                  onClick={() => handleStartEdit(i, msg.text)}
+                  className="opacity-40 md:opacity-0 md:group-hover:opacity-100 mb-1 w-5 h-5 rounded-full flex items-center justify-center text-ink4 hover:text-ink2 transition-all cursor-pointer shrink-0"
+                  aria-label="Edit message"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              )}
+              <div
+                className={`max-w-[78%] rounded-[16px] px-4 py-[10px] text-[13px] leading-[1.6] ${
+                  msg.type === 'user'
+                    ? 'bg-orange text-white rounded-br-[4px]'
+                    : 'bg-white border border-border text-ink1 rounded-bl-[4px]'
+                }`}
+              >
+                {msg.image && (
+                  <img src={msg.image} alt="Attached" className="w-full max-w-[200px] rounded-[8px] mb-2" />
+                )}
+                <span className="whitespace-pre-wrap">{msg.text}</span>
+                {msg.actions?.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-border/50 flex flex-col gap-[6px]">
+                    <span className="text-[11px] font-semibold text-ink2 uppercase tracking-wide">
+                      {t('chatQuickActions') || 'Quick actions'}
+                    </span>
+                    {msg.actions.map((action, ai) => {
+                      const actionKey = `${i}-${ai}`
+                      const applied = appliedActions.has(actionKey)
+                      return (
+                        <button
+                          key={ai}
+                          onClick={() => handleApplyAction(action, actionKey, i, ai)}
+                          disabled={applied}
+                          className={`flex items-center gap-2 text-left text-[12px] rounded-[10px] px-3 py-[8px] transition-all cursor-pointer ${
+                            applied
+                              ? 'bg-[#D4ECD8] text-[#2C5A38] border border-[#2C5A38]/20'
+                              : 'bg-orange/10 text-orange border border-orange/20 hover:bg-orange/20'
+                          }`}
+                        >
+                          {applied ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                              <line x1="12" y1="5" x2="12" y2="19"/>
+                              <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                          )}
+                          <span>{applied ? `${action.label} ✓` : action.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       ))}
       {isTyping && <TypingIndicator />}
