@@ -229,7 +229,7 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
     </>)
   }
 
-  // Desktop col 4: "Sets × Reps" (or —)
+  // Desktop col 4: "Sets × Reps" — strength/hiit use sets, cardio/stretch use duration
   function desktopMetrics() {
     if (type === 'strength') return (
       <div className="flex items-baseline gap-1 justify-end">
@@ -246,10 +246,17 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         <input className={`${bigD} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       </div>
     )
+    // cardio & stretch: put duration here
+    if (type === 'cardio' || type === 'stretch') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-12`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>min</span>
+      </div>
+    )
     return <div className="flex justify-end"><span className="text-ink3/30 text-[18px]">—</span></div>
   }
 
-  // Desktop col 5: "Weight" (or duration/distance)
+  // Desktop col 5: "Weight" — strength uses weight, cardio uses distance, others show —
   function desktopWeight() {
     if (type === 'strength') return (
       <div className="flex items-baseline gap-1 justify-end">
@@ -259,24 +266,18 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
     )
     if (type === 'cardio') return (
       <div className="flex items-baseline gap-1 justify-end">
-        <input className={`${bigD} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-        <span className={`${uSm} mr-1`}>min</span>
-        <input className={`${bigD} w-10`} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <input className={`${bigD} w-12`} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
         <span className={uSm}>km</span>
-      </div>
-    )
-    if (type === 'stretch') return (
-      <div className="flex items-baseline gap-1 justify-end">
-        <input className={`${bigD} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-        <span className={uSm}>min</span>
       </div>
     )
     if (type === 'hiit') return (
       <div className="flex items-baseline gap-1 justify-end">
-        <input className={`${bigD} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <input className={`${bigD} w-12`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
         <span className={uSm}>min</span>
       </div>
     )
+    // stretch: no weight/distance
+    return <div className="flex justify-end"><span className="text-ink3/30 text-[18px]">—</span></div>
   }
 
   return (<>
