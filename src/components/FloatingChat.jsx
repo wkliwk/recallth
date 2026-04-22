@@ -7,6 +7,14 @@ import { useChatPage } from '../context/ChatPageContext'
 import { renderMarkdown } from '../utils/renderMarkdown'
 
 
+function getQuickChips(pathname) {
+  if (pathname.startsWith('/nutrition')) return ['分析今日飲食', '我今日蛋白質夠嗎？', '建議明日食咩']
+  if (pathname.startsWith('/exercise')) return ['分析今日表現', '建議明日訓練', '我最近嘅進度點？']
+  if (pathname === '/' || pathname.startsWith('/home')) return ['今日健康概覽', '我今個星期點？', '有咩要注意？']
+  if (pathname.startsWith('/cabinet')) return ['我而家食緊咩補充品？', '有冇衝突？']
+  return ['我今日點樣？', '有咩健康建議？', '建議我下一步']
+}
+
 function SparkleIcon({ size = 20, color = 'currentColor' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -150,6 +158,8 @@ function ChatPanel({
   pendingSend, onPendingSendConsumed,
 }) {
   const { t } = useLanguage()
+  const { pathname } = useLocation()
+  const quickChips = getQuickChips(pathname)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [imagePreview, setImagePreview] = useState(null)
@@ -473,9 +483,23 @@ function ChatPanel({
             </div>
           )}
           {!loadingConversation && messages.length === 0 && !isTyping && (
-            <p className="text-[13px] text-ink3 text-center mt-8">
-              {pageContext?.placeholder || t('chatAskAnything')}
-            </p>
+            <div className="flex flex-col items-center gap-4 mt-8 px-2">
+              <p className="text-[13px] text-ink3 text-center">
+                {pageContext?.placeholder || t('chatAskAnything')}
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {quickChips.map((chip, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => send(chip)}
+                    className="px-3 py-[7px] rounded-full bg-sand text-[12px] text-ink2 font-medium border border-border/60 hover:bg-border hover:text-ink1 transition-colors"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           {!loadingConversation && messages.map((msg, i) => (
             <div key={i} className={`flex items-end gap-1 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
