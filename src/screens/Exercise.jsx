@@ -44,6 +44,19 @@ function formatCardDate(iso) {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
+function groupByDate(sessions) {
+  const groups = []
+  const map = {}
+  for (const s of sessions) {
+    if (!map[s.date]) {
+      map[s.date] = []
+      groups.push({ date: s.date, sessions: map[s.date] })
+    }
+    map[s.date].push(s)
+  }
+  return groups
+}
+
 function groupSessionsByWeek(sessions) {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
@@ -148,7 +161,7 @@ function IntensityBadge({ intensity, t }) {
 }
 
 // ── Session card ──────────────────────────────────────────────────────────────
-function SessionCard({ session, onClick, t }) {
+function SessionCard({ session, onClick, hideDate, t }) {
   const label = session.activityType === 'other' && session.activityLabel
     ? session.activityLabel
     : activityLabel(session.activityType, t)
@@ -163,7 +176,7 @@ function SessionCard({ session, onClick, t }) {
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-medium text-ink1 capitalize leading-tight">{label}</p>
-        <p className="text-[12px] text-ink3 mt-[2px]">{formatCardDate(session.date)}</p>
+        {!hideDate && <p className="text-[12px] text-ink3 mt-[2px]">{formatCardDate(session.date)}</p>}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         {session.durationMinutes > 0 && (
@@ -181,17 +194,24 @@ function SessionCard({ session, onClick, t }) {
 // ── Week section ──────────────────────────────────────────────────────────────
 function WeekSection({ label, sessions, onCardClick, t }) {
   if (!sessions || sessions.length === 0) return null
+  const groups = groupByDate(sessions)
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <p className="text-[12px] font-medium text-ink3 uppercase tracking-wide px-1">{label}</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {sessions.map((s) => (
-          <SessionCard
-            key={s._id || s.id || s.date + s.activityType}
-            session={s}
-            onClick={() => onCardClick(s._id || s.id)}
-            t={t}
-          />
+      <div className="flex flex-col gap-4">
+        {groups.map(({ date, sessions: daySessions }) => (
+          <div key={date} className="flex flex-col gap-2">
+            <p className="text-[12px] font-semibold text-ink2 px-1">{formatCardDate(date)}</p>
+            {daySessions.map((s) => (
+              <SessionCard
+                key={s._id || s.id || s.date + s.activityType}
+                session={s}
+                onClick={() => onCardClick(s._id || s.id)}
+                hideDate
+                t={t}
+              />
+            ))}
+          </div>
         ))}
       </div>
     </div>
