@@ -192,8 +192,8 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
   const { label, chipCls, icon, iconBg } = TYPE_CONFIG[type] ?? TYPE_CONFIG.strength
 
   // shared classes
-  const bigM  = 'text-[16px] font-bold text-ink1 bg-transparent outline-none tabular-nums min-w-0'
-  const bigD  = 'text-[20px] font-bold text-ink1 bg-transparent outline-none tabular-nums text-right'
+  const bigM  = 'text-[16px] font-bold text-ink1 bg-transparent outline-none tabular-nums min-w-0 appearance-none'
+  const bigD  = 'text-[20px] font-bold text-ink1 bg-transparent outline-none tabular-nums text-right appearance-none'
   const uSm   = 'text-[12px] text-ink3/50 shrink-0'
 
   // Mobile number fields per type
@@ -246,7 +246,7 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         <input className={`${bigD} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       </div>
     )
-    return <span className="text-ink3/30 text-right pr-2 block">—</span>
+    return <div className="flex justify-end"><span className="text-ink3/30 text-[18px]">—</span></div>
   }
 
   // Desktop col 5: "Weight" (or duration/distance)
