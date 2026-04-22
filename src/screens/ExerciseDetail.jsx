@@ -161,10 +161,10 @@ function displayToKg(val, unit) {
 
 const TYPE_ORDER = ['strength', 'cardio', 'stretch', 'hiit']
 const TYPE_CONFIG = {
-  strength: { label: 'Strength', chipCls: 'bg-orange/10 text-orange' },
-  cardio:   { label: 'Cardio',   chipCls: 'bg-blue-500/10 text-blue-600' },
-  stretch:  { label: 'Stretch',  chipCls: 'bg-emerald-500/10 text-emerald-700' },
-  hiit:     { label: 'HIIT',     chipCls: 'bg-red-500/10 text-red-600' },
+  strength: { label: 'Strength', chipCls: 'bg-orange/10 text-orange',              icon: '🏋️', iconBg: 'bg-orange/10' },
+  cardio:   { label: 'Cardio',   chipCls: 'bg-blue-500/10 text-blue-600',           icon: '🏃', iconBg: 'bg-blue-500/10' },
+  stretch:  { label: 'Stretch',  chipCls: 'bg-emerald-500/10 text-emerald-700',     icon: '🧘', iconBg: 'bg-emerald-500/10' },
+  hiit:     { label: 'HIIT',     chipCls: 'bg-red-500/10 text-red-600',             icon: '⚡', iconBg: 'bg-red-500/10' },
 }
 
 function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
@@ -189,72 +189,147 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
     onSave(cur.current)
   }
 
-  const numCls = 'w-10 text-center bg-transparent text-[13px] text-ink2 tabular-nums outline-none focus:bg-sand/60 rounded-[6px] px-1 py-0.5 transition-colors'
-  const numWide = 'w-14 text-center bg-transparent text-[13px] text-ink2 tabular-nums outline-none focus:bg-sand/60 rounded-[6px] px-1 py-0.5 transition-colors'
-  const unitLbl = 'text-[11px] text-ink3 shrink-0 leading-none'
-  const sep = <span className="text-ink3/40 text-[11px] shrink-0">×</span>
+  const { label, chipCls, icon, iconBg } = TYPE_CONFIG[type] ?? TYPE_CONFIG.strength
 
-  const { label, chipCls } = TYPE_CONFIG[type] ?? TYPE_CONFIG.strength
+  // shared classes
+  const bigM  = 'text-[16px] font-bold text-ink1 bg-transparent outline-none tabular-nums min-w-0'
+  const bigD  = 'text-[20px] font-bold text-ink1 bg-transparent outline-none tabular-nums text-right'
+  const uSm   = 'text-[12px] text-ink3/50 shrink-0'
 
-  return (
-    <div className="px-4 py-3 border-b border-[#EDE8E0] last:border-0">
-      {/* Line 1: chip + name + delete */}
-      <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={cycleType}
-          className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold leading-none transition-colors select-none ${chipCls}`}
-          title={TYPE_CONFIG[type]?.label ?? type}
-        >
+  // Mobile number fields per type
+  function mobileNums() {
+    if (type === 'strength') return (<>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}     onChange={e => setSets(e.target.value)}     onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={reps}     onChange={e => setReps(e.target.value)}     onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>reps</span>
+      <span className="flex items-baseline gap-0.5 whitespace-nowrap">
+        <input className={`${bigM} w-14`} type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>{unit}</span>
+      </span>
+    </>)
+    if (type === 'cardio') return (<>
+      <input className={`${bigM} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={`${uSm} mr-2`}>min</span>
+      <input className={`${bigM} w-12`} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>km</span>
+    </>)
+    if (type === 'stretch') return (<>
+      <input className={`${bigM} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>min</span>
+    </>)
+    if (type === 'hiit') return (<>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={rounds}    onChange={e => setRounds(e.target.value)}    onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={`${uSm} mr-1`}>rds</span>
+      <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={reps}      onChange={e => setReps(e.target.value)}      onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={`${uSm} mr-2`}>reps</span>
+      <input className={`${bigM} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>min</span>
+    </>)
+  }
+
+  // Desktop col 4: "Sets × Reps" (or —)
+  function desktopMetrics() {
+    if (type === 'strength') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-9`}  type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className="text-[15px] text-ink3/40">×</span>
+        <input className={`${bigD} w-9`}  type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>reps</span>
+      </div>
+    )
+    if (type === 'hiit') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-9`}  type="number" min="1" value={rounds} onChange={e => setRounds(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>rds ×</span>
+        <input className={`${bigD} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      </div>
+    )
+    return <span className="text-ink3/30 text-right pr-2 block">—</span>
+  }
+
+  // Desktop col 5: "Weight" (or duration/distance)
+  function desktopWeight() {
+    if (type === 'strength') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-16`} type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>{unit}</span>
+      </div>
+    )
+    if (type === 'cardio') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={`${uSm} mr-1`}>min</span>
+        <input className={`${bigD} w-10`} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>km</span>
+      </div>
+    )
+    if (type === 'stretch') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>min</span>
+      </div>
+    )
+    if (type === 'hiit') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>min</span>
+      </div>
+    )
+  }
+
+  return (<>
+    {/* ── MOBILE (< md) ────────────────────────────────────── */}
+    <div className="flex items-center px-4 py-3 border-b border-[#EDE8E0] last:border-0 gap-3 md:hidden">
+      {/* type icon */}
+      <div className={`w-10 h-10 rounded-[11px] flex items-center justify-center text-lg shrink-0 ${iconBg}`}>
+        {icon}
+      </div>
+      {/* name + numbers */}
+      <div className="flex-1 min-w-0">
+        <input
+          className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2 bg-transparent outline-none w-full mb-1 placeholder:text-ink3/30 focus:text-ink1 transition-colors"
+          value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey}
+          placeholder="EXERCISE NAME"
+        />
+        <div className="flex items-baseline gap-1 flex-wrap">
+          {mobileNums()}
+        </div>
+      </div>
+      {/* chip + delete */}
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <button onClick={cycleType} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold leading-none whitespace-nowrap transition-colors ${chipCls}`}>
           {label}
         </button>
-        <input
-          className="flex-1 min-w-0 bg-transparent text-[15px] font-medium text-ink1 placeholder:text-ink3/40 outline-none focus:bg-sand/60 rounded-[6px] px-1.5 py-0.5 transition-colors"
-          value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="Exercise name"
-        />
-        <button
-          onClick={onDelete}
-          className="shrink-0 w-6 h-6 flex items-center justify-center text-ink3/40 hover:text-red-400 rounded-full hover:bg-red-50 transition-colors text-[15px] leading-none"
-        >×</button>
-      </div>
-      {/* Line 2: fields (indented to align with name) */}
-      <div className="flex items-center gap-1.5 pl-[52px]">
-        {type === 'strength' && (
-          <>
-            <input className={numCls} type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            {sep}
-            <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>reps</span>
-            <input className={numWide} type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>{unit}</span>
-          </>
-        )}
-        {type === 'cardio' && (
-          <>
-            <input className={numCls} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>min</span>
-            <input className={numWide} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>km</span>
-          </>
-        )}
-        {type === 'stretch' && (
-          <>
-            <input className={numCls} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>min</span>
-          </>
-        )}
-        {type === 'hiit' && (
-          <>
-            <input className={numCls} type="number" min="1" value={rounds} onChange={e => setRounds(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>rds</span>
-            {sep}
-            <input className={numCls} type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <input className={numCls} type="number" min="0" step="1" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-            <span className={unitLbl}>min</span>
-          </>
-        )}
+        <button onClick={onDelete} className="text-ink3/30 hover:text-red-400 text-[17px] leading-none transition-colors">×</button>
       </div>
     </div>
-  )
+
+    {/* ── DESKTOP (≥ md) ───────────────────────────────────── */}
+    <div className="hidden md:grid grid-cols-[44px_1fr_90px_160px_110px_36px] items-center px-4 py-3.5 border-b border-[#EDE8E0] last:border-0 hover:bg-sand/20 transition-colors group">
+      {/* icon */}
+      <div className={`w-10 h-10 rounded-[11px] flex items-center justify-center text-lg ${iconBg}`}>
+        {icon}
+      </div>
+      {/* name */}
+      <input
+        className="text-[15px] font-semibold text-ink1 bg-transparent outline-none focus:bg-sand/50 rounded-[6px] px-2 py-1 transition-colors placeholder:text-ink3/30 w-full min-w-0"
+        value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey}
+        placeholder="Exercise name"
+      />
+      {/* chip */}
+      <button onClick={cycleType} className={`px-2.5 py-1 rounded-full text-[11px] font-semibold leading-none w-fit transition-colors ${chipCls}`}>
+        {label}
+      </button>
+      {/* sets × reps */}
+      {desktopMetrics()}
+      {/* weight / duration */}
+      {desktopWeight()}
+      {/* delete */}
+      <button onClick={onDelete} className="text-ink3/20 hover:text-red-400 text-[18px] leading-none text-center opacity-0 group-hover:opacity-100 transition-all">×</button>
+    </div>
+  </>)
 }
 
 function ExerciseTable({ sessionId, initialExercises, onSaved }) {
@@ -343,6 +418,17 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
           >lbs</button>
         </div>
       </div>
+      {/* Desktop column headers */}
+      {rows.length > 0 && (
+        <div className="hidden md:grid grid-cols-[44px_1fr_90px_160px_110px_36px] px-4 py-2.5 border-b border-[#EDE8E0] bg-sand/40">
+          <span />
+          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em]">Exercise</span>
+          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em]">Type</span>
+          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em] text-right">Sets × Reps</span>
+          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em] text-right">Weight</span>
+          <span />
+        </div>
+      )}
       {rows.length === 0 && (
         <p className="text-[13px] text-ink3 text-center py-6">No exercises yet</p>
       )}
