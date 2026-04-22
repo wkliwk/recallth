@@ -349,9 +349,12 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
     }))
   )
   const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const [saveState, setSaveState] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
 
   const saveRows = useCallback(async (updatedRows) => {
     setSaving(true)
+    setSaveState('saving')
     try {
       const exercises = updatedRows.filter(r => r.name.trim()).map(r => {
         if (r.type === 'cardio') return {
@@ -378,6 +381,12 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       })
       const res = await api.exercise.update(sessionId, { exercises })
       onSaved(res.data ?? res)
+      setDirty(false)
+      setSaveState('saved')
+      setTimeout(() => setSaveState('idle'), 1500)
+    } catch {
+      setSaveState('error')
+      setTimeout(() => setSaveState('idle'), 3000)
     } finally {
       setSaving(false)
     }
@@ -391,6 +400,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       weightKg: displayToKg(cur.weight, cur.unit),
       durationMin: cur.duration, distanceKm: cur.distance,
     } : r))
+    setDirty(true)
   }
 
   function handleDelete(i) {
@@ -401,6 +411,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
 
   function addRow() {
     setRows(prev => [...prev, { id: Math.random(), name: '', type: 'strength', sets: '', reps: '', rounds: '', weightKg: '', durationMin: '', distanceKm: '' }])
+    setDirty(true)
   }
 
   return (
@@ -449,12 +460,25 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
         >
           <span className="text-[17px] leading-none font-light">+</span> Add exercise
         </button>
+        {dirty && saveState === 'idle' && (
+          <p className="text-center text-[11px] font-semibold text-orange/70 py-1.5 tracking-wide">
+            ● Unsaved changes
+          </p>
+        )}
         <button
           onClick={() => saveRows(rows)}
           disabled={saving}
-          className="w-full py-3.5 text-[14px] font-semibold text-white bg-orange disabled:opacity-60 hover:bg-orange/90 active:bg-orange/80 transition-colors rounded-b-[16px]"
+          className={`w-full py-3.5 text-[14px] font-semibold text-white transition-all duration-300 rounded-b-[16px]
+            ${saveState === 'saved'  ? 'bg-emerald-500'
+            : saveState === 'error'  ? 'bg-red-500'
+            : dirty                  ? 'bg-orange hover:bg-orange/90 active:bg-orange/80'
+            :                          'bg-orange/30 cursor-default'}
+          `}
         >
-          {saving ? 'Saving…' : 'Save changes'}
+          {saveState === 'saving' ? 'Saving…'
+           : saveState === 'saved'  ? 'Saved ✓'
+           : saveState === 'error'  ? 'Failed — try again'
+           : 'Save changes'}
         </button>
       </div>
     </div>
