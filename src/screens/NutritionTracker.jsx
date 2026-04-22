@@ -588,6 +588,8 @@ function MealGroup({
   entries = [],
   t,
   onRequestDelete,
+  onChangeDate,
+  todayStr,
   logMetric = 'calories',
   isDropTarget = false,
   selectMode = false,
@@ -599,6 +601,8 @@ function MealGroup({
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
+  const [changingDateId, setChangingDateId] = useState(null)
+  const [datePickerVal, setDatePickerVal] = useState('')
 
   const { setNodeRef } = useDroppable({ id: mealType })
 
@@ -622,6 +626,22 @@ function MealGroup({
     setConfirmingId(null)
     setExpandedId(null)
     onRequestDelete?.(entry)
+  }
+
+  function handleChangeDateClick(entry) {
+    setConfirmingId(null)
+    setChangingDateId(entry._id)
+    setDatePickerVal(entry.date ?? todayStr ?? '')
+  }
+
+  function handleConfirmChangeDate(entry) {
+    if (!datePickerVal || datePickerVal === entry.date) {
+      setChangingDateId(null)
+      return
+    }
+    setChangingDateId(null)
+    setExpandedId(null)
+    onChangeDate?.(entry, datePickerVal)
   }
 
   const allSelected = entries.length > 0 && entries.every((e) => selectedIds?.has(e._id))
@@ -774,12 +794,53 @@ function MealGroup({
                   <p className="text-[12px] text-ink3 py-2">{t('nutritionNoFoodDetails')}</p>
                 )}
 
+                {/* Move to date */}
+                {changingDateId === entry._id ? (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={datePickerVal}
+                      max={todayStr}
+                      onChange={(e) => setDatePickerVal(e.target.value)}
+                      className="flex-1 rounded-[8px] border border-border text-[12px] text-ink1 px-2 py-[6px] bg-white focus:outline-none focus:border-orange"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setChangingDateId(null)}
+                      className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-ink2 bg-sand hover:bg-border transition-colors focus:outline-none"
+                    >
+                      {t('cancelButton')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmChangeDate(entry)}
+                      className="px-3 py-[6px] rounded-[8px] text-[12px] font-medium text-white bg-orange hover:bg-orange/90 transition-colors focus:outline-none"
+                    >
+                      Move
+                    </button>
+                  </div>
+                ) : !isConfirming && (
+                  <button
+                    type="button"
+                    onClick={() => handleChangeDateClick(entry)}
+                    className="mt-2 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-border text-ink2 text-[12px] font-medium py-[8px] hover:bg-sand/60 transition-colors focus:outline-none"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Move to date
+                  </button>
+                )}
+
                 {/* Delete — confirm step */}
-                {!isConfirming ? (
+                {changingDateId !== entry._id && (!isConfirming ? (
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(entry)}
-                    className="mt-2 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    className="mt-1 w-full flex items-center justify-center gap-[6px] rounded-[10px] border border-red-200 text-red-500 text-[12px] font-medium py-[8px] hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6" />
@@ -790,7 +851,7 @@ function MealGroup({
                     {t('nutritionDeleteRecord')}
                   </button>
                 ) : (
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-1 flex items-center gap-2">
                     <span className="text-[12px] text-ink2 flex-1">{t('nutritionDeleteEntry')}</span>
                     <button
                       type="button"
@@ -807,7 +868,7 @@ function MealGroup({
                       {t('journalDelete')}
                     </button>
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -2301,6 +2362,20 @@ export default function NutritionTracker() {
     // entry reappears automatically since it's filtered back in
   }
 
+  // ── Change date handler ───────────────────────────────────────────────────
+  async function handleChangeDate(entry, newDate) {
+    // Optimistic: remove from current view (it's moving to a different date)
+    setEntries((prev) => prev.filter((e) => e._id !== entry._id))
+    try {
+      await api.nutrition.update(entry._id, { date: newDate })
+      fetchSummary().catch(() => {})
+      bumpCalendar()
+    } catch {
+      // Revert on failure
+      fetchEntries()
+    }
+  }
+
   // ── Category selection handler ────────────────────────────────────────────
   async function handleSelectCategory(cat) {
     setCategory(cat)
@@ -2764,7 +2839,7 @@ export default function NutritionTracker() {
               <div className="flex flex-col gap-3">
                 {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
                   <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
-                    onRequestDelete={handleRequestDelete} logMetric={logMetric}
+                    onRequestDelete={handleRequestDelete} onChangeDate={handleChangeDate} todayStr={todayStr} logMetric={logMetric}
                     isDropTarget={false} selectMode={true}
                     selectedIds={selectedIds} onToggleSelect={handleToggleSelect} onSelectAll={handleSelectAll} />
                 ))}
@@ -2774,7 +2849,7 @@ export default function NutritionTracker() {
                 <div className="flex flex-col gap-3">
                   {MEAL_ORDER.map((mt) => (
                     <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
-                      onRequestDelete={handleRequestDelete} logMetric={logMetric}
+                      onRequestDelete={handleRequestDelete} onChangeDate={handleChangeDate} todayStr={todayStr} logMetric={logMetric}
                       isDropTarget={overMealType === mt}
                       onAddFood={(mt) => openAnalyser('ai', mt)} />
                   ))}
@@ -3345,6 +3420,8 @@ export default function NutritionTracker() {
                       entries={mealGroups[mt] ?? []}
                       t={t}
                       onRequestDelete={handleRequestDelete}
+                      onChangeDate={handleChangeDate}
+                      todayStr={todayStr}
                       logMetric={logMetric}
                       isDropTarget={false}
                       selectMode={true}
@@ -3369,6 +3446,8 @@ export default function NutritionTracker() {
                         entries={mealGroups[mt] ?? []}
                         t={t}
                         onRequestDelete={handleRequestDelete}
+                        onChangeDate={handleChangeDate}
+                        todayStr={todayStr}
                         logMetric={logMetric}
                         isDropTarget={overMealType === mt}
                         onAddFood={(mt) => openAnalyser('ai', mt)}
