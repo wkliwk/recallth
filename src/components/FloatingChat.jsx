@@ -149,15 +149,7 @@ function HistoryView({ onBack, onSelect, onNewChat, t }) {
           </svg>
         </button>
         <p className="text-[14px] font-semibold text-ink1">{t('chatHistory')}</p>
-        <button
-          onClick={onNewChat}
-          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink2 cursor-pointer"
-          aria-label="New chat"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-        </button>
+        <div className="w-8 h-8" />
       </div>
 
       {/* List */}
@@ -430,6 +422,16 @@ function ChatPanel({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {/* New chat button */}
+            <button
+              onClick={handleNewChat}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink3 cursor-pointer"
+              aria-label="New chat"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
             {/* History button */}
             <button
               onClick={() => setView('history')}
