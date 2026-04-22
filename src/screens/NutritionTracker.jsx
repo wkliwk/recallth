@@ -680,12 +680,39 @@ function EntryActionSheet({ entry, open, todayStr, onClose, onRequestDelete, onC
 }
 
 // ── Meal group card ───────────────────────────────────────────────────────────
-function DraggableEntry({ entry, children }) {
+function DraggableEntry({ entry, children, onTap }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: entry._id })
+  const tapStartRef = useRef(null)
+  const isDraggingRef = useRef(false)
+
+  // Keep a ref in sync with isDragging so the window listener can read it
+  useEffect(() => { isDraggingRef.current = isDragging }, [isDragging])
+
+  // Window-level pointerup fires even when dnd-kit has captured the pointer,
+  // so this is the only reliable way to detect a tap vs a drag.
+  useEffect(() => {
+    function onWindowPointerUp(e) {
+      const tap = tapStartRef.current
+      if (!tap) return
+      tapStartRef.current = null
+      if (isDraggingRef.current) return          // Drag was activated — not a tap
+      const dx = Math.abs(e.clientX - tap.x)
+      const dy = Math.abs(e.clientY - tap.y)
+      if (dx < 8 && dy < 8) onTap?.()
+    }
+    window.addEventListener('pointerup', onWindowPointerUp)
+    return () => window.removeEventListener('pointerup', onWindowPointerUp)
+  }, [onTap])
+
+  // Override onPointerDown to also start tracking the tap candidate
+  const handlePointerDown = useCallback((e) => {
+    listeners.onPointerDown?.(e)
+    tapStartRef.current = { x: e.clientX, y: e.clientY }
+  }, [listeners])
+
   return (
     <div ref={setNodeRef} style={{ opacity: isDragging ? 0.4 : 1 }}>
-      {/* Drag handle attached via listeners */}
-      {children({ dragHandleProps: { ...listeners, ...attributes } })}
+      {children({ dragHandleProps: { ...listeners, ...attributes, onPointerDown: handlePointerDown } })}
     </div>
   )
 }
@@ -707,7 +734,6 @@ function MealGroup({
   const label = t(MEAL_LABEL_KEYS[mealType] ?? mealType)
   const [expandedId, setExpandedId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
-  const tapRef = useRef(null)
 
   const { setNodeRef } = useDroppable({ id: mealType })
 
@@ -808,29 +834,14 @@ function MealGroup({
 
         /* ── Normal mode row ── */
         return (
-          <DraggableEntry key={entry._id} entry={entry}>
+          <DraggableEntry key={entry._id} entry={entry} onTap={() => onRequestAction?.(entry)}>
             {({ dragHandleProps }) => (
           <div className="border-b border-border last:border-0">
             {/* Entry row — drag handle + tap to expand */}
             <div className="flex items-center">
-              {/* Drag handle — tap to open action sheet, drag to reorder */}
+              {/* Drag handle — tap (via window pointerup) to open action sheet, drag to reorder */}
               <div
                 {...dragHandleProps}
-                onPointerDown={(e) => {
-                  dragHandleProps.onPointerDown?.(e)
-                  tapRef.current = { x: e.clientX, y: e.clientY, id: entry._id }
-                }}
-                onPointerUp={(e) => {
-                  const tap = tapRef.current
-                  tapRef.current = null
-                  if (!tap || tap.id !== entry._id) return
-                  const dx = Math.abs(e.clientX - tap.x)
-                  const dy = Math.abs(e.clientY - tap.y)
-                  if (dx < 8 && dy < 8) {
-                    e.stopPropagation()
-                    onRequestAction?.(entry)
-                  }
-                }}
                 onClick={(e) => e.stopPropagation()}
                 className="pl-3 pr-1 py-[11px] cursor-grab active:cursor-grabbing touch-none shrink-0 text-ink3 hover:text-ink1 transition-colors"
                 aria-label={t('nutritionDragHandle')}
