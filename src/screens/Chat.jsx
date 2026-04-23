@@ -270,8 +270,31 @@ export default function Chat() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { type: 'ai', text: t('chatError') },
+        { type: 'ai', text: t('chatError'), isError: true },
       ])
+    } finally {
+      setIsTyping(false)
+    }
+  }
+
+  async function handleRetry() {
+    const lastUserMsg = [...messages].reverse().find(m => m.type === 'user')
+    if (!lastUserMsg) return
+    setMessages(m => m.slice(0, -1))
+    setIsTyping(true)
+    try {
+      const res = await chatService.send(lastUserMsg.text, conversationId)
+      if (res.success && res.data) {
+        setConversationId(res.data.conversationId)
+        setMessages(m => [...m, {
+          type: 'ai',
+          text: res.data.message?.content ?? t('chatNoResponse'),
+          actions: res.data.actions || [],
+        }])
+        if (!conversationId) fetchHistory()
+      }
+    } catch {
+      setMessages(m => [...m, { type: 'ai', text: t('chatError'), isError: true }])
     } finally {
       setIsTyping(false)
     }
@@ -334,7 +357,7 @@ export default function Chat() {
         }])
       }
     } catch {
-      setMessages(m => [...m, { type: 'ai', text: t('chatError') }])
+      setMessages(m => [...m, { type: 'ai', text: t('chatError'), isError: true }])
     } finally {
       setIsTyping(false)
     }
@@ -470,7 +493,8 @@ export default function Chat() {
   const chatMessages = (
     <div className="flex-1 flex flex-col gap-3 px-4 py-4 overflow-y-auto">
       {messages.map((msg, i) => (
-        <div key={i} className={`flex items-end gap-1 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
+        <div key={i} className="flex flex-col">
+        <div className={`flex items-end gap-1 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
           {msg.type === 'ai' && (
             <div className="w-7 h-7 rounded-full bg-orange flex items-center justify-center shrink-0 mr-1 mb-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -570,6 +594,20 @@ export default function Chat() {
               </div>
             </>
           )}
+        </div>
+        {msg.isError && i === messages.length - 1 && !isTyping && (
+          <button
+            onClick={handleRetry}
+            className="self-start ml-9 mt-1 flex items-center gap-1 text-[12px] text-ink3 hover:text-orange transition-colors cursor-pointer"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 4v6h-6"/>
+              <path d="M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            {t('chatRetry')}
+          </button>
+        )}
         </div>
       ))}
       {isTyping && <TypingIndicator />}
