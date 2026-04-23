@@ -105,7 +105,23 @@ function intensityColor(intensity) {
   return 'bg-sand text-ink2'
 }
 
-function buildExerciseSystemPrompt(session, name, t) {
+function buildSessionSummaryLine(s, nameLabel) {
+  const parts = [`${s.date} — ${nameLabel}, ${s.durationMinutes} min, ${s.intensity || 'unknown'}`]
+  if (s.distanceKm > 0) parts.push(`${s.distanceKm} km`)
+  if (s.exercises?.length > 0) {
+    const exSummary = s.exercises.slice(0, 5).map(ex => {
+      const t = normalizeExType(ex.type)
+      if (t === 'strength' || t === 'bodyweight') return `${ex.name} ${ex.sets}×${ex.reps}${ex.weightKg ? `@${ex.weightKg}kg` : ''}`
+      if (t === 'timed') return `${ex.name} ${ex.sets}×${Math.round((ex.durationMin || 0) * 60)}s`
+      if (t === 'cardio') return `${ex.name} ${ex.durationMin || 0}min${ex.distanceKm ? `/${ex.distanceKm}km` : ''}`
+      return ex.name
+    }).join(', ')
+    parts.push(`[${exSummary}${s.exercises.length > 5 ? ` +${s.exercises.length - 5} more` : ''}]`)
+  }
+  return parts.join(' | ')
+}
+
+function buildExerciseSystemPrompt(session, name, t, recentSessions) {
   const lines = [
     `[Page context — Exercise Session]`,
     `Session ID: ${session._id}`,
@@ -137,7 +153,20 @@ function buildExerciseSystemPrompt(session, name, t) {
     })
   }
   if (session.notes) lines.push(`Notes: ${session.notes}`)
-  lines.push(`\nThe user is viewing this specific exercise session and may ask questions about their performance, improvement, or the workout itself. Answer in the same language the user writes in.`)
+
+  // Inject recent history for progress questions
+  if (recentSessions?.length > 0) {
+    const others = recentSessions.filter(s => s._id !== session._id).slice(0, 19)
+    if (others.length > 0) {
+      lines.push(`\n[Recent exercise history — last ${others.length} sessions]`)
+      others.forEach(s => {
+        const label = s.activityLabel || s.activityType
+        lines.push(`  ${buildSessionSummaryLine(s, label)}`)
+      })
+    }
+  }
+
+  lines.push(`\nThe user is viewing this specific exercise session and may ask questions about their performance, progress over time, or the workout itself. Answer in the same language the user writes in.`)
   return lines.join('\n')
 }
 
@@ -789,16 +818,33 @@ export default function ExerciseDetail() {
   useEffect(() => {
     if (!session) return
     const name = activityLabel(session.activityType, session.activityLabel, t)
-    setChatContext({
-      title: name,
-      placeholder: t('chatExerciseContextPlaceholder'),
-      data: session,
-      systemPrompt: buildExerciseSystemPrompt(session, name, t),
-      onActionApplied: ({ type, data }) => {
-        if (type === 'add_exercise_set' && data?.updated) {
-          setSession(prev => ({ ...prev, exercises: data.updated }))
-        }
-      },
+    // Fetch recent history to enrich the chat context (best-effort — doesn't block)
+    api.exercise.list().then(res => {
+      const recent = (res.data ?? res) ?? []
+      setChatContext({
+        title: name,
+        placeholder: t('chatExerciseContextPlaceholder'),
+        data: session,
+        systemPrompt: buildExerciseSystemPrompt(session, name, t, recent),
+        onActionApplied: ({ type, data }) => {
+          if (type === 'add_exercise_set' && data?.updated) {
+            setSession(prev => ({ ...prev, exercises: data.updated }))
+          }
+        },
+      })
+    }).catch(() => {
+      // Fall back to current-session-only context if history fetch fails
+      setChatContext({
+        title: name,
+        placeholder: t('chatExerciseContextPlaceholder'),
+        data: session,
+        systemPrompt: buildExerciseSystemPrompt(session, name, t, []),
+        onActionApplied: ({ type, data }) => {
+          if (type === 'add_exercise_set' && data?.updated) {
+            setSession(prev => ({ ...prev, exercises: data.updated }))
+          }
+        },
+      })
     })
   }, [session])
 
