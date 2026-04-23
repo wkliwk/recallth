@@ -57,7 +57,7 @@ export default function ExerciseNew() {
   const [duration, setDuration] = useState('')
   const [intensity, setIntensity] = useState('moderate')
   const [distanceKm, setDistanceKm] = useState('')
-  const [exercises, setExercises] = useState([{ name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationSec: '' }])
+  const [exercises, setExercises] = useState([{ name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationSec: '', durationMin: '', distanceKm: '' }])
   const [notes, setNotes] = useState('')
 
   const [saving, setSaving] = useState(false)
@@ -96,14 +96,19 @@ export default function ExerciseNew() {
       setIntensity(d.intensity || 'moderate')
       setDistanceKm(d.distanceKm ? String(d.distanceKm) : '')
       if (d.exercises?.length) {
-        setExercises(d.exercises.map(ex => ({
-          name: ex.name || '',
-          type: ex.type === 'stretch' ? 'stretch' : 'strength',
-          sets: String(ex.sets || ''),
-          reps: String(ex.reps || ''),
-          weightKg: ex.weightKg ? String(ex.weightKg) : '',
-          durationSec: ex.durationMin ? String(Math.round(ex.durationMin * 60)) : '',
-        })))
+        setExercises(d.exercises.map(ex => {
+          const type = ['strength','bodyweight','timed','cardio','session'].includes(ex.type) ? ex.type : 'strength'
+          return {
+            name: ex.name || '',
+            type,
+            sets: String(ex.sets || ''),
+            reps: String(ex.reps || ''),
+            weightKg: ex.weightKg ? String(ex.weightKg) : '',
+            durationSec: type === 'timed' ? String(Math.round((ex.durationMin || 0) * 60)) : '',
+            durationMin: (type === 'cardio' || type === 'session') ? String(ex.durationMin || '') : '',
+            distanceKm: type === 'cardio' ? String(ex.distanceKm || '') : '',
+          }
+        }))
       }
       setNotes(d.notes || '')
     } catch {
@@ -138,38 +143,14 @@ export default function ExerciseNew() {
         payload.distanceKm = Number(parsed.distanceKm)
       }
       if (type === 'gym' && parsed.exercises?.length) {
-        payload.exercises = parsed.exercises.map(ex => {
-          if (ex.type === 'stretch') return {
-            name: ex.name, type: 'stretch',
-            sets: Number(ex.sets) || 1,
-            durationMin: ex.durationMin ? Number(ex.durationMin) : undefined,
-          }
-          return {
-            name: ex.name,
-            sets: Number(ex.sets) || 1,
-            reps: Number(ex.reps) || 1,
-            weightKg: ex.weightKg ? Number(ex.weightKg) : undefined,
-          }
-        })
+        payload.exercises = parsed.exercises.map(ex => buildExPayload(ex))
       }
     } else {
       if ((type === 'running' || type === 'swimming' || type === 'cycling' || type === 'hiking') && distanceKm) {
         payload.distanceKm = Number(distanceKm)
       }
       if (type === 'gym') {
-        const valid = exercises.filter(ex => ex.name.trim()).map(ex => {
-          if (ex.type === 'stretch') return {
-            name: ex.name.trim(), type: 'stretch',
-            sets: Number(ex.sets) || 1,
-            durationMin: ex.durationSec ? Number(ex.durationSec) / 60 : undefined,
-          }
-          return {
-            name: ex.name.trim(),
-            sets: Number(ex.sets) || 1,
-            reps: Number(ex.reps) || 1,
-            weightKg: ex.weightKg ? Number(ex.weightKg) : undefined,
-          }
-        })
+        const valid = exercises.filter(ex => ex.name.trim()).map(ex => buildExPayload(ex, true))
         if (valid.length) payload.exercises = valid
       }
     }
@@ -190,8 +171,42 @@ export default function ExerciseNew() {
     }
   }
 
+  // Build backend payload for a single exercise (form state or parsed AI object)
+  function buildExPayload(ex, fromForm = false) {
+    const name = fromForm ? ex.name.trim() : (ex.name || '')
+    const type = ex.type || 'strength'
+    if (type === 'timed') return {
+      name, type: 'timed',
+      sets: Number(ex.sets) || 1,
+      durationMin: fromForm
+        ? (ex.durationSec ? Number(ex.durationSec) / 60 : undefined)
+        : (ex.durationMin ? Number(ex.durationMin) : undefined),
+    }
+    if (type === 'bodyweight') return {
+      name, type: 'bodyweight',
+      sets: Number(ex.sets) || 1,
+      reps: Number(ex.reps) || 1,
+      ...(ex.weightKg ? { weightKg: Number(ex.weightKg) } : {}),
+    }
+    if (type === 'cardio') return {
+      name, type: 'cardio',
+      ...(ex.durationMin ? { durationMin: Number(ex.durationMin) } : {}),
+      ...(ex.distanceKm ? { distanceKm: Number(ex.distanceKm) } : {}),
+    }
+    if (type === 'session') return {
+      name, type: 'session',
+      ...(ex.durationMin ? { durationMin: Number(ex.durationMin) } : {}),
+    }
+    return {
+      name, type: 'strength',
+      sets: Number(ex.sets) || 1,
+      reps: Number(ex.reps) || 1,
+      ...(ex.weightKg ? { weightKg: Number(ex.weightKg) } : {}),
+    }
+  }
+
   function addExercise() {
-    setExercises(prev => [...prev, { name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationSec: '' }])
+    setExercises(prev => [...prev, { name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationSec: '', durationMin: '', distanceKm: '' }])
   }
   function removeExercise(i) {
     setExercises(prev => prev.filter((_, idx) => idx !== i))
@@ -295,9 +310,15 @@ export default function ExerciseNew() {
                   <div key={i} className="flex items-center gap-2 bg-sand rounded-[10px] px-3 py-2">
                     <span className="flex-1 text-[13px] font-medium text-ink1">{ex.name}</span>
                     <span className="text-[12px] text-ink3">
-                      {ex.type === 'stretch'
-                        ? `${ex.sets}×${ex.durationMin ? Math.round(ex.durationMin * 60) + 'sec' : '—'}`
-                        : `${ex.sets}×${ex.reps}${ex.weightKg ? ` @ ${ex.weightKg}kg` : ''}`}
+                      {ex.type === 'timed'
+                        ? `${ex.sets || 1}×${ex.durationMin ? Math.round(ex.durationMin * 60) + 'sec' : '—'}`
+                        : ex.type === 'cardio'
+                        ? `${ex.distanceKm || '—'}km ${ex.durationMin || '—'}min`
+                        : ex.type === 'session'
+                        ? `${ex.durationMin || '—'}min`
+                        : ex.type === 'bodyweight'
+                        ? `${ex.sets || 1}×${ex.reps || 1}reps`
+                        : `${ex.sets || 1}×${ex.reps || 1}${ex.weightKg ? ` @ ${ex.weightKg}kg` : ''}`}
                     </span>
                   </div>
                 ))}
@@ -435,20 +456,62 @@ export default function ExerciseNew() {
                         </button>
                       )}
                     </div>
-                    {/* Type toggle */}
-                    <div className="flex items-center bg-sand rounded-full p-0.5 self-start">
-                      <button
-                        type="button"
-                        onClick={() => updateExercise(i, 'type', 'strength')}
-                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${ex.type !== 'stretch' ? 'bg-orange text-white shadow-sm' : 'text-ink3'}`}
-                      >Strength</button>
-                      <button
-                        type="button"
-                        onClick={() => updateExercise(i, 'type', 'stretch')}
-                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${ex.type === 'stretch' ? 'bg-orange text-white shadow-sm' : 'text-ink3'}`}
-                      >Timed</button>
+                    {/* 5-type selector */}
+                    <div className="flex gap-1.5 flex-wrap">
+                      {[
+                        { value: 'strength',   icon: '🏋️', label: 'Strength' },
+                        { value: 'bodyweight', icon: '💪', label: 'Bodyweight' },
+                        { value: 'timed',      icon: '⏱️', label: 'Timed' },
+                        { value: 'cardio',     icon: '🏃', label: 'Cardio' },
+                        { value: 'session',    icon: '🧘', label: 'Session' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => updateExercise(i, 'type', opt.value)}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border ${
+                            ex.type === opt.value
+                              ? 'bg-orange text-white border-orange shadow-sm'
+                              : 'bg-sand text-ink3 border-transparent'
+                          }`}
+                        >
+                          <span>{opt.icon}</span>{opt.label}
+                        </button>
+                      ))}
                     </div>
-                    {ex.type === 'stretch' ? (
+                    {/* Inputs per type */}
+                    {ex.type === 'strength' && (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="1" className={numInputClass} placeholder="3" value={ex.sets} onChange={e => updateExercise(i, 'sets', e.target.value)} />
+                          <span className="text-[12px] text-ink3">sets</span>
+                        </div>
+                        <span className="text-ink3">×</span>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="1" className={numInputClass} placeholder="10" value={ex.reps} onChange={e => updateExercise(i, 'reps', e.target.value)} />
+                          <span className="text-[12px] text-ink3">reps</span>
+                        </div>
+                        <span className="text-ink3">×</span>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="0" step="0.5" className={numInputClass} placeholder="60" value={ex.weightKg} onChange={e => updateExercise(i, 'weightKg', e.target.value)} />
+                          <span className="text-[12px] text-ink3">kg</span>
+                        </div>
+                      </div>
+                    )}
+                    {ex.type === 'bodyweight' && (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="1" className={numInputClass} placeholder="3" value={ex.sets} onChange={e => updateExercise(i, 'sets', e.target.value)} />
+                          <span className="text-[12px] text-ink3">sets</span>
+                        </div>
+                        <span className="text-ink3">×</span>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="1" className={numInputClass} placeholder="15" value={ex.reps} onChange={e => updateExercise(i, 'reps', e.target.value)} />
+                          <span className="text-[12px] text-ink3">reps</span>
+                        </div>
+                      </div>
+                    )}
+                    {ex.type === 'timed' && (
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-1">
                           <input type="number" min="1" className={numInputClass} placeholder="5" value={ex.sets} onChange={e => updateExercise(i, 'sets', e.target.value)} />
@@ -460,23 +523,25 @@ export default function ExerciseNew() {
                           <span className="text-[12px] text-ink3">sec</span>
                         </div>
                       </div>
-                    ) : (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex items-center gap-1">
-                        <input type="number" min="1" className={numInputClass} placeholder="3" value={ex.sets} onChange={e => updateExercise(i, 'sets', e.target.value)} />
-                        <span className="text-[12px] text-ink3">sets</span>
+                    )}
+                    {ex.type === 'cardio' && (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="0" step="0.1" className={numInputClass} placeholder="5.0" value={ex.distanceKm} onChange={e => updateExercise(i, 'distanceKm', e.target.value)} />
+                          <span className="text-[12px] text-ink3">km</span>
+                        </div>
+                        <span className="text-ink3">+</span>
+                        <div className="flex items-center gap-1">
+                          <input type="number" min="1" className={numInputClass} placeholder="30" value={ex.durationMin} onChange={e => updateExercise(i, 'durationMin', e.target.value)} />
+                          <span className="text-[12px] text-ink3">min</span>
+                        </div>
                       </div>
-                      <span className="text-ink3">×</span>
+                    )}
+                    {ex.type === 'session' && (
                       <div className="flex items-center gap-1">
-                        <input type="number" min="1" className={numInputClass} placeholder="10" value={ex.reps} onChange={e => updateExercise(i, 'reps', e.target.value)} />
-                        <span className="text-[12px] text-ink3">reps</span>
+                        <input type="number" min="1" className={numInputClass} placeholder="45" value={ex.durationMin} onChange={e => updateExercise(i, 'durationMin', e.target.value)} />
+                        <span className="text-[12px] text-ink3">min</span>
                       </div>
-                      <span className="text-ink3">×</span>
-                      <div className="flex items-center gap-1">
-                        <input type="number" min="0" step="0.5" className={numInputClass} placeholder="60" value={ex.weightKg} onChange={e => updateExercise(i, 'weightKg', e.target.value)} />
-                        <span className="text-[12px] text-ink3">kg</span>
-                      </div>
-                    </div>
                     )}
                   </div>
                 ))}
