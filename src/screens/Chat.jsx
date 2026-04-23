@@ -345,7 +345,7 @@ export default function Chat() {
       await api.chat.delete(id)
       setHistory((prev) => prev.filter((c) => c._id !== id))
       if (conversationId === id) handleNewChat()
-      setDrawerOpen(false)
+      // Stay on history drawer — do not close
     } catch {
       // ignore
     }
