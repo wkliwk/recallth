@@ -4,6 +4,7 @@ import { getFlag } from '../utils/featureFlags'
 import {
   DndContext,
   DragOverlay,
+  MeasuringStrategy,
   PointerSensor,
   TouchSensor,
   useSensor,
@@ -733,38 +734,38 @@ function DateDropChip({ date, viewDate }) {
     <div
       ref={setNodeRef}
       className={[
-        'flex flex-col items-center justify-center min-w-[48px] h-[60px] rounded-[14px] border-2 transition-all duration-150 select-none shrink-0',
+        'flex flex-col items-center justify-center flex-1 h-[56px] rounded-[12px] border-2 transition-all duration-150 select-none',
         isOver
-          ? 'bg-orange border-orange text-white scale-110 shadow-md'
+          ? 'bg-orange border-orange text-white scale-105 shadow-md'
           : isCurrentView
             ? 'bg-orange/10 border-orange/50 text-ink1'
             : 'bg-white border-border text-ink2',
       ].join(' ')}
     >
-      <span className="text-[10px] font-medium leading-tight">
+      <span className="text-[9px] font-medium leading-tight">
         {isToday ? '今日' : `週${dayName}`}
       </span>
-      <span className="text-[17px] font-bold leading-tight">{dayNum}</span>
-      <span className="text-[9px] opacity-60 leading-tight">{monthNum}月</span>
+      <span className="text-[15px] font-bold leading-tight">{dayNum}</span>
+      <span className="text-[8px] opacity-60 leading-tight">{monthNum}月</span>
     </div>
   )
 }
 
 // ── Date drop strip (slides in during drag) ───────────────────────────────────
+// Chips are ALWAYS in the DOM so dnd-kit has valid rects; only opacity changes.
 function DateDropStrip({ visible, viewDate }) {
   const today = todayISO()
-  // today-3 … today+3, 7 chips
   const dates = Array.from({ length: 7 }, (_, i) => offsetDate(today, i - 3))
 
   return (
     <div
       className={[
-        'overflow-hidden transition-all duration-200',
-        visible ? 'max-h-24 opacity-100 mb-2' : 'max-h-0 opacity-0',
+        'transition-opacity duration-150',
+        visible ? 'opacity-100 mb-2' : 'opacity-0 pointer-events-none',
       ].join(' ')}
     >
-      <div className="flex gap-2 px-1 pt-1 pb-2 overflow-x-auto">
-        <p className="self-center text-[11px] text-ink3 shrink-0 pr-1">拖到:</p>
+      <div className="flex gap-[6px] px-1 pt-1 pb-2">
+        <p className="self-center text-[11px] text-ink3 shrink-0 pr-1">拖到</p>
         {dates.map((date) => (
           <DateDropChip key={date} date={date} viewDate={viewDate} />
         ))}
@@ -2994,7 +2995,7 @@ export default function NutritionTracker() {
                 ))}
               </div>
             ) : (
-              <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+              <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
                 <DateDropStrip visible={!!activeEntryId} viewDate={viewDate} />
                 <div className="flex flex-col gap-3">
                   {MEAL_ORDER.map((mt) => (
@@ -3586,6 +3587,7 @@ export default function NutritionTracker() {
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
+                  measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
                 >
                   <DateDropStrip visible={!!activeEntryId} viewDate={viewDate} />
                   <div className="flex flex-col gap-3">
