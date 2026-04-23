@@ -2951,20 +2951,10 @@ export default function NutritionTracker() {
 
           {/* ── RIGHT COLUMN: meal log ── */}
           <div className="flex flex-col gap-3 mt-3 lg:mt-0">
-            {/* Date nav + metric row */}
+            {/* Metric row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
-                {!selectMode && (
-                  <>
-                    <button type="button" onClick={handlePrevDay} aria-label="Previous day" className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2"><polyline points="15 18 9 12 15 6" /></svg>
-                    </button>
-                    <span className="px-1 text-[14px] font-semibold text-ink1">{dateLabel}</span>
-                    <button type="button" onClick={handleNextDay} disabled={isAtMaxDate} aria-label="Next day" className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2"><polyline points="9 18 15 12 9 6" /></svg>
-                    </button>
-                  </>
-                )}
+                {!selectMode && <span className="text-[14px] font-semibold text-ink1">{dateLabel}</span>}
                 {selectMode && <span className="text-[14px] font-semibold text-ink1">{selectedIds.size > 0 ? `${selectedIds.size} selected` : t('nutritionSelectMode')}</span>}
               </div>
               <div className="flex items-center gap-2">
