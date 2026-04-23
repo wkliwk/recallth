@@ -59,6 +59,7 @@ export default function Cabinet() {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
   const [sortBy, setSortBy] = useState('name') // 'name' | 'brand' | 'type' | 'recent'
+  const [stockFilter, setStockFilter] = useState('all') // 'all' | 'out'
   const [aiSuggestion, setAiSuggestion] = useState(null)
   const [aiSuggesting, setAiSuggesting] = useState(false)
   const aiDebounceRef = useRef(null)
@@ -104,12 +105,18 @@ export default function Cabinet() {
     fetchData()
   }, [])
 
+  const outOfStockCount = supplements.filter((s) => s.outOfStock).length
+
   const filtered = supplements
     .filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((s) => stockFilter === 'out' ? s.outOfStock : true)
     .sort((a, b) => {
       if (sortBy === 'brand') return (a.brand || '').localeCompare(b.brand || '')
       if (sortBy === 'type') return (a.type || '').localeCompare(b.type || '')
       if (sortBy === 'recent') return (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || '')
+      // Always sort out-of-stock items to the bottom
+      if (a.outOfStock && !b.outOfStock) return 1
+      if (!a.outOfStock && b.outOfStock) return -1
       return a.name.localeCompare(b.name)
     })
 
@@ -220,6 +227,18 @@ export default function Cabinet() {
                 {opt.label}
               </button>
             ))}
+            {outOfStockCount > 0 && (
+              <button
+                onClick={() => setStockFilter(stockFilter === 'out' ? 'all' : 'out')}
+                className={`rounded-pill px-3 py-[5px] text-[11px] font-medium whitespace-nowrap cursor-pointer transition-colors ${
+                  stockFilter === 'out'
+                    ? 'bg-[#888] text-white'
+                    : 'bg-white border border-border text-ink3 hover:border-ink3/40'
+                }`}
+              >
+                用完 {outOfStockCount}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -291,6 +310,18 @@ export default function Cabinet() {
                 {opt.label}
               </button>
             ))}
+            {outOfStockCount > 0 && (
+              <button
+                onClick={() => setStockFilter(stockFilter === 'out' ? 'all' : 'out')}
+                className={`rounded-pill px-3 py-[5px] text-[11px] font-medium whitespace-nowrap cursor-pointer transition-colors ${
+                  stockFilter === 'out'
+                    ? 'bg-[#888] text-white'
+                    : 'bg-white border border-border text-ink3 hover:border-ink3/40'
+                }`}
+              >
+                用完 {outOfStockCount}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1 ml-3 shrink-0">
             <button
@@ -441,6 +472,7 @@ export default function Cabinet() {
                   evidenceLevel={evidenceLevel}
                   imageUrl={supp.imageUrl}
                   variant={viewMode}
+                  outOfStock={!!supp.outOfStock}
                 />
               </div>
             )

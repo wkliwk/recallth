@@ -310,6 +310,16 @@ export default function CabinetDetail() {
     }
   }
 
+  async function handleToggleOutOfStock() {
+    const newValue = !supp.outOfStock
+    try {
+      const res = await api.cabinet.update(id, { outOfStock: newValue })
+      setSupp(res.data || { ...supp, outOfStock: newValue })
+    } catch (err) {
+      setFormErrors({ submit: err.message || 'Failed to update stock status' })
+    }
+  }
+
   const evidenceScore = supp?.evidenceScore
   const evidenceLevel = evidenceScore?.level
   const evidenceColors = EVIDENCE_COLORS[evidenceLevel] || null
@@ -847,6 +857,18 @@ export default function CabinetDetail() {
           )}
 
           {/* Actions */}
+          {/* Out-of-stock toggle */}
+          <button
+            onClick={handleToggleOutOfStock}
+            className={`w-full rounded-pill border-[1.5px] text-[14px] font-medium py-[11px] cursor-pointer transition-colors ${
+              supp.outOfStock
+                ? 'border-[#ccc] text-ink3 bg-[#f5f5f5] hover:bg-[#ebebeb]'
+                : 'border-[#ccc] text-ink2 hover:bg-[#f5f5f5]'
+            }`}
+          >
+            {supp.outOfStock ? '✓ 已用完  —  按此恢復存貨' : '標記為已用完'}
+          </button>
+
           {confirmDelete ? (
             <div className="rounded-card border border-[#E8C4B0] bg-[#FDE8DE] p-4 flex flex-col gap-3">
               <p className="text-[14px] text-ink1 text-center font-medium">{t('confirmDelete')}</p>
