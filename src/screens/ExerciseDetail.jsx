@@ -123,6 +123,9 @@ function buildExerciseSystemPrompt(session, name, t) {
         if (ex.durationMin) parts.push(`${ex.durationMin} min`)
         if (ex.distanceKm) parts.push(`${ex.distanceKm} km`)
         lines.push(`  - ${ex.name} (cardio)${parts.length ? ': ' + parts.join(', ') : ''}`)
+      } else if (ex.type === 'stretch') {
+        const secStr = ex.durationMin ? `${Math.round(ex.durationMin * 60)} sec` : ''
+        lines.push(`  - ${ex.name} (timed): ${ex.sets || 1} sets${secStr ? ` × ${secStr}` : ''}`)
       } else {
         lines.push(`  - ${ex.name}: ${ex.sets} sets × ${ex.reps} reps${ex.weightKg ? ` @ ${ex.weightKg} kg` : ''}`)
       }
@@ -215,8 +218,13 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
       <span className={uSm}>km</span>
     </>)
     if (type === 'stretch') return (<>
-      <input className={`${bigM} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <span className={uSm}>min</span>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}     onChange={e => setSets(e.target.value)}     onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
+      <input className={`${bigM} w-12`} type="number" min="1"
+        value={duration !== '' ? Math.round(parseFloat(duration || 0) * 60) || '' : ''}
+        onChange={e => setDuration(e.target.value !== '' ? String(parseFloat(e.target.value) / 60) : '')}
+        onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>sec</span>
     </>)
     if (type === 'hiit') return (<>
       <input className={`${bigM} w-9`}  type="number" min="1" value={rounds}    onChange={e => setRounds(e.target.value)}    onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
@@ -246,11 +254,21 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         <input className={`${bigD} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       </div>
     )
-    // cardio & stretch: put duration here
-    if (type === 'cardio' || type === 'stretch') return (
+    if (type === 'cardio') return (
       <div className="flex items-baseline gap-1 justify-end">
         <input className={`${bigD} w-12`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
         <span className={uSm}>min</span>
+      </div>
+    )
+    if (type === 'stretch') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-9`}  type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className="text-[15px] text-ink3/40">×</span>
+        <input className={`${bigD} w-12`} type="number" min="1"
+          value={duration !== '' ? Math.round(parseFloat(duration || 0) * 60) || '' : ''}
+          onChange={e => setDuration(e.target.value !== '' ? String(parseFloat(e.target.value) / 60) : '')}
+          onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>sec</span>
       </div>
     )
     return <div className="flex justify-end"><span className="text-ink3/30 text-[18px]">—</span></div>
@@ -364,6 +382,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
         }
         if (r.type === 'stretch') return {
           name: r.name.trim(), type: 'stretch',
+          sets: Number(r.sets) || 1,
           ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
         }
         if (r.type === 'hiit') return {
