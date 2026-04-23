@@ -333,6 +333,7 @@ function AlgorithmCard({ summary, onOpenProfileChat }) {
 function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKey }) {
   const [open, setOpen] = useState(false)
   const isToday = viewDate === todayStr
+  const maxViewDate = offsetDate(todayStr, 3)
   return (
     <div className="lg:hidden rounded-[14px] border border-border bg-white overflow-hidden">
       <div className="flex items-center px-2 py-1.5">
@@ -375,7 +376,7 @@ function MobileCalendar({ viewDate, onSelectDate, todayStr, dateLabel, refreshKe
         <button
           type="button"
           onClick={() => onSelectDate(offsetDate(viewDate, 1))}
-          disabled={isToday}
+          disabled={viewDate >= maxViewDate}
           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none shrink-0 disabled:opacity-30"
           aria-label="Next day"
         >
@@ -492,7 +493,7 @@ function NutritionCalendar({ viewDate, onSelectDate, todayStr, refreshKey = 0 })
       <div className="grid grid-cols-7 gap-y-[2px]">
         {cells.map((iso, i) => {
           if (!iso) return <div key={`empty-${i}`} />
-          const isFuture = iso > todayStr
+          const isFuture = iso > offsetDate(todayStr, 3)
           const isToday = iso === todayStr
           const isSelected = iso === viewDate
           const hasRecord = recordDays.has(iso)
@@ -1530,10 +1531,12 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
 
   function prevWeek() { onSelectDate(offsetDate(days[0], -7)) }
   function nextWeek() {
-    if (!days.includes(todayStr)) onSelectDate(offsetDate(days[0], 7))
+    const nextStart = offsetDate(days[0], 7)
+    if (nextStart <= offsetDate(todayStr, 3)) onSelectDate(nextStart)
   }
 
   const isCurrentWeek = days.includes(todayStr)
+  const isAtMaxWeek = offsetDate(days[0], 7) > offsetDate(todayStr, 3)
 
   return (
     <div className="bg-white border-b border-border">
@@ -1552,7 +1555,7 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
           {/* Day buttons */}
           <div className="flex gap-1 flex-1 justify-around">
             {days.map((iso) => {
-              const isFuture = iso > todayStr
+              const isFuture = iso > offsetDate(todayStr, 3)
               const isToday = iso === todayStr
               const isSelected = iso === viewDate
               const hasRecord = recordDays.has(iso)
@@ -1583,7 +1586,7 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
 
           {/* Next week */}
           {!expanded && (
-            <button type="button" onClick={nextWeek} disabled={isCurrentWeek} aria-label="Next week"
+            <button type="button" onClick={nextWeek} disabled={isAtMaxWeek} aria-label="Next week"
               className="w-7 h-7 flex items-center justify-center text-ink3 hover:text-ink2 focus:outline-none shrink-0 disabled:opacity-30">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
             </button>
@@ -2227,6 +2230,9 @@ export default function NutritionTracker() {
   const [aiPlaceholder] = useState(() => getRandomAiPlaceholder(language))
   const [viewDate, setViewDate] = useState(todayStr)
   const isToday = viewDate === todayStr
+  // Allow browsing up to today+3 (matches drag-to-date strip range)
+  const maxViewDate = offsetDate(todayStr, 3)
+  const isAtMaxDate = viewDate >= maxViewDate
   const dateLabel = isToday ? t('nutritionCalToday') : formatDateLabel(viewDate)
 
   // ── Feature flag ──────────────────────────────────────────────────────────
@@ -2253,7 +2259,7 @@ export default function NutritionTracker() {
   function handlePrevDay() { setViewDate((d) => offsetDate(d, -1)) }
   function handleNextDay() {
     const next = offsetDate(viewDate, 1)
-    if (next <= todayStr) setViewDate(next)
+    if (next <= maxViewDate) setViewDate(next)
   }
   function handleGoToday() { setViewDate(todayStr) }
 
@@ -2954,7 +2960,7 @@ export default function NutritionTracker() {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2"><polyline points="15 18 9 12 15 6" /></svg>
                     </button>
                     <span className="px-1 text-[14px] font-semibold text-ink1">{dateLabel}</span>
-                    <button type="button" onClick={handleNextDay} disabled={isToday} aria-label="Next day" className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30">
+                    <button type="button" onClick={handleNextDay} disabled={isAtMaxDate} aria-label="Next day" className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink2"><polyline points="9 18 15 12 9 6" /></svg>
                     </button>
                   </>
@@ -3497,7 +3503,7 @@ export default function NutritionTracker() {
                       <button
                         type="button"
                         onClick={handleNextDay}
-                        disabled={isToday}
+                        disabled={isAtMaxDate}
                         aria-label="Next day"
                         className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
                       >
