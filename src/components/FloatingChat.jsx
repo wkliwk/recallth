@@ -83,9 +83,8 @@ function HistoryView({ onBack, onSelect, onNewChat, activeConversationId, onActi
     try { await chatService.deleteConversation(id) } catch { /* ignore */ }
     if (id === activeConversationId) {
       onActiveDeleted()
-    } else {
-      onBack()
     }
+    // Stay on history view — no navigation
   }
 
   return (
@@ -404,7 +403,13 @@ function ChatPanel({
             onSelect={handleSelectConversation}
             onNewChat={handleNewChat}
             activeConversationId={conversationId}
-            onActiveDeleted={handleNewChat}
+            onActiveDeleted={() => {
+              // Reset chat state but stay on history view
+              setConversationId(null)
+              setMessages([])
+              setAppliedActions(new Set())
+              setContextInjected(false)
+            }}
             t={t}
           />
         </div>
