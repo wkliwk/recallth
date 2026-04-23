@@ -118,14 +118,19 @@ function buildExerciseSystemPrompt(session, name, t) {
   if (session.exercises?.length > 0) {
     lines.push(`Exercises:`)
     session.exercises.forEach((ex) => {
-      if (ex.type === 'cardio') {
+      const t = normalizeExType(ex.type)
+      if (t === 'cardio') {
         const parts = []
         if (ex.durationMin) parts.push(`${ex.durationMin} min`)
         if (ex.distanceKm) parts.push(`${ex.distanceKm} km`)
         lines.push(`  - ${ex.name} (cardio)${parts.length ? ': ' + parts.join(', ') : ''}`)
-      } else if (ex.type === 'stretch') {
+      } else if (t === 'timed') {
         const secStr = ex.durationMin ? `${Math.round(ex.durationMin * 60)} sec` : ''
         lines.push(`  - ${ex.name} (timed): ${ex.sets || 1} sets${secStr ? ` × ${secStr}` : ''}`)
+      } else if (t === 'bodyweight') {
+        lines.push(`  - ${ex.name} (bodyweight): ${ex.sets || 1} sets × ${ex.reps || 1} reps${ex.weightKg ? ` +${ex.weightKg} kg` : ''}`)
+      } else if (t === 'session') {
+        lines.push(`  - ${ex.name} (session): ${ex.durationMin || 0} min`)
       } else {
         lines.push(`  - ${ex.name}: ${ex.sets} sets × ${ex.reps} reps${ex.weightKg ? ` @ ${ex.weightKg} kg` : ''}`)
       }
@@ -162,25 +167,34 @@ function displayToKg(val, unit) {
   return val
 }
 
-const TYPE_ORDER = ['strength', 'cardio', 'stretch', 'hiit']
+const TYPE_ORDER = ['strength', 'bodyweight', 'timed', 'cardio', 'session']
 const TYPE_CONFIG = {
-  strength: { label: 'Strength', chipCls: 'bg-orange/10 text-orange',              icon: '🏋️', iconBg: 'bg-orange/10' },
-  cardio:   { label: 'Cardio',   chipCls: 'bg-blue-500/10 text-blue-600',           icon: '🏃', iconBg: 'bg-blue-500/10' },
-  stretch:  { label: 'Stretch',  chipCls: 'bg-emerald-500/10 text-emerald-700',     icon: '🧘', iconBg: 'bg-emerald-500/10' },
-  hiit:     { label: 'HIIT',     chipCls: 'bg-red-500/10 text-red-600',             icon: '⚡', iconBg: 'bg-red-500/10' },
+  strength:   { label: 'Strength',   chipCls: 'bg-orange/10 text-orange',           icon: '🏋️', iconBg: 'bg-orange/10' },
+  bodyweight: { label: 'Bodyweight', chipCls: 'bg-violet-500/10 text-violet-600',   icon: '💪', iconBg: 'bg-violet-500/10' },
+  timed:      { label: 'Timed',      chipCls: 'bg-emerald-500/10 text-emerald-700', icon: '⏱️', iconBg: 'bg-emerald-500/10' },
+  cardio:     { label: 'Cardio',     chipCls: 'bg-blue-500/10 text-blue-600',       icon: '🏃', iconBg: 'bg-blue-500/10' },
+  session:    { label: 'Session',    chipCls: 'bg-amber-500/10 text-amber-600',     icon: '🧘', iconBg: 'bg-amber-500/10' },
+  // backwards compat for existing DB data
+  stretch:    { label: 'Timed',      chipCls: 'bg-emerald-500/10 text-emerald-700', icon: '⏱️', iconBg: 'bg-emerald-500/10' },
+  hiit:       { label: 'Session',    chipCls: 'bg-amber-500/10 text-amber-600',     icon: '🧘', iconBg: 'bg-amber-500/10' },
+}
+// Normalize legacy types to new type system for display/input logic
+function normalizeExType(t) {
+  if (t === 'stretch') return 'timed'
+  if (t === 'hiit') return 'session'
+  return t || 'strength'
 }
 
 function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
   const [name, setName] = useState(row.name || '')
-  const [type, setType] = useState(row.type || 'strength')
+  const [type, setType] = useState(normalizeExType(row.type || 'strength'))
   const [sets, setSets] = useState(String(row.sets ?? ''))
   const [reps, setReps] = useState(String(row.reps ?? ''))
-  const [rounds, setRounds] = useState(String(row.rounds ?? ''))
   const [weight, setWeight] = useState(kgToDisplay(row.weightKg, unit))
   const [duration, setDuration] = useState(String(row.durationMin ?? ''))
   const [distance, setDistance] = useState(String(row.distanceKm ?? ''))
   const cur = useRef({})
-  cur.current = { name, type, sets, reps, rounds, weight, duration, distance, unit }
+  cur.current = { name, type, sets, reps, weight, duration, distance, unit }
 
   function handleBlur() { onSave(cur.current) }
   function onKey(e) { if (e.key === 'Enter') e.target.blur() }
@@ -202,23 +216,23 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
   // Mobile number fields per type
   function mobileNums() {
     if (type === 'strength') return (<>
-      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}     onChange={e => setSets(e.target.value)}     onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}   onChange={e => setSets(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
-      <input className={`${bigM} w-9`}  type="number" min="1" value={reps}     onChange={e => setReps(e.target.value)}     onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <input className={`${bigM} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       <span className={uSm}>reps</span>
       <span className="flex items-baseline gap-0.5 whitespace-nowrap">
         <input className={`${bigM} w-14`} type="number" min="0" step={unit === 'lbs' ? '1' : '0.5'} value={weight} onChange={e => setWeight(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
         <span className={uSm}>{unit}</span>
       </span>
     </>)
-    if (type === 'cardio') return (<>
-      <input className={`${bigM} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <span className={`${uSm} mr-2`}>min</span>
-      <input className={`${bigM} w-12`} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <span className={uSm}>km</span>
+    if (type === 'bodyweight') return (<>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}   onChange={e => setSets(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>reps</span>
     </>)
-    if (type === 'stretch') return (<>
-      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}     onChange={e => setSets(e.target.value)}     onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+    if (type === 'timed') return (<>
+      <input className={`${bigM} w-9`}  type="number" min="1" value={sets}   onChange={e => setSets(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
       <input className={`${bigM} w-12`} type="number" min="1"
         value={duration !== '' ? Math.round(parseFloat(duration || 0) * 60) || '' : ''}
@@ -226,20 +240,21 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       <span className={uSm}>sec</span>
     </>)
-    if (type === 'hiit') return (<>
-      <input className={`${bigM} w-9`}  type="number" min="1" value={rounds}    onChange={e => setRounds(e.target.value)}    onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <span className={`${uSm} mr-1`}>rds</span>
-      <span className="text-[15px] text-ink3/40 mx-0.5">×</span>
-      <input className={`${bigM} w-9`}  type="number" min="1" value={reps}      onChange={e => setReps(e.target.value)}      onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      <span className={`${uSm} mr-2`}>reps</span>
-      <input className={`${bigM} w-10`} type="number" min="0" value={duration}  onChange={e => setDuration(e.target.value)}  onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+    if (type === 'cardio') return (<>
+      <input className={`${bigM} w-10`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={`${uSm} mr-2`}>min</span>
+      <input className={`${bigM} w-12`} type="number" min="0" step="0.1" value={distance} onChange={e => setDistance(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+      <span className={uSm}>km</span>
+    </>)
+    if (type === 'session') return (<>
+      <input className={`${bigM} w-10`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
       <span className={uSm}>min</span>
     </>)
   }
 
-  // Desktop col 4: "Sets × Reps" — strength/hiit use sets, cardio/stretch use duration
+  // Desktop col 4: "Sets × Reps / Duration"
   function desktopMetrics() {
-    if (type === 'strength') return (
+    if (type === 'strength' || type === 'bodyweight') return (
       <div className="flex items-baseline gap-1 justify-end">
         <input className={`${bigD} w-9`}  type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
         <span className="text-[15px] text-ink3/40">×</span>
@@ -247,20 +262,7 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         <span className={uSm}>reps</span>
       </div>
     )
-    if (type === 'hiit') return (
-      <div className="flex items-baseline gap-1 justify-end">
-        <input className={`${bigD} w-9`}  type="number" min="1" value={rounds} onChange={e => setRounds(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-        <span className={uSm}>rds ×</span>
-        <input className={`${bigD} w-9`}  type="number" min="1" value={reps}   onChange={e => setReps(e.target.value)}   onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-      </div>
-    )
-    if (type === 'cardio') return (
-      <div className="flex items-baseline gap-1 justify-end">
-        <input className={`${bigD} w-12`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-        <span className={uSm}>min</span>
-      </div>
-    )
-    if (type === 'stretch') return (
+    if (type === 'timed') return (
       <div className="flex items-baseline gap-1 justify-end">
         <input className={`${bigD} w-9`}  type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
         <span className="text-[15px] text-ink3/40">×</span>
@@ -271,10 +273,16 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         <span className={uSm}>sec</span>
       </div>
     )
+    if (type === 'cardio' || type === 'session') return (
+      <div className="flex items-baseline gap-1 justify-end">
+        <input className={`${bigD} w-12`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
+        <span className={uSm}>min</span>
+      </div>
+    )
     return <div className="flex justify-end"><span className="text-ink3/30 text-[18px]">—</span></div>
   }
 
-  // Desktop col 5: "Weight" — strength uses weight, cardio uses distance, others show —
+  // Desktop col 5: "Weight / Distance"
   function desktopWeight() {
     if (type === 'strength') return (
       <div className="flex items-baseline gap-1 justify-end">
@@ -288,13 +296,6 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         <span className={uSm}>km</span>
       </div>
     )
-    if (type === 'hiit') return (
-      <div className="flex items-baseline gap-1 justify-end">
-        <input className={`${bigD} w-12`} type="number" min="0" value={duration} onChange={e => setDuration(e.target.value)} onBlur={handleBlur} onKeyDown={onKey} placeholder="—" />
-        <span className={uSm}>min</span>
-      </div>
-    )
-    // stretch: no weight/distance
     return <div className="flex justify-end"><span className="text-ink3/30 text-[18px]">—</span></div>
   }
 
@@ -360,7 +361,6 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       type: ex.type || 'strength',
       sets: ex.sets ?? '',
       reps: ex.reps ?? '',
-      rounds: ex.rounds ?? '',
       weightKg: ex.weightKg ?? '',
       durationMin: ex.durationMin ?? '',
       distanceKm: ex.distanceKm ?? '',
@@ -375,20 +375,25 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
     setSaveState('saving')
     try {
       const exercises = updatedRows.filter(r => r.name.trim()).map(r => {
-        if (r.type === 'cardio') return {
+        const t = normalizeExType(r.type)
+        if (t === 'timed') return {
+          name: r.name.trim(), type: 'timed',
+          sets: Number(r.sets) || 1,
+          ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
+        }
+        if (t === 'cardio') return {
           name: r.name.trim(), type: 'cardio',
           ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
           ...(r.distanceKm !== '' ? { distanceKm: Number(r.distanceKm) } : {}),
         }
-        if (r.type === 'stretch') return {
-          name: r.name.trim(), type: 'stretch',
+        if (t === 'bodyweight') return {
+          name: r.name.trim(), type: 'bodyweight',
           sets: Number(r.sets) || 1,
-          ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
-        }
-        if (r.type === 'hiit') return {
-          name: r.name.trim(), type: 'hiit',
-          rounds: Number(r.rounds) || 1,
           reps: Number(r.reps) || 1,
+          ...(r.weightKg !== '' && r.weightKg != null && !isNaN(Number(r.weightKg)) ? { weightKg: Number(r.weightKg) } : {}),
+        }
+        if (t === 'session') return {
+          name: r.name.trim(), type: 'session',
           ...(r.durationMin !== '' ? { durationMin: Number(r.durationMin) } : {}),
         }
         return {
@@ -415,7 +420,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
     setRows(prev => prev.map((r, idx) => idx === i ? {
       ...r,
       name: cur.name, type: cur.type,
-      sets: cur.sets, reps: cur.reps, rounds: cur.rounds,
+      sets: cur.sets, reps: cur.reps,
       weightKg: displayToKg(cur.weight, cur.unit),
       durationMin: cur.duration, distanceKm: cur.distance,
     } : r))
@@ -429,7 +434,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
   }
 
   function addRow() {
-    setRows(prev => [...prev, { id: Math.random(), name: '', type: 'strength', sets: '', reps: '', rounds: '', weightKg: '', durationMin: '', distanceKm: '' }])
+    setRows(prev => [...prev, { id: Math.random(), name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationMin: '', distanceKm: '' }])
     setDirty(true)
   }
 
