@@ -160,6 +160,7 @@ function ChatPanel({
   contextInjected, setContextInjected,
   pendingSend, onPendingSendConsumed,
   persistent,
+  lastChipSent, onRegenerate,
 }) {
   const { t } = useLanguage()
   const { pathname } = useLocation()
@@ -482,6 +483,21 @@ function ChatPanel({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {/* Regenerate button — persistent mode only, when a chip was used and there are messages */}
+            {persistent && lastChipSent && messages.length > 0 && (
+              <button
+                onClick={onRegenerate}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-orange/10 transition-colors text-ink3 hover:text-orange cursor-pointer"
+                aria-label="Regenerate analysis"
+                title="重新分析"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 4v6h-6"/>
+                  <path d="M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+              </button>
+            )}
             {/* New chat button */}
             <button
               onClick={handleNewChat}
@@ -742,6 +758,7 @@ function ChatPanel({
 export default function FloatingChat() {
   const [open, setOpen] = useState(false)
   const [persistent, setPersistent] = useState(false)
+  const [lastChipSent, setLastChipSent] = useState(null)
   const location = useLocation()
   const { pageContext, chatRequest, clearChatRequest } = useChatPage()
   const [pendingSend, setPendingSend] = useState(null)
@@ -764,19 +781,32 @@ export default function FloatingChat() {
     setAppliedActions(new Set())
     setContextInjected(false)
     setPersistent(false)
+    setLastChipSent(null)
   }, [location.pathname])
 
   // Open chat and queue a message when a quick action is triggered
   useEffect(() => {
     if (!chatRequest) return
+    const isPersistentPage = /^\/exercise\/.+/.test(location.pathname)
+    // If this chip already has an answered response in the current conversation, just reopen
+    const alreadyAnswered = messages.some((m, i) =>
+      m.type === 'user' && m.text === chatRequest.message &&
+      messages[i + 1]?.type === 'ai' && !messages[i + 1]?.isError
+    )
+    if (alreadyAnswered && isPersistentPage) {
+      setOpen(true)
+      setPersistent(true)
+      clearChatRequest()
+      return
+    }
     setOpen(true)
     setConversationId(null)
     setMessages([])
     setAppliedActions(new Set())
     setContextInjected(false)
     setPendingSend(chatRequest.message)
-    // Persistent side panel on exercise detail pages
-    setPersistent(/^\/exercise\/.+/.test(location.pathname))
+    setPersistent(isPersistentPage)
+    if (isPersistentPage) setLastChipSent(chatRequest.message)
     clearChatRequest()
   }, [chatRequest])
 
@@ -847,6 +877,15 @@ export default function FloatingChat() {
           pendingSend={pendingSend}
           onPendingSendConsumed={() => setPendingSend(null)}
           persistent={persistent}
+          lastChipSent={lastChipSent}
+          onRegenerate={() => {
+            if (!lastChipSent) return
+            setConversationId(null)
+            setMessages([])
+            setAppliedActions(new Set())
+            setContextInjected(false)
+            setPendingSend(lastChipSent)
+          }}
         />
       )}
     </>

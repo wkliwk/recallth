@@ -905,9 +905,17 @@ export default function ExerciseDetail() {
           <div className="flex-1 min-w-0">
             <p className="text-[20px] font-semibold text-ink1 capitalize">{name}</p>
             <p className="text-[13px] text-ink3 mt-[2px]">{formatDate(session.date)}</p>
-            <span className={`inline-block mt-2 text-[12px] font-medium px-3 py-[3px] rounded-full capitalize ${intensityColor(session.intensity)}`}>
-              {intensityLabel(session.intensity, t)}
-            </span>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className={`text-[12px] font-medium px-3 py-[3px] rounded-full capitalize ${intensityColor(session.intensity)}`}>
+                {intensityLabel(session.intensity, t)}
+              </span>
+              <span className="text-[11px] text-ink3">·</span>
+              <span className="text-[12px] font-medium text-ink2">{session.durationMinutes} min</span>
+              {session.distanceKm > 0 && (<>
+                <span className="text-[11px] text-ink3">·</span>
+                <span className="text-[12px] font-medium text-ink2">{session.distanceKm} km</span>
+              </>)}
+            </div>
           </div>
         </div>
 
@@ -929,22 +937,6 @@ export default function ExerciseDetail() {
               {chip}
             </button>
           ))}
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>}
-            label={t('duration')}
-            value={`${session.durationMinutes} min`}
-          />
-          {session.distanceKm > 0 && (
-            <StatCard
-              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>}
-              label={t('distance')}
-              value={`${session.distanceKm} km`}
-            />
-          )}
         </div>
 
         {/* Gym exercises — inline editable table */}
