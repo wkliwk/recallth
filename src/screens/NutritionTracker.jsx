@@ -720,8 +720,8 @@ function DraggableEntry({ entry, children, onTap }) {
 }
 
 // ── Date drop chip (one droppable day) ───────────────────────────────────────
-function DateDropChip({ date, viewDate, onSelect }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `date-${date}` })
+function DateDropChip({ date, viewDate, onSelect, hasRecord, isFuture }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `date-${date}`, disabled: isFuture })
   const today = todayISO()
   const isToday = date === today
   const isCurrentView = date === viewDate
@@ -735,21 +735,29 @@ function DateDropChip({ date, viewDate, onSelect }) {
     <button
       type="button"
       ref={setNodeRef}
-      onClick={() => onSelect?.(date)}
+      onClick={() => !isFuture && onSelect?.(date)}
+      disabled={isFuture}
       className={[
-        'flex flex-col items-center justify-center flex-1 h-[56px] rounded-[12px] border-2 transition-all duration-150 select-none focus:outline-none',
-        isOver
-          ? 'bg-orange border-orange text-white scale-105 shadow-md'
-          : isCurrentView
-            ? 'bg-orange/10 border-orange/50 text-ink1'
-            : 'bg-white border-border text-ink2 hover:border-orange/40 hover:bg-orange/5',
+        'flex flex-col items-center justify-center flex-1 rounded-[12px] border-2 transition-all duration-150 select-none focus:outline-none pt-[6px] pb-[4px]',
+        isFuture
+          ? 'bg-white border-border text-ink4 cursor-not-allowed'
+          : isOver
+            ? 'bg-orange border-orange text-white scale-105 shadow-md'
+            : isCurrentView
+              ? 'bg-orange/10 border-orange/50 text-ink1'
+              : 'bg-white border-border text-ink2 hover:border-orange/40 hover:bg-orange/5',
       ].join(' ')}
     >
       <span className="text-[9px] font-medium leading-tight">
         {isToday ? '今日' : `週${dayName}`}
       </span>
       <span className="text-[15px] font-bold leading-tight">{dayNum}</span>
-      <span className="text-[8px] opacity-60 leading-tight">{monthNum}月</span>
+      <span className="text-[8px] opacity-60 leading-tight mb-[3px]">{monthNum}月</span>
+      {/* Record dot */}
+      <span className={[
+        'w-[4px] h-[4px] rounded-full transition-opacity',
+        hasRecord && !isCurrentView && !isFuture ? 'bg-orange opacity-100' : 'opacity-0',
+      ].join(' ')} aria-hidden="true" />
     </button>
   )
 }
@@ -757,15 +765,82 @@ function DateDropChip({ date, viewDate, onSelect }) {
 // ── Date chip strip ────────────────────────────────────────────────────────────
 // V2: always visible, clickable for navigation + droppable for drag-and-drop.
 // V1: pass visible={!!activeEntryId} to show only during drag (opacity trick keeps dnd-kit rects valid).
-function DateDropStrip({ viewDate, onSelectDate, visible = true }) {
-  const today = todayISO()
-  const dates = Array.from({ length: 7 }, (_, i) => offsetDate(today, i - 3))
+function DateDropStrip({ viewDate, onSelectDate, visible = true, todayStr: todayStrProp, refreshKey = 0 }) {
+  const today = todayStrProp || todayISO()
+  const maxDate = offsetDate(today, 3)
+  const [windowStart, setWindowStart] = useState(() => offsetDate(today, -3))
+  const [recordDays, setRecordDays] = useState(new Set())
+  const [expanded, setExpanded] = useState(false)
+
+  const dates = Array.from({ length: 7 }, (_, i) => offsetDate(windowStart, i))
+
+  // Fetch record dots whenever the window moves
+  useEffect(() => {
+    const months = [...new Set(dates.map((d) => d.slice(0, 7)))]
+    Promise.all(
+      months.map((ym) => {
+        const [y, m] = ym.split('-')
+        return api.nutrition.days(y, m).then((res) => res?.data ?? []).catch(() => [])
+      })
+    ).then((results) => setRecordDays(new Set(results.flat())))
+  }, [windowStart, refreshKey])
+
+  const isAtMax = offsetDate(windowStart, 7) > maxDate
+
+  function prevWindow() { setWindowStart(offsetDate(windowStart, -7)) }
+  function nextWindow() {
+    const next = offsetDate(windowStart, 7)
+    if (next <= maxDate) setWindowStart(next)
+  }
+
+  const arrowCls = 'w-6 h-6 flex items-center justify-center text-ink3 hover:text-ink2 focus:outline-none shrink-0 transition-colors'
 
   return (
-    <div className={visible ? 'flex gap-[6px] px-1 pt-1 pb-2' : 'opacity-0 pointer-events-none flex gap-[6px] px-1 pt-1 pb-2'}>
-      {dates.map((date) => (
-        <DateDropChip key={date} date={date} viewDate={viewDate} onSelect={onSelectDate} />
-      ))}
+    <div className={visible ? '' : 'opacity-0 pointer-events-none'}>
+      <div className="flex items-center gap-1 px-1 pt-1 pb-1">
+        {/* Prev arrow */}
+        <button type="button" onClick={prevWindow} aria-label="Previous days" className={arrowCls}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+        </button>
+
+        {/* Date chips */}
+        <div className="flex gap-[4px] flex-1">
+          {dates.map((date) => (
+            <DateDropChip key={date} date={date} viewDate={viewDate} onSelect={(d) => { onSelectDate?.(d); setExpanded(false) }}
+              hasRecord={recordDays.has(date)} isFuture={date > maxDate} />
+          ))}
+        </div>
+
+        {/* Next arrow */}
+        <button type="button" onClick={nextWindow} disabled={isAtMax} aria-label="Next days"
+          className={`${arrowCls} disabled:opacity-30`}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+        </button>
+      </div>
+
+      {/* Expand toggle */}
+      <div className="flex justify-end px-2 pb-2">
+        <button type="button" onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-1 text-[11px] font-medium text-ink3 hover:text-ink2 focus:outline-none">
+          {expanded ? '收起' : '展開月曆'}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Expanded monthly calendar */}
+      {expanded && (
+        <div className="mb-2">
+          <NutritionCalendar
+            viewDate={viewDate}
+            onSelectDate={(d) => { onSelectDate?.(d); setExpanded(false) }}
+            todayStr={today}
+            refreshKey={refreshKey}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -2971,7 +3046,7 @@ export default function NutritionTracker() {
             </div>
 
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
-              <DateDropStrip viewDate={viewDate} onSelectDate={setViewDate} />
+              <DateDropStrip viewDate={viewDate} onSelectDate={setViewDate} todayStr={todayStr} refreshKey={calendarRefreshKey} />
               {entriesLoading ? (
                 <div className="flex flex-col gap-3"><Skeleton className="h-[90px]" /><Skeleton className="h-[90px]" /></div>
               ) : entriesError ? (
