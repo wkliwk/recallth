@@ -773,7 +773,7 @@ export default function ExerciseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const { setChatContext, clearChatContext } = useChatPage()
+  const { setChatContext, clearChatContext, openChat } = useChatPage()
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -909,6 +909,26 @@ export default function ExerciseDetail() {
               {intensityLabel(session.intensity, t)}
             </span>
           </div>
+        </div>
+
+        {/* Quick AI chips */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            '分析今日表現',
+            '建議明日訓練',
+            '我最近嘅進度點？',
+          ].map((chip) => (
+            <button
+              key={chip}
+              onClick={() => openChat(chip)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-orange/10 text-orange text-[13px] font-medium hover:bg-orange/20 active:bg-orange/30 transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+              </svg>
+              {chip}
+            </button>
+          ))}
         </div>
 
         {/* Stats row */}
