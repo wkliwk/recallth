@@ -81,7 +81,11 @@ function HistoryView({ onBack, onSelect, onNewChat, activeConversationId, onActi
     e.stopPropagation()
     setConversations(prev => prev.filter(c => c._id !== id))
     try { await chatService.deleteConversation(id) } catch { /* ignore */ }
-    if (id === activeConversationId) onActiveDeleted()
+    if (id === activeConversationId) {
+      onActiveDeleted()
+    } else {
+      onBack()
+    }
   }
 
   return (
@@ -323,6 +327,13 @@ function ChatPanel({
     setView('chat')
   }
 
+  async function handleDeleteCurrentConversation() {
+    if (!conversationId) return
+    const idToDelete = conversationId
+    handleNewChat()
+    try { await chatService.deleteConversation(idToDelete) } catch { /* ignore */ }
+  }
+
   function handleStartEdit(index, text) {
     setEditingIndex(index)
     setEditingText(text)
@@ -460,6 +471,21 @@ function ChatPanel({
                 <polyline points="12 7 12 12 15 15"/>
               </svg>
             </button>
+            {/* Delete current conversation button — only when a conversation is active */}
+            {conversationId && (
+              <button
+                onClick={handleDeleteCurrentConversation}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors text-ink3 hover:text-red-500 cursor-pointer"
+                aria-label="Delete conversation"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14H6L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                  <path d="M9 6V4h6v2"/>
+                </svg>
+              </button>
+            )}
             {/* Close button */}
             <button
               onClick={onClose}
