@@ -720,7 +720,7 @@ function DraggableEntry({ entry, children, onTap }) {
 }
 
 // ── Date drop chip (one droppable day) ───────────────────────────────────────
-function DateDropChip({ date, viewDate }) {
+function DateDropChip({ date, viewDate, onSelect }) {
   const { setNodeRef, isOver } = useDroppable({ id: `date-${date}` })
   const today = todayISO()
   const isToday = date === today
@@ -732,15 +732,17 @@ function DateDropChip({ date, viewDate }) {
   const dayName = dayNames[d.getDay()]
 
   return (
-    <div
+    <button
+      type="button"
       ref={setNodeRef}
+      onClick={() => onSelect?.(date)}
       className={[
-        'flex flex-col items-center justify-center flex-1 h-[56px] rounded-[12px] border-2 transition-all duration-150 select-none',
+        'flex flex-col items-center justify-center flex-1 h-[56px] rounded-[12px] border-2 transition-all duration-150 select-none focus:outline-none',
         isOver
           ? 'bg-orange border-orange text-white scale-105 shadow-md'
           : isCurrentView
             ? 'bg-orange/10 border-orange/50 text-ink1'
-            : 'bg-white border-border text-ink2',
+            : 'bg-white border-border text-ink2 hover:border-orange/40 hover:bg-orange/5',
       ].join(' ')}
     >
       <span className="text-[9px] font-medium leading-tight">
@@ -748,29 +750,22 @@ function DateDropChip({ date, viewDate }) {
       </span>
       <span className="text-[15px] font-bold leading-tight">{dayNum}</span>
       <span className="text-[8px] opacity-60 leading-tight">{monthNum}月</span>
-    </div>
+    </button>
   )
 }
 
-// ── Date drop strip (slides in during drag) ───────────────────────────────────
-// Chips are ALWAYS in the DOM so dnd-kit has valid rects; only opacity changes.
-function DateDropStrip({ visible, viewDate }) {
+// ── Date chip strip ────────────────────────────────────────────────────────────
+// V2: always visible, clickable for navigation + droppable for drag-and-drop.
+// V1: pass visible={!!activeEntryId} to show only during drag (opacity trick keeps dnd-kit rects valid).
+function DateDropStrip({ viewDate, onSelectDate, visible = true }) {
   const today = todayISO()
   const dates = Array.from({ length: 7 }, (_, i) => offsetDate(today, i - 3))
 
   return (
-    <div
-      className={[
-        'transition-opacity duration-150',
-        visible ? 'opacity-100 mb-2' : 'opacity-0 pointer-events-none',
-      ].join(' ')}
-    >
-      <div className="flex gap-[6px] px-1 pt-1 pb-2">
-        <p className="self-center text-[11px] text-ink3 shrink-0 pr-1">拖到</p>
-        {dates.map((date) => (
-          <DateDropChip key={date} date={date} viewDate={viewDate} />
-        ))}
-      </div>
+    <div className={visible ? 'flex gap-[6px] px-1 pt-1 pb-2' : 'opacity-0 pointer-events-none flex gap-[6px] px-1 pt-1 pb-2'}>
+      {dates.map((date) => (
+        <DateDropChip key={date} date={date} viewDate={viewDate} onSelect={onSelectDate} />
+      ))}
     </div>
   )
 }
@@ -2784,8 +2779,6 @@ export default function NutritionTracker() {
           </div>
         </div>
 
-        {/* Week strip */}
-        <WeekStrip viewDate={viewDate} onSelectDate={setViewDate} todayStr={todayStr} refreshKey={calendarRefreshKey} />
 
         {/* ── Main content: single col mobile, two col desktop ── */}
         <div className="max-w-[1000px] mx-auto px-4 md:px-6 pt-4 pb-10 lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
@@ -2977,39 +2970,41 @@ export default function NutritionTracker() {
               </div>
             </div>
 
-            {entriesLoading ? (
-              <div className="flex flex-col gap-3"><Skeleton className="h-[90px]" /><Skeleton className="h-[90px]" /></div>
-            ) : entriesError ? (
-              <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
-            ) : selectMode ? (
-              <div className="flex flex-col gap-3">
-                {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
-                  <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
-                    onRequestDelete={handleRequestDelete} onRequestAction={handleRequestAction} logMetric={logMetric}
-                    isDropTarget={false} selectMode={true}
-                    selectedIds={selectedIds} onToggleSelect={handleToggleSelect} onSelectAll={handleSelectAll} />
-                ))}
-              </div>
-            ) : (
-              <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
-                <DateDropStrip visible={!!activeEntryId} viewDate={viewDate} />
+            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
+              <DateDropStrip viewDate={viewDate} onSelectDate={setViewDate} />
+              {entriesLoading ? (
+                <div className="flex flex-col gap-3"><Skeleton className="h-[90px]" /><Skeleton className="h-[90px]" /></div>
+              ) : entriesError ? (
+                <p className="text-[13px] text-ink3 text-center py-6">{entriesError}</p>
+              ) : selectMode ? (
                 <div className="flex flex-col gap-3">
-                  {MEAL_ORDER.map((mt) => (
+                  {MEAL_ORDER.filter((mt) => mealGroups[mt]).map((mt) => (
                     <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
                       onRequestDelete={handleRequestDelete} onRequestAction={handleRequestAction} logMetric={logMetric}
-                      isDropTarget={overMealType === mt}
-                      onAddFood={(mt) => openAnalyser('ai', mt)} />
+                      isDropTarget={false} selectMode={true}
+                      selectedIds={selectedIds} onToggleSelect={handleToggleSelect} onSelectAll={handleSelectAll} />
                   ))}
                 </div>
-                <DragOverlay>
-                  {activeEntryId ? (
-                    <div className="rounded-[10px] bg-white border border-orange shadow-lg px-4 py-3 text-[13px] font-medium text-ink1 opacity-90">
-                      {(() => { const e = entries.find((x) => x._id === activeEntryId); return e?.foods?.map((f) => f.name).join(', ') ?? e?.rawText ?? '…' })()}
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
-            )}
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3">
+                    {MEAL_ORDER.map((mt) => (
+                      <MealGroup key={mt} mealType={mt} entries={mealGroups[mt] ?? []} t={t}
+                        onRequestDelete={handleRequestDelete} onRequestAction={handleRequestAction} logMetric={logMetric}
+                        isDropTarget={overMealType === mt}
+                        onAddFood={(mt) => openAnalyser('ai', mt)} />
+                    ))}
+                  </div>
+                  <DragOverlay>
+                    {activeEntryId ? (
+                      <div className="rounded-[10px] bg-white border border-orange shadow-lg px-4 py-3 text-[13px] font-medium text-ink1 opacity-90">
+                        {(() => { const e = entries.find((x) => x._id === activeEntryId); return e?.foods?.map((f) => f.name).join(', ') ?? e?.rawText ?? '…' })()}
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </>
+              )}
+            </DndContext>
 
             {/* Supplement recommendations */}
             {(recLoading || (supplementRecs?.recommendations?.length ?? 0) > 0) && (
