@@ -471,15 +471,11 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
       <div className="border-t border-[#EDE8E0]">
         <button
           onClick={addRow}
-          className="w-full py-3 text-[13px] font-medium text-orange flex items-center justify-center gap-1.5 hover:bg-sand/30 transition-colors border-b border-[#EDE8E0]"
+          className="w-full py-3 mx-0 text-[13px] font-medium text-orange flex items-center justify-center gap-2 hover:bg-sand/30 active:bg-sand/50 transition-colors border-b border-dashed border-[#DDD8CE]"
         >
-          <span className="text-[17px] leading-none font-light">+</span> Add exercise
+          <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[14px] leading-none font-light shrink-0">+</span>
+          Add exercise
         </button>
-        {dirty && saveState === 'idle' && (
-          <p className="text-center text-[11px] font-semibold text-orange/70 py-1.5 tracking-wide">
-            ● Unsaved changes
-          </p>
-        )}
         <button
           onClick={() => saveRows(rows)}
           disabled={saving}
@@ -493,6 +489,7 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
           {saveState === 'saving' ? 'Saving…'
            : saveState === 'saved'  ? 'Saved ✓'
            : saveState === 'error'  ? 'Failed — try again'
+           : dirty ? '● Save changes'
            : 'Save changes'}
         </button>
       </div>
