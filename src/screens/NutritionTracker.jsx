@@ -2384,6 +2384,7 @@ export default function NutritionTracker() {
 
   // ── Calendar refresh key (incremented after add/delete to re-fetch dots) ─
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0)
+  const [calendarPopupOpen, setCalendarPopupOpen] = useState(false)
   function bumpCalendar() { setCalendarRefreshKey((k) => k + 1) }
 
   // ── DnD state ─────────────────────────────────────────────────────────────
@@ -3022,8 +3023,34 @@ export default function NutritionTracker() {
           <div className="flex flex-col gap-3 mt-3 lg:mt-0">
             {/* Metric row */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                {!selectMode && <span className="text-[14px] font-semibold text-ink1">{dateLabel}</span>}
+              <div className="flex items-center gap-1 relative">
+                {!selectMode && (
+                  <>
+                    <span className="text-[14px] font-semibold text-ink1">{dateLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCalendarPopupOpen((v) => !v)}
+                      className="text-[15px] leading-none hover:opacity-70 transition-opacity focus:outline-none ml-1"
+                      aria-label="Open calendar"
+                    >
+                      🗓️
+                    </button>
+                    {/* Calendar popup */}
+                    {calendarPopupOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setCalendarPopupOpen(false)} />
+                        <div className="absolute top-[28px] left-0 z-50 shadow-xl rounded-[14px] border border-border bg-white overflow-hidden" style={{ minWidth: 300 }}>
+                          <NutritionCalendar
+                            viewDate={viewDate}
+                            onSelectDate={(d) => { setViewDate(d); setCalendarPopupOpen(false) }}
+                            todayStr={todayStr}
+                            refreshKey={calendarRefreshKey}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
                 {selectMode && <span className="text-[14px] font-semibold text-ink1">{selectedIds.size > 0 ? `${selectedIds.size} selected` : t('nutritionSelectMode')}</span>}
               </div>
               <div className="flex items-center gap-2">
