@@ -7,6 +7,7 @@ import {
   MeasuringStrategy,
   PointerSensor,
   TouchSensor,
+  pointerWithin,
   useSensor,
   useSensors,
   useDroppable,
@@ -742,7 +743,7 @@ function DateDropChip({ date, viewDate, onSelect, hasRecord, isFuture }) {
         isFuture
           ? 'bg-white border-border text-ink4 cursor-not-allowed'
           : isOver
-            ? 'bg-orange border-orange text-white scale-105 shadow-md'
+            ? 'bg-orange border-orange text-white shadow-md'
             : isCurrentView
               ? 'bg-orange/10 border-orange/50 text-ink1'
               : 'bg-white border-border text-ink2 hover:border-orange/40 hover:bg-orange/5',
@@ -3045,7 +3046,7 @@ export default function NutritionTracker() {
               </div>
             </div>
 
-            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
+            <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
               <DateDropStrip viewDate={viewDate} onSelectDate={setViewDate} todayStr={todayStr} refreshKey={calendarRefreshKey} />
               {entriesLoading ? (
                 <div className="flex flex-col gap-3"><Skeleton className="h-[90px]" /><Skeleton className="h-[90px]" /></div>
@@ -3650,6 +3651,7 @@ export default function NutritionTracker() {
               ) : (
                 <DndContext
                   sensors={sensors}
+                  collisionDetection={pointerWithin}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
