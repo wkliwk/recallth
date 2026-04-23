@@ -159,6 +159,7 @@ function ChatPanel({
   appliedActions, setAppliedActions,
   contextInjected, setContextInjected,
   pendingSend, onPendingSendConsumed,
+  persistent,
 }) {
   const { t } = useLanguage()
   const { pathname } = useLocation()
@@ -198,7 +199,9 @@ function ChatPanel({
   }
 
   const panelStyle = {
-    width: window.innerWidth >= 768 ? panelWidth : '100%',
+    width: window.innerWidth >= 768
+      ? panelWidth
+      : persistent ? Math.min(360, window.innerWidth * 0.9) : '100%',
   }
 
   useEffect(() => {
@@ -405,19 +408,22 @@ function ChatPanel({
     }
   }
 
+  // Outer wrapper: persistent = no backdrop, transparent, underlying content stays interactive
+  const outerCls = persistent
+    ? 'fixed inset-0 z-[60] flex justify-end pointer-events-none'
+    : 'fixed inset-0 z-[60] flex justify-end'
+  const outerStyle = persistent ? {} : { background: 'rgba(42,34,26,0.25)' }
+  const outerClick = persistent ? undefined : (e) => e.target === e.currentTarget && onClose()
+  const innerCls = `h-full bg-white flex flex-col shadow-2xl relative${persistent ? ' pointer-events-auto' : ''}`
+
   // History view
   if (view === 'history') {
     return (
-      <div
-        className="fixed inset-0 z-[60] flex justify-end"
-        style={{ background: 'rgba(42,34,26,0.25)' }}
-        onClick={(e) => e.target === e.currentTarget && onClose()}
-      >
+      <div className={outerCls} style={outerStyle} onClick={outerClick}>
         <div
-          className="h-full bg-white flex flex-col shadow-2xl relative"
+          className={innerCls}
           style={{ animation: 'slideIn 0.22s ease-out', ...panelStyle }}
         >
-          {/* Resize handle — desktop only */}
           <div
             className="hidden md:block absolute left-0 top-0 bottom-0 w-2 cursor-col-resize group z-10 select-none"
             onPointerDown={handleResizePointerDown}
@@ -430,7 +436,6 @@ function ChatPanel({
             onNewChat={handleNewChat}
             activeConversationId={conversationId}
             onActiveDeleted={() => {
-              // Reset chat state but stay on history view
               setConversationId(null)
               setMessages([])
               setAppliedActions(new Set())
@@ -451,13 +456,9 @@ function ChatPanel({
 
   // Chat view
   return (
-    <div
-      className="fixed inset-0 z-[60] flex justify-end"
-      style={{ background: 'rgba(42,34,26,0.25)' }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
+    <div className={outerCls} style={outerStyle} onClick={outerClick}>
       <div
-        className="h-full bg-white flex flex-col shadow-2xl relative"
+        className={innerCls}
         style={{ animation: 'slideIn 0.22s ease-out', ...panelStyle }}
       >
         {/* Resize handle — desktop only */}
@@ -740,6 +741,7 @@ function ChatPanel({
 
 export default function FloatingChat() {
   const [open, setOpen] = useState(false)
+  const [persistent, setPersistent] = useState(false)
   const location = useLocation()
   const { pageContext, chatRequest, clearChatRequest } = useChatPage()
   const [pendingSend, setPendingSend] = useState(null)
@@ -761,6 +763,7 @@ export default function FloatingChat() {
     setMessages([])
     setAppliedActions(new Set())
     setContextInjected(false)
+    setPersistent(false)
   }, [location.pathname])
 
   // Open chat and queue a message when a quick action is triggered
@@ -772,6 +775,8 @@ export default function FloatingChat() {
     setAppliedActions(new Set())
     setContextInjected(false)
     setPendingSend(chatRequest.message)
+    // Persistent side panel on exercise detail pages
+    setPersistent(/^\/exercise\/.+/.test(location.pathname))
     clearChatRequest()
   }, [chatRequest])
 
@@ -829,7 +834,7 @@ export default function FloatingChat() {
       )}
       {open && (
         <ChatPanel
-          onClose={() => setOpen(false)}
+          onClose={() => { setOpen(false); setPersistent(false) }}
           pageContext={pageContext}
           conversationId={conversationId}
           setConversationId={setConversationId}
@@ -841,6 +846,7 @@ export default function FloatingChat() {
           setContextInjected={setContextInjected}
           pendingSend={pendingSend}
           onPendingSendConsumed={() => setPendingSend(null)}
+          persistent={persistent}
         />
       )}
     </>
