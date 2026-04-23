@@ -309,7 +309,7 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
       {/* name + numbers */}
       <div className="flex-1 min-w-0">
         <input
-          className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2 bg-transparent outline-none w-full mb-1 placeholder:text-ink3/30 focus:text-ink1 transition-colors"
+          className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink2 bg-transparent outline-none w-full mb-1 placeholder:text-ink3/30 focus:text-ink1 transition-colors truncate"
           value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey}
           placeholder="EXERCISE NAME"
         />
@@ -333,11 +333,13 @@ function ExerciseRow({ row, unit = 'kg', onSave, onDelete }) {
         {icon}
       </div>
       {/* name */}
-      <input
-        className="text-[15px] font-semibold text-ink1 bg-transparent outline-none focus:bg-sand/50 rounded-[6px] px-2 py-1 transition-colors placeholder:text-ink3/30 w-full min-w-0"
-        value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey}
-        placeholder="Exercise name"
-      />
+      <div className="min-w-0">
+        <input
+          className="text-[15px] font-semibold text-ink1 bg-transparent outline-none focus:bg-sand/50 rounded-[6px] px-2 py-1 transition-colors placeholder:text-ink3/30 w-full min-w-0 truncate"
+          value={name} onChange={e => setName(e.target.value)} onBlur={handleBlur} onKeyDown={onKey}
+          placeholder="Exercise name"
+        />
+      </div>
       {/* chip */}
       <button onClick={cycleType} className={`px-2.5 py-1 rounded-full text-[11px] font-semibold leading-none w-fit transition-colors ${chipCls}`}>
         {label}
@@ -454,17 +456,6 @@ function ExerciseTable({ sessionId, initialExercises, onSaved }) {
           >lbs</button>
         </div>
       </div>
-      {/* Desktop column headers */}
-      {rows.length > 0 && (
-        <div className="hidden md:grid grid-cols-[44px_1fr_90px_160px_110px_36px] px-4 py-2.5 border-b border-[#EDE8E0] bg-sand/40">
-          <span />
-          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em]">Exercise</span>
-          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em]">Type</span>
-          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em] text-right">Sets × Reps</span>
-          <span className="text-[11px] font-semibold text-ink3/50 uppercase tracking-[0.05em] text-right">Weight</span>
-          <span />
-        </div>
-      )}
       {rows.length === 0 && (
         <p className="text-[13px] text-ink3 text-center py-6">No exercises yet</p>
       )}
@@ -909,12 +900,14 @@ export default function ExerciseDetail() {
               <span className={`text-[12px] font-medium px-3 py-[3px] rounded-full capitalize ${intensityColor(session.intensity)}`}>
                 {intensityLabel(session.intensity, t)}
               </span>
-              <span className="text-[11px] text-ink3">·</span>
-              <span className="text-[12px] font-medium text-ink2">{session.durationMinutes} min</span>
-              {session.distanceKm > 0 && (<>
-                <span className="text-[11px] text-ink3">·</span>
-                <span className="text-[12px] font-medium text-ink2">{session.distanceKm} km</span>
-              </>)}
+              <span className="text-[12px] font-medium px-3 py-[3px] rounded-full bg-sand text-ink2">
+                {session.durationMinutes} min
+              </span>
+              {session.distanceKm > 0 && (
+                <span className="text-[12px] font-medium px-3 py-[3px] rounded-full bg-sand text-ink2">
+                  {session.distanceKm} km
+                </span>
+              )}
             </div>
           </div>
         </div>
