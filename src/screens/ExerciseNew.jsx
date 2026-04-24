@@ -242,7 +242,7 @@ export default function ExerciseNew() {
         <h1 className="text-[18px] font-semibold text-ink1">{planId ? t('startTraining') : t('logActivity')}</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5 max-w-[640px]">
 
         {/* Loading skeleton while fetching planned session */}
         {planLoading && (
