@@ -57,7 +57,8 @@ export default function ExerciseNew() {
   const [duration, setDuration] = useState('')
   const [intensity, setIntensity] = useState('moderate')
   const [distanceKm, setDistanceKm] = useState('')
-  const [exercises, setExercises] = useState([{ name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationSec: '', durationMin: '', distanceKm: '' }])
+  // When opening from a plan, start with empty exercises (no blank card) — pre-fill runs in useEffect
+  const [exercises, setExercises] = useState(planId ? [] : [{ name: '', type: 'strength', sets: '', reps: '', weightKg: '', durationSec: '', durationMin: '', distanceKm: '' }])
   const [notes, setNotes] = useState('')
 
   const [saving, setSaving] = useState(false)
@@ -90,6 +91,8 @@ export default function ExerciseNew() {
             distanceKm: type === 'cardio' ? String(ex.distanceKm || '') : '',
           }
         }))
+      } else {
+        setExercises([]) // no exercises in this plan — show empty state, not blank card
       }
       setShowManual(true)
       setPlanLoading(false)
@@ -459,6 +462,11 @@ export default function ExerciseNew() {
             {activityType === 'gym' && (
               <div className="flex flex-col gap-3">
                 <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">Exercises</label>
+                {planId && exercises.length === 0 && (
+                  <p className="text-[13px] text-ink3 bg-sand rounded-[12px] px-4 py-3">
+                    此計劃未包含具體動作，可手動加入
+                  </p>
+                )}
                 {exercises.map((ex, i) => (
                   <div key={i} className="bg-white rounded-[14px] p-4 flex flex-col gap-3 shadow-sm">
                     <div className="flex items-center gap-2">
