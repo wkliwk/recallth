@@ -387,7 +387,7 @@ function QuickActions({ sessions, openChat, onPlanAdded }) {
 }
 
 // ── Planned session card ──────────────────────────────────────────────────────
-function PlannedSessionCard({ session, onStart, t }) {
+function PlannedSessionCard({ session, onStart, onDelete, t }) {
   const label = session.activityType === 'other' && session.activityLabel
     ? session.activityLabel
     : activityLabel(session.activityType, t)
@@ -408,13 +408,24 @@ function PlannedSessionCard({ session, onStart, t }) {
         )}
         {session.intensity && <IntensityBadge intensity={session.intensity} t={t} />}
       </div>
-      <button
-        onClick={onStart}
-        className="shrink-0 bg-orange text-white rounded-[8px] px-[10px] py-[5px] text-[12px] font-medium flex items-center gap-1 hover:bg-orange-dk transition-colors cursor-pointer"
-      >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        開始
-      </button>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={onDelete}
+          className="w-7 h-7 flex items-center justify-center rounded-full bg-sand text-ink3 hover:bg-[#fde8e8] hover:text-[#C62828] transition-colors cursor-pointer"
+          aria-label="刪除計劃"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+        <button
+          onClick={onStart}
+          className="bg-orange text-white rounded-[8px] px-[10px] py-[5px] text-[12px] font-medium flex items-center gap-1 hover:bg-orange-dk transition-colors cursor-pointer"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          開始
+        </button>
+      </div>
     </div>
   )
 }
@@ -582,6 +593,12 @@ export default function Exercise() {
                     key={s._id}
                     session={s}
                     onStart={() => navigate(`/exercise/new?plan=${s._id}`)}
+                    onDelete={async () => {
+                      try {
+                        await api.exercise.remove(s._id)
+                        setSessions(prev => prev.filter(x => x._id !== s._id))
+                      } catch { /* silent — list will refresh on next load */ }
+                    }}
                     t={t}
                   />
                 ))}
