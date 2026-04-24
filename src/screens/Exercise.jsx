@@ -219,8 +219,77 @@ function WeekSection({ label, sessions, onCardClick, t }) {
   )
 }
 
+// ── AI Plan Modal ─────────────────────────────────────────────────────────────
+function AiPlanModal({ plan, onConfirm, onDismiss, confirming, t }) {
+  if (!plan) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-0 md:px-5">
+      <div className="w-full md:max-w-[480px] bg-white rounded-t-[24px] md:rounded-[20px] px-5 pt-5 pb-8 flex flex-col gap-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-orange/10 flex items-center justify-center text-orange">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </span>
+            <div>
+              <p className="text-[15px] font-semibold text-ink1">AI 建議聽日計劃</p>
+              <p className="text-[11px] text-ink3">{plan.date}</p>
+            </div>
+          </div>
+          <button onClick={onDismiss} className="w-7 h-7 flex items-center justify-center rounded-full bg-sand text-ink3 hover:bg-border transition-colors cursor-pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {plan.sessions.map((s, i) => (
+            <div key={i} className="bg-sand rounded-[14px] px-4 py-3 flex items-start gap-3">
+              <span className="w-8 h-8 rounded-full bg-orange/10 flex items-center justify-center text-orange shrink-0 mt-[1px]">
+                <ActivityIcon type={s.activityType} size={16} />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[14px] font-medium text-ink1 capitalize">{s.activityType}</p>
+                  <span className="text-[11px] text-ink3">{s.durationMinutes} min</span>
+                  <IntensityBadge intensity={s.intensity} t={t} />
+                </div>
+                {s.notes && <p className="text-[12px] text-ink3 mt-1 leading-snug">{s.notes}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={onDismiss}
+            className="flex-1 py-3 rounded-full border border-border text-ink2 text-[14px] font-medium hover:bg-sand transition-colors cursor-pointer"
+          >
+            取消
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={confirming}
+            className="flex-1 py-3 rounded-full bg-orange text-white text-[14px] font-semibold hover:bg-orange-dk transition-colors cursor-pointer disabled:opacity-60"
+          >
+            {confirming ? '加入中…' : '加到計劃'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Quick AI action pills ─────────────────────────────────────────────────────
-function QuickActions({ sessions, openChat }) {
+function QuickActions({ sessions, openChat, onPlanAdded }) {
+  const { t } = useLanguage()
+  const [planLoading, setPlanLoading] = useState(false)
+  const [plan, setPlan] = useState(null)
+  const [confirming, setConfirming] = useState(false)
+  const [toast, setToast] = useState(null)
+
   function handleAnalyze() {
     const today = new Date().toISOString().slice(0, 10)
     const todaySessions = sessions.filter(s => s.date === today)
@@ -234,37 +303,86 @@ function QuickActions({ sessions, openChat }) {
     openChat(msg)
   }
 
-  function handlePlanTomorrow() {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const tomorrowStr = tomorrow.toISOString().slice(0, 10)
-    const recent = sessions.slice(0, 5)
-    const lines = recent.map(s => `- ${s.date}: ${s.activityType}${s.durationMinutes ? ` ${s.durationMinutes} 分鐘` : ''}${s.intensity ? `（${s.intensity}）` : ''}`).join('\n')
-    const msg = `根據我最近嘅訓練記錄，幫我建議聽日（${tomorrowStr}）應該做咩運動、份量幾多、強度幾多。用廣東話回覆。\n\n最近訓練：\n${lines}`
-    openChat(msg)
+  async function handlePlanTomorrow() {
+    setPlanLoading(true)
+    try {
+      const res = await api.exercise.aiPlan()
+      const data = res.data ?? res
+      setPlan(data)
+    } catch {
+      setToast('AI 計劃生成失敗，請稍後再試')
+      setTimeout(() => setToast(null), 3000)
+    } finally {
+      setPlanLoading(false)
+    }
+  }
+
+  async function handleConfirmPlan() {
+    if (!plan) return
+    setConfirming(true)
+    try {
+      const sessionsToAdd = plan.sessions.map(s => ({
+        ...s,
+        date: plan.date,
+        status: 'planned',
+      }))
+      await api.exercise.bulk(sessionsToAdd)
+      setPlan(null)
+      onPlanAdded()
+      setToast(`✓ ${sessionsToAdd.length} 個計劃加入成功`)
+      setTimeout(() => setToast(null), 3000)
+    } catch {
+      setToast('加入計劃失敗，請稍後再試')
+      setTimeout(() => setToast(null), 3000)
+    } finally {
+      setConfirming(false)
+    }
   }
 
   return (
-    <div className="flex gap-2 flex-wrap">
-      <button
-        onClick={handleAnalyze}
-        className="flex items-center gap-[6px] px-3 py-[7px] rounded-full bg-orange/10 text-orange text-[12px] font-medium hover:bg-orange/20 transition-colors cursor-pointer"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        分析今日表現
-      </button>
-      <button
-        onClick={handlePlanTomorrow}
-        className="flex items-center gap-[6px] px-3 py-[7px] rounded-full bg-sand text-ink2 text-[12px] font-medium hover:bg-border transition-colors cursor-pointer"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        建議明日計劃
-      </button>
-    </div>
+    <>
+      {plan && (
+        <AiPlanModal
+          plan={plan}
+          onConfirm={handleConfirmPlan}
+          onDismiss={() => setPlan(null)}
+          confirming={confirming}
+          t={t}
+        />
+      )}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-ink1 text-white text-[13px] font-medium px-4 py-2 rounded-full shadow-lg whitespace-nowrap">
+          {toast}
+        </div>
+      )}
+      <div className="flex gap-2 flex-wrap">
+        <button
+          onClick={handleAnalyze}
+          className="flex items-center gap-[6px] px-3 py-[7px] rounded-full bg-orange/10 text-orange text-[12px] font-medium hover:bg-orange/20 transition-colors cursor-pointer"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          分析今日表現
+        </button>
+        <button
+          onClick={handlePlanTomorrow}
+          disabled={planLoading}
+          className="flex items-center gap-[6px] px-3 py-[7px] rounded-full bg-sand text-ink2 text-[12px] font-medium hover:bg-border transition-colors cursor-pointer disabled:opacity-60"
+        >
+          {planLoading ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          )}
+          {planLoading ? 'AI 生成中…' : 'AI 計劃聽日'}
+        </button>
+      </div>
+    </>
   )
 }
 
@@ -390,19 +508,20 @@ export default function Exercise() {
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await api.exercise.list()
-        setSessions(Array.isArray(res) ? res : (res.data ?? []))
-      } catch (err) {
-        setError(err.message || 'Failed to load exercise history')
-      } finally {
-        setLoading(false)
-      }
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.exercise.list()
+      setSessions(Array.isArray(res) ? res : (res.data ?? []))
+    } catch (err) {
+      setError(err.message || 'Failed to load exercise history')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     load()
   }, [])
 
@@ -451,7 +570,7 @@ export default function Exercise() {
         {!loading && !error && hasSessions && (
           <>
             <WeeklySummary sessions={completed} t={t} />
-            <QuickActions sessions={completed} openChat={openChat} />
+            <QuickActions sessions={completed} openChat={openChat} onPlanAdded={load} />
             <FilterChips sessions={completed} active={filter} onChange={setFilter} t={t} />
 
             {/* UPCOMING — real planned sessions */}
