@@ -230,7 +230,7 @@ function AboutSection({ data, onSave }) {
 }
 
 // ── Goals ──────────────────────────────────────────────────────────────────
-function GoalsSection({ data, onSave }) {
+function GoalsSection({ data, onSave, focusAreas }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -282,6 +282,23 @@ function GoalsSection({ data, onSave }) {
             </div>
           )}
           <ReadRow label={t('fieldPrimaryGoal')} value={data.primaryGoal} />
+          {Array.isArray(focusAreas) && focusAreas.length > 0 && (
+            <div className="mt-2">
+              <span className="text-[10px] uppercase tracking-[0.08em] text-ink3 font-medium">
+                {t('weakAreas')}
+              </span>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {focusAreas.map((area, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center bg-[#E0F0FF] text-[#2B5F8A] border border-[#B0D4F1] rounded-full px-2.5 py-[3px] text-[11px] font-medium"
+                  >
+                    {typeof area === 'string' ? area : area.name ?? area.label ?? ''}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </ProfileSection>
@@ -682,6 +699,148 @@ function SecuritySection({ hasPassword, googleLinked }) {
   )
 }
 
+// ── Relative time helper ──────────────────────────────────────────────────
+function relativeTimeAgo(dateStr, t) {
+  if (!dateStr) return ''
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days < 1) return t('chatJustNow') ?? 'just now'
+  return `${days} ${t('daysAgo')}`
+}
+
+// ── Source tag badge ──────────────────────────────────────────────────────
+function SourceTag({ label }) {
+  return (
+    <span className="inline-flex items-center gap-1 bg-orange-lt text-orange-dk rounded-full px-2 py-[2px] text-[10px] font-medium">
+      {label}
+    </span>
+  )
+}
+
+function NotSetBadge({ t }) {
+  return (
+    <span className="inline-flex items-center bg-orange-lt text-orange rounded-full px-2 py-[2px] text-[10px] font-medium">
+      {t('notSet')}
+    </span>
+  )
+}
+
+// ── Sports & Training ─────────────────────────────────────────────────────
+function SportsSection({ data, changeHistory, t }) {
+  const [open, setOpen] = useState(false)
+  const sports = Array.isArray(data) ? data : []
+  const isEmpty = sports.length === 0
+
+  const statusColors = {
+    active: 'bg-[#D4ECD8] text-[#2C5A38] border-[#B6DFC5]',
+    learning: 'bg-[#E0F0FF] text-[#2B5F8A] border-[#B0D4F1]',
+    past: 'bg-[#F2EDE4] text-[#7A6A5A] border-[#D8D0C4]',
+  }
+
+  const historyEntry = changeHistory?.find((c) => c.field === 'sportsBackground' && c.source === 'ai_extracted')
+
+  return (
+    <ProfileSection
+      title={t('sportsSection')}
+      open={open}
+      onToggle={() => setOpen((p) => !p)}
+      onEdit={() => {}}
+    >
+      {isEmpty ? (
+        <NotSetBadge t={t} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            {sports.map((sport, i) => {
+              const status = sport.status ?? 'active'
+              const colors = statusColors[status] ?? statusColors.active
+              return (
+                <span
+                  key={i}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-[5px] text-[12px] font-medium border ${colors}`}
+                >
+                  {sport.name}
+                  <span className="opacity-70">
+                    ({t(`sportStatus${status.charAt(0).toUpperCase() + status.slice(1)}`) ?? status})
+                  </span>
+                  {sport.experience && (
+                    <span className="opacity-60 text-[10px]">· {sport.experience}</span>
+                  )}
+                </span>
+              )
+            })}
+          </div>
+          {historyEntry && (
+            <SourceTag label={`${t('addedViaChat')} — ${relativeTimeAgo(historyEntry.updatedAt, t)}`} />
+          )}
+        </div>
+      )}
+    </ProfileSection>
+  )
+}
+
+// ── Conditions & Injuries ─────────────────────────────────────────────────
+function ConditionsSection({ data, t }) {
+  const [open, setOpen] = useState(false)
+  const injuries = Array.isArray(data) ? data : []
+  const isEmpty = injuries.length === 0
+
+  return (
+    <ProfileSection
+      title={t('conditionsSection')}
+      open={open}
+      onToggle={() => setOpen((p) => !p)}
+      onEdit={() => {}}
+    >
+      {isEmpty ? (
+        <NotSetBadge t={t} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {injuries.map((injury, i) => {
+            const isActive = injury.status === 'active'
+            return (
+              <div
+                key={i}
+                className={`flex flex-col gap-1 rounded-[12px] px-3 py-[8px] border ${
+                  isActive
+                    ? 'bg-[#FDE8DE] border-[#E8C4B0]'
+                    : 'bg-[#F2EDE4] border-[#D8D0C4]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`text-[12px] font-medium ${isActive ? 'text-orange-dk' : 'text-ink2'}`}>
+                    {injury.name}
+                  </span>
+                  <span className={`text-[10px] px-2 py-[1px] rounded-full font-medium ${
+                    isActive
+                      ? 'bg-orange text-white'
+                      : 'bg-[#D4ECD8] text-[#2C5A38]'
+                  }`}>
+                    {isActive ? t('injuryStatusActive') : t('injuryStatusRecovered')}
+                  </span>
+                  {isActive && injury.onset && (
+                    <span className="text-[10px] text-orange-dk bg-orange-lt rounded-full px-2 py-[1px] font-medium">
+                      {relativeTimeAgo(injury.onset, t)}
+                    </span>
+                  )}
+                </div>
+                {injury.onset && (
+                  <span className="text-[10px] text-ink3">
+                    Onset: {new Date(injury.onset).toLocaleDateString()}
+                  </span>
+                )}
+                {injury.notes && (
+                  <span className="text-[11px] text-ink2">{injury.notes}</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </ProfileSection>
+  )
+}
+
 // ── Empty state fallbacks ──────────────────────────────────────────────────
 const EMPTY_BODY       = { weight: '', height: '', age: '', sex: '', activityLevel: '' }
 const EMPTY_GOALS      = { primary: [], primaryGoal: '' }
@@ -772,12 +931,16 @@ export default function Profile() {
     { label: t('profileDashboard'), path: '/home' },
   ]
 
-  const bodyData      = profileData?.body      ?? EMPTY_BODY
-  const goalsData     = profileData?.goals     ?? EMPTY_GOALS
-  const exerciseData  = profileData?.exercise  ?? EMPTY_EXERCISE
-  const dietData      = profileData?.diet      ?? EMPTY_DIET
-  const sleepData     = profileData?.sleep     ?? EMPTY_SLEEP
-  const lifestyleData = profileData?.lifestyle ?? EMPTY_LIFESTYLE
+  const bodyData          = profileData?.body            ?? EMPTY_BODY
+  const goalsData         = profileData?.goals           ?? EMPTY_GOALS
+  const exerciseData      = profileData?.exercise        ?? EMPTY_EXERCISE
+  const dietData          = profileData?.diet            ?? EMPTY_DIET
+  const sleepData         = profileData?.sleep           ?? EMPTY_SLEEP
+  const lifestyleData     = profileData?.lifestyle       ?? EMPTY_LIFESTYLE
+  const sportsData        = profileData?.sportsBackground ?? []
+  const injuriesData      = profileData?.injuries        ?? []
+  const focusAreasData    = profileData?.focusAreas      ?? []
+  const changeHistoryData = profileData?.changeHistory   ?? []
 
   return (
     <div className="min-h-screen bg-page pb-24">
@@ -837,8 +1000,10 @@ export default function Profile() {
         {/* Accordion sections */}
         <div className="flex flex-col gap-3 px-5">
           <AboutSection    data={bodyData}      onSave={handleSave} />
-          <GoalsSection    data={goalsData}     onSave={handleSave} />
+          <GoalsSection    data={goalsData}     onSave={handleSave} focusAreas={focusAreasData} />
           <ExerciseSection data={exerciseData}  onSave={handleSave} />
+          <SportsSection   data={sportsData}    changeHistory={changeHistoryData} t={t} />
+          <ConditionsSection data={injuriesData} t={t} />
           <DietSection     data={dietData}      onSave={handleSave} />
           <SleepSection    data={sleepData}     onSave={handleSave} />
           <LifestyleSection data={lifestyleData} onSave={handleSave} />
