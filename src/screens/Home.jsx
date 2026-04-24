@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
+import { calcProfileCompleteness, getFirstMissingLabel } from '../utils/profileCompleteness'
 
 // ── Colour palette for schedule time slots ──────────────────────────────────
 const SLOT_COLOURS = [
@@ -95,6 +96,8 @@ export default function Home() {
   const [conversations, setConversations] = useState([])
 
   const [quickInput, setQuickInput] = useState('')
+  const [profileCompleteness, setProfileCompleteness] = useState(null)
+  const [firstMissingLabel, setFirstMissingLabel] = useState('')
 
   // ── Fetch stats ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -102,17 +105,20 @@ export default function Home() {
 
     async function fetchStats() {
       try {
-        const [cabinetRes, interactionsRes, streakRes] = await Promise.allSettled([
+        const [cabinetRes, interactionsRes, streakRes, profileRes] = await Promise.allSettled([
           api.cabinet.list(),
           api.cabinet.interactions(),
           api.intake.streak(),
+          api.profile.get(),
         ])
 
         if (cancelled) return
 
+        let cabinetItems = []
         if (cabinetRes.status === 'fulfilled') {
           const items = cabinetRes.value?.data ?? []
-          setSupplementCount(Array.isArray(items) ? items.length : 0)
+          cabinetItems = Array.isArray(items) ? items : []
+          setSupplementCount(cabinetItems.length)
         }
 
         if (interactionsRes.status === 'fulfilled') {
@@ -122,6 +128,13 @@ export default function Home() {
         }
         if (streakRes.status === 'fulfilled') {
           setStreakDays(streakRes.value?.currentStreak ?? 0)
+        }
+
+        if (profileRes.status === 'fulfilled') {
+          const profile = profileRes.value?.data ?? null
+          const { percentage, missingSections } = calcProfileCompleteness(profile, cabinetItems)
+          setProfileCompleteness(percentage)
+          setFirstMissingLabel(getFirstMissingLabel(missingSections))
         }
       } catch {
         // silently degrade
@@ -258,6 +271,57 @@ export default function Home() {
                   <span className="text-[11px] sm:text-[12px] uppercase tracking-[0.03em] sm:tracking-[0.06em] text-ink3 font-medium">{s.label}</span>
                 </div>
               ))}
+        </div>
+
+        {/* ── Profile completeness nudge ── */}
+        {profileCompleteness !== null && profileCompleteness < 100 && (
+          <button
+            onClick={() => navigateToChat(`Tell me about my ${firstMissingLabel}`)}
+            className="w-full bg-orange-lt border border-orange-md rounded-[14px] px-4 py-4 mb-6 flex items-center gap-3 cursor-pointer hover:bg-orange-lt/80 transition-colors text-left"
+          >
+            <div className="w-10 h-10 rounded-full bg-orange/15 flex items-center justify-center shrink-0">
+              <span className="text-[16px] font-semibold text-orange">{profileCompleteness}%</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-medium text-ink1">
+                {t('profileCompletenessLabel')}
+              </p>
+              <p className="text-[12px] text-ink2 truncate">
+                {t('profileCompleteTellMe')} {firstMissingLabel}
+              </p>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-ink4 shrink-0">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        )}
+
+        {/* ── What can I help with? ── */}
+        <div className="mb-6">
+          <h2 className="text-[15px] font-semibold text-ink1 mb-3">{t('whatCanIHelp')}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              onClick={() => navigateToChat(t('promptCheckStackDesc'))}
+              className="rounded-xl bg-orange-lt border border-orange-md px-4 py-4 text-left cursor-pointer hover:bg-orange-lt/70 transition-colors"
+            >
+              <p className="text-[13px] font-bold text-orange-dk">{t('promptCheckStack')}</p>
+              <p className="text-[12px] text-ink2 italic mt-1">{t('promptCheckStackDesc')}</p>
+            </button>
+            <button
+              onClick={() => navigateToChat(t('promptUpdateHealthDesc'))}
+              className="rounded-xl bg-[#E0F0FF] border border-[#B0D4F1] px-4 py-4 text-left cursor-pointer hover:bg-[#E0F0FF]/70 transition-colors"
+            >
+              <p className="text-[13px] font-bold text-[#2B5F8A]">{t('promptUpdateHealth')}</p>
+              <p className="text-[12px] text-ink2 italic mt-1">{t('promptUpdateHealthDesc')}</p>
+            </button>
+            <button
+              onClick={() => navigateToChat(t('promptPeriodicReviewDesc'))}
+              className="rounded-xl bg-[#D4ECD8] border border-[#B6DFC5] px-4 py-4 text-left cursor-pointer hover:bg-[#D4ECD8]/70 transition-colors"
+            >
+              <p className="text-[13px] font-bold text-[#2C5A38]">{t('promptPeriodicReview')}</p>
+              <p className="text-[12px] text-ink2 italic mt-1">{t('promptPeriodicReviewDesc')}</p>
+            </button>
+          </div>
         </div>
 
         {/* ── Two-column grid ── */}

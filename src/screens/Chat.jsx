@@ -7,6 +7,7 @@ import InputPill from '../components/InputPill'
 import { chatService } from '../services/chat'
 import { api } from '../services/api'
 import { renderMarkdown } from '../utils/renderMarkdown'
+import { calcProfileCompleteness, getMissingPrompts } from '../utils/profileCompleteness'
 
 // ── Typing indicator ─────────────────────────────────────────────────────────
 function TypingIndicator() {
@@ -176,6 +177,8 @@ export default function Chat() {
 
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [missingPrompts, setMissingPrompts] = useState([])
+  const [profilePct, setProfilePct] = useState(null)
 
   const bottomRef = useRef(null)
   const autoSentRef = useRef(false)
@@ -202,6 +205,29 @@ export default function Chat() {
   useEffect(() => {
     fetchHistory()
   }, [fetchHistory])
+
+  // Fetch profile to determine missing sections
+  useEffect(() => {
+    let cancelled = false
+    async function fetchProfile() {
+      try {
+        const [profileRes, cabinetRes] = await Promise.allSettled([
+          api.profile.get(),
+          api.cabinet.list(),
+        ])
+        if (cancelled) return
+        const profile = profileRes.status === 'fulfilled' ? (profileRes.value?.data ?? null) : null
+        const cabinetItems = cabinetRes.status === 'fulfilled' ? (cabinetRes.value?.data ?? []) : []
+        const { percentage, missingSections } = calcProfileCompleteness(profile, cabinetItems)
+        setProfilePct(percentage)
+        setMissingPrompts(getMissingPrompts(missingSections, t, 2))
+      } catch {
+        // silently degrade
+      }
+    }
+    fetchProfile()
+    return () => { cancelled = true }
+  }, [t])
 
   const loadConversation = useCallback(async (id) => {
     try {
@@ -449,6 +475,32 @@ export default function Chat() {
             </button>
           ))}
         </div>
+
+        {/* Missing from profile prompts */}
+        {missingPrompts.length > 0 && profilePct !== null && profilePct < 100 && (
+          <div className="mt-4">
+            <p className="text-[10px] uppercase tracking-[0.08em] text-ink3 font-medium mb-2">
+              {t('missingFromProfile')}
+            </p>
+            <div className="flex flex-col gap-2">
+              {missingPrompts.map((p) => {
+                const nextPct = Math.min(100, profilePct + 10)
+                return (
+                  <button
+                    key={p.key}
+                    onClick={() => sendMessage(p.text)}
+                    className="flex items-center gap-2 border border-dashed border-orange rounded-[12px] px-3 py-[10px] text-left cursor-pointer hover:bg-orange/[0.04] transition-colors bg-white"
+                  >
+                    <span className="text-[13px] text-ink1 font-medium flex-1">{p.text}</span>
+                    <span className="text-[11px] text-orange font-medium shrink-0">
+                      {profilePct}%&rarr;{nextPct}%
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {history.length > 0 && (
