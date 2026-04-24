@@ -242,7 +242,7 @@ export default function ExerciseNew() {
         <h1 className="text-[18px] font-semibold text-ink1">{planId ? t('startTraining') : t('logActivity')}</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-32 flex flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
 
         {/* Loading skeleton while fetching planned session */}
         {planLoading && (
@@ -589,16 +589,14 @@ export default function ExerciseNew() {
         )}
 
         {saveError && <p className="text-[13px] text-[#C05A28]">{saveError}</p>}
-      </div>
 
-      {/* Save button */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-4 bg-page border-t border-[#EDE8E0]">
+        {/* Save button */}
         <button
           onClick={handleSave}
           disabled={saving || planLoading || (!hasParsed && !showManual)}
-          className="w-full bg-orange text-white font-semibold text-[15px] py-4 rounded-full disabled:opacity-60"
+          className="w-full bg-orange text-white font-semibold text-[14px] py-3 rounded-full disabled:opacity-60"
         >
-          {saving ? 'Saving...' : t('saveSession')}
+          {saving ? t('saving') : t('saveSession')}
         </button>
       </div>
     </div>
