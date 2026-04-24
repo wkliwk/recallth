@@ -62,6 +62,7 @@ export default function ExerciseNew() {
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [planLoading, setPlanLoading] = useState(!!planId)
 
   // Pre-fill form from planned session
   useEffect(() => {
@@ -91,7 +92,8 @@ export default function ExerciseNew() {
         }))
       }
       setShowManual(true)
-    }).catch(() => {})
+      setPlanLoading(false)
+    }).catch(() => { setPlanLoading(false) })
   }, [planId])
 
   async function handleParse() {
@@ -245,13 +247,20 @@ export default function ExerciseNew() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <h1 className="text-[18px] font-semibold text-ink1">{t('logActivity')}</h1>
+        <h1 className="text-[18px] font-semibold text-ink1">{planId ? '開始訓練' : t('logActivity')}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-32 flex flex-col gap-5">
 
-        {/* AI text input */}
-        <div className="flex flex-col gap-3">
+        {/* Loading skeleton while fetching planned session */}
+        {planLoading && (
+          <div className="flex flex-col gap-3 mt-2">
+            {[1, 2, 3].map(n => <div key={n} className="h-[52px] rounded-[12px] bg-sand animate-pulse" />)}
+          </div>
+        )}
+
+        {/* AI text input — hidden when opening a planned session */}
+        {!planId && <div className="flex flex-col gap-3">
           <textarea
             className={`${inputClass} resize-none`}
             style={{ minHeight: '96px' }}
@@ -290,7 +299,7 @@ export default function ExerciseNew() {
           </button>
 
           {parseError && <p className="text-[13px] text-[#C05A28]">{parseError}</p>}
-        </div>
+        </div>}
 
         {/* Parsed preview card */}
         {hasParsed && (
@@ -346,8 +355,8 @@ export default function ExerciseNew() {
           </div>
         )}
 
-        {/* "Fill manually" toggle (shown when no parsed result yet) */}
-        {!hasParsed && (
+        {/* "Fill manually" toggle (shown when no parsed result and not from a plan) */}
+        {!hasParsed && !planId && (
           <button
             onClick={() => setShowManual(v => !v)}
             className="flex items-center gap-2 text-[13px] text-ink3 font-medium self-start"
@@ -589,7 +598,7 @@ export default function ExerciseNew() {
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-4 bg-page border-t border-[#EDE8E0]">
         <button
           onClick={handleSave}
-          disabled={saving || (!hasParsed && !showManual)}
+          disabled={saving || planLoading || (!hasParsed && !showManual)}
           className="w-full bg-orange text-white font-semibold text-[15px] py-4 rounded-full disabled:opacity-60"
         >
           {saving ? 'Saving...' : t('saveSession')}
