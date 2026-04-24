@@ -75,6 +75,21 @@ export default function ExerciseNew() {
       setDuration(s.durationMinutes ? String(s.durationMinutes) : '')
       setIntensity(s.intensity || 'moderate')
       setNotes(s.notes || '')
+      if (Array.isArray(s.exercises) && s.exercises.length > 0) {
+        setExercises(s.exercises.map(ex => {
+          const type = ['strength', 'bodyweight', 'timed', 'cardio', 'session'].includes(ex.type) ? ex.type : 'strength'
+          return {
+            name: ex.name || '',
+            type,
+            sets: String(ex.sets || ''),
+            reps: String(ex.reps || ''),
+            weightKg: ex.weightKg ? String(ex.weightKg) : '',
+            durationSec: type === 'timed' ? String(Math.round((ex.durationMin || 0) * 60)) : '',
+            durationMin: (type === 'cardio' || type === 'session') ? String(ex.durationMin || '') : '',
+            distanceKm: type === 'cardio' ? String(ex.distanceKm || '') : '',
+          }
+        }))
+      }
       setShowManual(true)
     }).catch(() => {})
   }, [planId])
