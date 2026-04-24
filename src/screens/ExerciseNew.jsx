@@ -11,19 +11,8 @@ const QUICK_PROMPTS = [
   '游水30分鐘',
 ]
 
-const ACTIVITY_LABELS = {
-  gym: 'Gym',
-  running: 'Running',
-  swimming: 'Swimming',
-  basketball: 'Basketball',
-  badminton: 'Badminton',
-  cycling: 'Cycling',
-  yoga: 'Yoga',
-  hiking: 'Hiking',
-  other: 'Other',
-}
-
-const INTENSITY_LABELS = { easy: 'Easy', moderate: 'Moderate', hard: 'Hard' }
+const ACTIVITY_KEYS = ['gym', 'running', 'swimming', 'basketball', 'badminton', 'cycling', 'yoga', 'hiking', 'other']
+const INTENSITY_KEYS = ['easy', 'moderate', 'hard']
 
 const inputClass =
   'w-full bg-sand border-0 rounded-[12px] px-4 py-[10px] text-[14px] text-ink1 placeholder:text-ink3 outline-none focus:ring-2 focus:ring-orange transition-all'
@@ -250,7 +239,7 @@ export default function ExerciseNew() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <h1 className="text-[18px] font-semibold text-ink1">{planId ? '開始訓練' : t('logActivity')}</h1>
+        <h1 className="text-[18px] font-semibold text-ink1">{planId ? t('startTraining') : t('logActivity')}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-32 flex flex-col gap-5">
@@ -319,12 +308,12 @@ export default function ExerciseNew() {
 
             <div className="flex flex-wrap gap-2">
               <span className="px-3 py-1 rounded-full bg-orange/10 text-orange text-[12px] font-medium">
-                {ACTIVITY_LABELS[parsed.activityType] || parsed.activityLabel || parsed.activityType}
+                {t(`activity${parsed.activityType ? parsed.activityType.charAt(0).toUpperCase() + parsed.activityType.slice(1) : 'Other'}`) || parsed.activityLabel || parsed.activityType}
               </span>
               <span className="px-3 py-1 rounded-full bg-sand text-ink2 text-[12px]">{parsed.date}</span>
               <span className="px-3 py-1 rounded-full bg-sand text-ink2 text-[12px]">{parsed.durationMinutes} min</span>
               <span className="px-3 py-1 rounded-full bg-sand text-ink2 text-[12px] capitalize">
-                {INTENSITY_LABELS[parsed.intensity] || parsed.intensity}
+                {t(`intensity${parsed.intensity ? parsed.intensity.charAt(0).toUpperCase() + parsed.intensity.slice(1) : 'Moderate'}`) || parsed.intensity}
               </span>
               {parsed.distanceKm && (
                 <span className="px-3 py-1 rounded-full bg-sand text-ink2 text-[12px]">{parsed.distanceKm} km</span>
@@ -379,7 +368,7 @@ export default function ExerciseNew() {
             <div className="flex flex-col gap-2">
               <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('activityType')}</label>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(ACTIVITY_LABELS).map(([value, label]) => (
+                {ACTIVITY_KEYS.map(value => (
                   <button
                     key={value}
                     onClick={() => setActivityType(value)}
@@ -387,7 +376,7 @@ export default function ExerciseNew() {
                       activityType === value ? 'bg-orange text-white' : 'bg-sand text-ink2'
                     }`}
                   >
-                    {label}
+                    {t(`activity${value.charAt(0).toUpperCase() + value.slice(1)}`)}
                   </button>
                 ))}
               </div>
@@ -404,13 +393,13 @@ export default function ExerciseNew() {
 
             {/* Date */}
             <div className="flex flex-col gap-2">
-              <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">Date</label>
+              <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('date')}</label>
               <input type="date" className={inputClass} value={date} onChange={e => setDate(e.target.value)} />
             </div>
 
             {/* Duration */}
             <div className="flex flex-col gap-2">
-              <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">Duration</label>
+              <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('duration')}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number" min="1"
@@ -427,7 +416,7 @@ export default function ExerciseNew() {
             <div className="flex flex-col gap-2">
               <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('intensity')}</label>
               <div className="flex gap-2">
-                {Object.entries(INTENSITY_LABELS).map(([value, label]) => (
+                {INTENSITY_KEYS.map(value => (
                   <button
                     key={value}
                     onClick={() => setIntensity(value)}
@@ -435,7 +424,7 @@ export default function ExerciseNew() {
                       intensity === value ? 'bg-orange text-white' : 'bg-sand text-ink2'
                     }`}
                   >
-                    {label}
+                    {t(`intensity${value.charAt(0).toUpperCase() + value.slice(1)}`)}
                   </button>
                 ))}
               </div>
@@ -444,7 +433,7 @@ export default function ExerciseNew() {
             {/* Distance */}
             {(activityType === 'running' || activityType === 'swimming' || activityType === 'cycling' || activityType === 'hiking') && (
               <div className="flex flex-col gap-2">
-                <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">Distance</label>
+                <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('distance')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number" min="0" step="0.1"
@@ -461,10 +450,10 @@ export default function ExerciseNew() {
             {/* Gym exercises */}
             {activityType === 'gym' && (
               <div className="flex flex-col gap-3">
-                <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">Exercises</label>
+                <label className="text-[12px] font-medium text-ink2 uppercase tracking-wide">{t('exercises')}</label>
                 {planId && exercises.length === 0 && (
                   <p className="text-[13px] text-ink3 bg-sand rounded-[12px] px-4 py-3">
-                    此計劃未包含具體動作，可手動加入
+                    {t('noPlanExercises')}
                   </p>
                 )}
                 {exercises.map((ex, i) => (
@@ -491,11 +480,11 @@ export default function ExerciseNew() {
                     {/* 5-type selector */}
                     <div className="flex gap-1.5 flex-wrap">
                       {[
-                        { value: 'strength',   icon: '🏋️', label: 'Strength' },
-                        { value: 'bodyweight', icon: '💪', label: 'Bodyweight' },
-                        { value: 'timed',      icon: '⏱️', label: 'Timed' },
-                        { value: 'cardio',     icon: '🏃', label: 'Cardio' },
-                        { value: 'session',    icon: '🧘', label: 'Session' },
+                        { value: 'strength',   icon: '🏋️', labelKey: 'exTypeStrength' },
+                        { value: 'bodyweight', icon: '💪', labelKey: 'exTypeBodyweight' },
+                        { value: 'timed',      icon: '⏱️', labelKey: 'exTypeTimed' },
+                        { value: 'cardio',     icon: '🏃', labelKey: 'exTypeCardio' },
+                        { value: 'session',    icon: '🧘', labelKey: 'exTypeSession' },
                       ].map(opt => (
                         <button
                           key={opt.value}
@@ -507,7 +496,7 @@ export default function ExerciseNew() {
                               : 'bg-sand text-ink3 border-transparent'
                           }`}
                         >
-                          <span>{opt.icon}</span>{opt.label}
+                          <span>{opt.icon}</span>{t(opt.labelKey)}
                         </button>
                       ))}
                     </div>
