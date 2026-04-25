@@ -859,9 +859,10 @@ export default function ExerciseDetail() {
     progress: { storageKey: `exercise_progress_${id}`,  fetch: () => api.exercise.progress(id).then(r => r.progress),  label: '近期進度',   chatPrompt: '我最近嘅進度點？', errorMsg: '生成失敗，請稍後再試' },
   }
 
-  async function fetchCard(type) {
+  async function fetchCard(type, force = false) {
     const cfg = CARD_CONFIG[type]
     if (cards[type].loading) return
+    if (!force && cards[type].text) return   // already cached — chip re-click does nothing
     setCards(prev => ({ ...prev, [type]: { text: null, loading: true, error: null } }))
     try {
       const text = await cfg.fetch()
@@ -1014,7 +1015,7 @@ export default function ExerciseDetail() {
                 <span className="text-[12px] font-semibold text-ink3 uppercase tracking-wide">{cfg.label}</span>
                 <div className="flex items-center gap-2 -mt-0.5 -mr-0.5">
                   {!card.loading && (
-                    <button onClick={() => fetchCard(type)} title="重新生成" className="text-ink3 hover:text-ink1 transition-colors">
+                    <button onClick={() => fetchCard(type, true)} title="重新生成" className="text-ink3 hover:text-ink1 transition-colors">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                       </svg>
