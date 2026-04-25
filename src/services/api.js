@@ -155,5 +155,6 @@ export const api = {
     parse: (text) => request('/exercise/parse', { method: 'POST', body: JSON.stringify({ text }) }),
     aiPlan: () => request('/exercise/ai-plan', { method: 'POST' }),
     bulk: (sessions) => request('/exercise/bulk', { method: 'POST', body: JSON.stringify({ sessions }) }),
+    analyze: (id) => request(`/exercise/${id}/analyze`, { method: 'POST' }),
   },
 }

@@ -797,6 +797,9 @@ export default function ExerciseDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [analysisText, setAnalysisText] = useState(null)
+  const [analysisLoading, setAnalysisLoading] = useState(false)
+  const [analysisError, setAnalysisError] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -847,6 +850,20 @@ export default function ExerciseDetail() {
       })
     })
   }, [session])
+
+  async function handleAnalyze() {
+    if (analysisText || analysisLoading) return // cached — don't re-fetch
+    setAnalysisLoading(true)
+    setAnalysisError(null)
+    try {
+      const res = await api.exercise.analyze(id)
+      setAnalysisText(res.analysis)
+    } catch {
+      setAnalysisError('分析失敗，請稍後再試')
+    } finally {
+      setAnalysisLoading(false)
+    }
+  }
 
   async function handleDelete() {
     setDeleting(true)
@@ -964,7 +981,7 @@ export default function ExerciseDetail() {
           ].map((chip) => (
             <button
               key={chip}
-              onClick={() => openChat(chip)}
+              onClick={() => chip === '分析今日表現' ? handleAnalyze() : openChat(chip)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-orange/10 text-orange text-[13px] font-medium hover:bg-orange/20 active:bg-orange/30 transition-colors"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -974,6 +991,31 @@ export default function ExerciseDetail() {
             </button>
           ))}
         </div>
+
+        {/* Inline analysis card */}
+        {(analysisLoading || analysisText || analysisError) && (
+          <div className="bg-white rounded-[16px] p-4 shadow-sm flex flex-col gap-3">
+            {analysisLoading && (
+              <div className="flex flex-col gap-2">
+                <div className="h-3 bg-sand rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-sand rounded animate-pulse w-full" />
+                <div className="h-3 bg-sand rounded animate-pulse w-2/3" />
+              </div>
+            )}
+            {analysisText && (
+              <>
+                <p className="text-[14px] text-ink1 leading-relaxed whitespace-pre-line">{analysisText}</p>
+                <button
+                  onClick={() => openChat('分析今日表現')}
+                  className="self-start text-[13px] text-orange font-medium hover:underline"
+                >
+                  繼續喺Chat討論 →
+                </button>
+              </>
+            )}
+            {analysisError && <p className="text-[13px] text-[#C05A28]">{analysisError}</p>}
+          </div>
+        )}
 
         {/* Gym exercises — inline editable table */}
         {(session.activityType === 'gym' || session.exercises?.length > 0) && (
