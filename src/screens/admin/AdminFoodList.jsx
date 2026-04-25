@@ -15,6 +15,8 @@ export default function AdminFoodList() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [grabbing, setGrabbing] = useState({}) // { [id]: true }
+  const [grabError, setGrabError] = useState(null)
 
   const [q, setQ] = useState('')
   const [category, setCategory] = useState('')
@@ -45,6 +47,22 @@ export default function AdminFoodList() {
       load()
     } catch (e) {
       alert(e.message)
+    }
+  }
+
+  const handleGrabImage = async (id) => {
+    setGrabbing(g => ({ ...g, [id]: true }))
+    setGrabError(null)
+    try {
+      const res = await api.admin.foodDb.grabImage(id)
+      setItems(prev => prev.map(item =>
+        item._id === id ? { ...item, dishImageUrl: res.data.dishImageUrl } : item
+      ))
+    } catch (e) {
+      setGrabError(`Failed to grab image: ${e.message}`)
+      setTimeout(() => setGrabError(null), 4000)
+    } finally {
+      setGrabbing(g => { const n = { ...g }; delete n[id]; return n })
     }
   }
 
@@ -97,10 +115,14 @@ export default function AdminFoodList() {
 
         {/* Table */}
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {grabError && (
+          <p className="text-red-500 text-sm mb-4">{grabError}</p>
+        )}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="px-3 py-3 w-12" />
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
@@ -111,11 +133,28 @@ export default function AdminFoodList() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
               ) : items.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No items found</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No items found</td></tr>
               ) : items.map(item => (
                 <tr key={item._id} className="border-b border-gray-50 hover:bg-gray-50">
+                  {/* Image thumbnail */}
+                  <td className="px-3 py-2 w-12">
+                    {item.dishImageUrl ? (
+                      <img
+                        src={item.dishImageUrl}
+                        alt=""
+                        className="w-10 h-10 rounded-lg object-cover bg-gray-100"
+                        onError={e => { e.target.style.display = 'none' }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-900 font-medium">{item.name}</td>
                   <td className="px-4 py-3 text-gray-600">{item.displayName}</td>
                   <td className="px-4 py-3 text-gray-500">{item.category}</td>
@@ -130,6 +169,22 @@ export default function AdminFoodList() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right space-x-3">
+                    <button
+                      onClick={() => handleGrabImage(item._id)}
+                      disabled={!!grabbing[item._id]}
+                      title="Grab image"
+                      className="text-gray-400 hover:text-blue-500 disabled:opacity-40 transition-colors inline-flex items-center"
+                    >
+                      {grabbing[item._id] ? (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                      ) : (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                        </svg>
+                      )}
+                    </button>
                     <button
                       onClick={() => navigate(`/admin/food-db/${item._id}`)}
                       className="text-blue-600 hover:underline text-xs"
