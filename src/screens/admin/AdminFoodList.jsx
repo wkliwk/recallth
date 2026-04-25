@@ -17,6 +17,7 @@ export default function AdminFoodList() {
   const [error, setError] = useState(null)
   const [grabbing, setGrabbing] = useState({}) // { [id]: true }
   const [grabError, setGrabError] = useState(null)
+  const [batchProgress, setBatchProgress] = useState(null) // { done, total } | null
 
   const [q, setQ] = useState('')
   const [category, setCategory] = useState('')
@@ -66,6 +67,23 @@ export default function AdminFoodList() {
     }
   }
 
+  const handleGrabAllMissing = async () => {
+    const missing = items.filter(item => !item.dishImageUrl)
+    if (missing.length === 0) return
+    setBatchProgress({ done: 0, total: missing.length })
+    for (let i = 0; i < missing.length; i++) {
+      const item = missing[i]
+      try {
+        const res = await api.admin.foodDb.grabImage(item._id)
+        setItems(prev => prev.map(it =>
+          it._id === item._id ? { ...it, dishImageUrl: res.data.dishImageUrl } : it
+        ))
+      } catch { /* skip failed items */ }
+      setBatchProgress({ done: i + 1, total: missing.length })
+    }
+    setTimeout(() => setBatchProgress(null), 2000)
+  }
+
   const totalPages = Math.ceil(total / LIMIT)
 
   return (
@@ -77,12 +95,35 @@ export default function AdminFoodList() {
             <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Admin Panel</p>
             <h1 className="text-2xl font-semibold text-gray-900">Food Database</h1>
           </div>
-          <button
-            onClick={() => navigate('/admin/food-db/new')}
-            className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            + Add Food
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleGrabAllMissing}
+              disabled={!!batchProgress || loading || items.filter(i => !i.dishImageUrl).length === 0}
+              className="flex items-center gap-1.5 border border-gray-200 text-gray-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
+            >
+              {batchProgress ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  {batchProgress.done === batchProgress.total ? 'Done' : `${batchProgress.done} / ${batchProgress.total}`}
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  Grab All Missing
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => navigate('/admin/food-db/new')}
+              className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              + Add Food
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
