@@ -156,5 +156,7 @@ export const api = {
     aiPlan: () => request('/exercise/ai-plan', { method: 'POST' }),
     bulk: (sessions) => request('/exercise/bulk', { method: 'POST', body: JSON.stringify({ sessions }) }),
     analyze: (id) => request(`/exercise/${id}/analyze`, { method: 'POST' }),
+    suggest: (id) => request(`/exercise/${id}/suggest`, { method: 'POST' }),
+    progress: (id) => request(`/exercise/${id}/progress`, { method: 'POST' }),
   },
 }

@@ -797,9 +797,11 @@ export default function ExerciseDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
-  const [analysisText, setAnalysisText] = useState(() => localStorage.getItem(`exercise_analysis_${id}`) ?? null)
-  const [analysisLoading, setAnalysisLoading] = useState(false)
-  const [analysisError, setAnalysisError] = useState(null)
+  const [cards, setCards] = useState(() => ({
+    analyze:  { text: localStorage.getItem(`exercise_analysis_${id}`) ?? null,   loading: false, error: null },
+    suggest:  { text: localStorage.getItem(`exercise_suggest_${id}`) ?? null,    loading: false, error: null },
+    progress: { text: localStorage.getItem(`exercise_progress_${id}`) ?? null,   loading: false, error: null },
+  }))
 
   useEffect(() => {
     async function load() {
@@ -851,26 +853,28 @@ export default function ExerciseDetail() {
     })
   }, [session])
 
-  async function handleAnalyze() {
-    if (analysisLoading) return
-    setAnalysisLoading(true)
-    setAnalysisError(null)
-    setAnalysisText(null)
+  const CARD_CONFIG = {
+    analyze:  { storageKey: `exercise_analysis_${id}`,  fetch: () => api.exercise.analyze(id).then(r => r.analysis),  label: '今日分析',   chatPrompt: '分析今日表現',   errorMsg: '分析失敗，請稍後再試' },
+    suggest:  { storageKey: `exercise_suggest_${id}`,   fetch: () => api.exercise.suggest(id).then(r => r.suggestion), label: '明日訓練建議', chatPrompt: '建議明日訓練',   errorMsg: '生成失敗，請稍後再試' },
+    progress: { storageKey: `exercise_progress_${id}`,  fetch: () => api.exercise.progress(id).then(r => r.progress),  label: '近期進度',   chatPrompt: '我最近嘅進度點？', errorMsg: '生成失敗，請稍後再試' },
+  }
+
+  async function fetchCard(type) {
+    const cfg = CARD_CONFIG[type]
+    if (cards[type].loading) return
+    setCards(prev => ({ ...prev, [type]: { text: null, loading: true, error: null } }))
     try {
-      const res = await api.exercise.analyze(id)
-      setAnalysisText(res.analysis)
-      localStorage.setItem(`exercise_analysis_${id}`, res.analysis)
+      const text = await cfg.fetch()
+      setCards(prev => ({ ...prev, [type]: { text, loading: false, error: null } }))
+      localStorage.setItem(cfg.storageKey, text)
     } catch {
-      setAnalysisError('分析失敗，請稍後再試')
-    } finally {
-      setAnalysisLoading(false)
+      setCards(prev => ({ ...prev, [type]: { text: null, loading: false, error: cfg.errorMsg } }))
     }
   }
 
-  function handleCloseAnalysis() {
-    setAnalysisText(null)
-    setAnalysisError(null)
-    localStorage.removeItem(`exercise_analysis_${id}`)
+  function closeCard(type) {
+    setCards(prev => ({ ...prev, [type]: { text: null, loading: false, error: null } }))
+    localStorage.removeItem(CARD_CONFIG[type].storageKey)
   }
 
   async function handleDelete() {
@@ -983,57 +987,70 @@ export default function ExerciseDetail() {
         {/* Quick AI chips */}
         <div className="flex flex-wrap gap-2">
           {[
-            '分析今日表現',
-            '建議明日訓練',
-            '我最近嘅進度點？',
-          ].map((chip) => (
+            { label: '分析今日表現',   type: 'analyze'  },
+            { label: '建議明日訓練',   type: 'suggest'  },
+            { label: '我最近嘅進度點？', type: 'progress' },
+          ].map(({ label, type }) => (
             <button
-              key={chip}
-              onClick={() => chip === '分析今日表現' ? handleAnalyze() : openChat(chip)}
+              key={type}
+              onClick={() => fetchCard(type)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-orange/10 text-orange text-[13px] font-medium hover:bg-orange/20 active:bg-orange/30 transition-colors"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
               </svg>
-              {chip}
+              {label}
             </button>
           ))}
         </div>
 
-        {/* Inline analysis card */}
-        {(analysisLoading || analysisText || analysisError) && (
-          <div className="bg-white rounded-[16px] p-4 shadow-sm flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-[12px] font-semibold text-ink3 uppercase tracking-wide">今日分析</span>
-              {!analysisLoading && (
-                <button onClick={handleCloseAnalysis} className="text-ink3 hover:text-ink1 transition-colors -mt-0.5 -mr-0.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              )}
-            </div>
-            {analysisLoading && (
-              <div className="flex flex-col gap-2">
-                <div className="h-3 bg-sand rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-sand rounded animate-pulse w-full" />
-                <div className="h-3 bg-sand rounded animate-pulse w-2/3" />
+        {/* Inline AI cards */}
+        {Object.entries(CARD_CONFIG).map(([type, cfg]) => {
+          const card = cards[type]
+          if (!card.loading && !card.text && !card.error) return null
+          return (
+            <div key={type} className="bg-white rounded-[16px] p-4 shadow-sm flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-[12px] font-semibold text-ink3 uppercase tracking-wide">{cfg.label}</span>
+                <div className="flex items-center gap-2 -mt-0.5 -mr-0.5">
+                  {!card.loading && (
+                    <button onClick={() => fetchCard(type)} title="重新生成" className="text-ink3 hover:text-ink1 transition-colors">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                      </svg>
+                    </button>
+                  )}
+                  {!card.loading && (
+                    <button onClick={() => closeCard(type)} className="text-ink3 hover:text-ink1 transition-colors">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-            {analysisText && (
-              <>
-                <p className="text-[14px] text-ink1 leading-relaxed whitespace-pre-line">{analysisText}</p>
-                <button
-                  onClick={() => openChat('分析今日表現')}
-                  className="self-start text-[13px] text-orange font-medium hover:underline"
-                >
-                  繼續喺Chat討論 →
-                </button>
-              </>
-            )}
-            {analysisError && <p className="text-[13px] text-[#C05A28]">{analysisError}</p>}
-          </div>
-        )}
+              {card.loading && (
+                <div className="flex flex-col gap-2">
+                  <div className="h-3 bg-sand rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-sand rounded animate-pulse w-full" />
+                  <div className="h-3 bg-sand rounded animate-pulse w-2/3" />
+                </div>
+              )}
+              {card.text && (
+                <>
+                  <p className="text-[14px] text-ink1 leading-relaxed whitespace-pre-line">{card.text}</p>
+                  <button
+                    onClick={() => openChat(cfg.chatPrompt)}
+                    className="self-start text-[13px] text-orange font-medium hover:underline"
+                  >
+                    繼續喺Chat討論 →
+                  </button>
+                </>
+              )}
+              {card.error && <p className="text-[13px] text-[#C05A28]">{card.error}</p>}
+            </div>
+          )
+        })}
 
         {/* Gym exercises — inline editable table */}
         {(session.activityType === 'gym' || session.exercises?.length > 0) && (
