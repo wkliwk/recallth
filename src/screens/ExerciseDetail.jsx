@@ -797,7 +797,7 @@ export default function ExerciseDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
-  const [analysisText, setAnalysisText] = useState(null)
+  const [analysisText, setAnalysisText] = useState(() => localStorage.getItem(`exercise_analysis_${id}`) ?? null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [analysisError, setAnalysisError] = useState(null)
 
@@ -852,17 +852,25 @@ export default function ExerciseDetail() {
   }, [session])
 
   async function handleAnalyze() {
-    if (analysisText || analysisLoading) return // cached — don't re-fetch
+    if (analysisLoading) return
     setAnalysisLoading(true)
     setAnalysisError(null)
+    setAnalysisText(null)
     try {
       const res = await api.exercise.analyze(id)
       setAnalysisText(res.analysis)
+      localStorage.setItem(`exercise_analysis_${id}`, res.analysis)
     } catch {
       setAnalysisError('分析失敗，請稍後再試')
     } finally {
       setAnalysisLoading(false)
     }
+  }
+
+  function handleCloseAnalysis() {
+    setAnalysisText(null)
+    setAnalysisError(null)
+    localStorage.removeItem(`exercise_analysis_${id}`)
   }
 
   async function handleDelete() {
@@ -995,6 +1003,16 @@ export default function ExerciseDetail() {
         {/* Inline analysis card */}
         {(analysisLoading || analysisText || analysisError) && (
           <div className="bg-white rounded-[16px] p-4 shadow-sm flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-[12px] font-semibold text-ink3 uppercase tracking-wide">今日分析</span>
+              {!analysisLoading && (
+                <button onClick={handleCloseAnalysis} className="text-ink3 hover:text-ink1 transition-colors -mt-0.5 -mr-0.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
+            </div>
             {analysisLoading && (
               <div className="flex flex-col gap-2">
                 <div className="h-3 bg-sand rounded animate-pulse w-3/4" />
