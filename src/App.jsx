@@ -33,6 +33,10 @@ import ExerciseDetail from './screens/ExerciseDetail'
 import NutritionAdd from './screens/NutritionAdd'
 import NutritionDetail from './screens/NutritionDetail'
 import FoodDatabase from './screens/FoodDatabase'
+import AdminFoodList from './screens/admin/AdminFoodList'
+import AdminFoodForm from './screens/admin/AdminFoodForm'
+import { useEffect, useState } from 'react'
+import { api } from './services/api'
 
 // Placeholder screens for routes not yet built
 function Placeholder({ title }) {
@@ -63,6 +67,28 @@ function PublicRoute({ children }) {
   if (isLoading) return null
   // Don't redirect new users — Auth.handleSubmit handles navigation to /onboarding
   if (isAuthenticated && !isNewUser) return <Navigate to="/home" replace />
+  return children
+}
+
+function AdminRoute({ children }) {
+  const { token, isLoading } = useAuth()
+  const [status, setStatus] = useState('checking')
+
+  useEffect(() => {
+    if (isLoading) return
+    if (!token) { setStatus('denied'); return }
+    api.auth.me()
+      .then(d => setStatus(d?.data?.isAdmin ? 'ok' : 'denied'))
+      .catch(() => setStatus('denied'))
+  }, [token, isLoading])
+
+  if (isLoading || status === 'checking') return null
+  if (!token) return <Navigate to="/auth?mode=login" replace />
+  if (status === 'denied') return (
+    <div className="flex items-center justify-center min-h-screen text-gray-500 text-sm">
+      Access denied. Admin only.
+    </div>
+  )
   return children
 }
 
@@ -98,6 +124,11 @@ function AppRoutes() {
       <Route path="/exercise"          element={<ProtectedRoute><Exercise /></ProtectedRoute>} />
       <Route path="/exercise/new"      element={<ProtectedRoute><ExerciseNew /></ProtectedRoute>} />
       <Route path="/exercise/:id"      element={<ProtectedRoute><ExerciseDetail /></ProtectedRoute>} />
+
+      {/* Admin */}
+      <Route path="/admin/food-db"     element={<AdminRoute><AdminFoodList /></AdminRoute>} />
+      <Route path="/admin/food-db/new" element={<AdminRoute><AdminFoodForm /></AdminRoute>} />
+      <Route path="/admin/food-db/:id" element={<AdminRoute><AdminFoodForm /></AdminRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
