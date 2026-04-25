@@ -55,6 +55,7 @@ export default function Cabinet() {
   const [interactions, setInteractions] = useState([])
   const [evidenceMap, setEvidenceMap] = useState({})
   const [loading, setLoading] = useState(true)
+  const [aiLoading, setAiLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
@@ -65,21 +66,28 @@ export default function Cabinet() {
   const aiDebounceRef = useRef(null)
 
   useEffect(() => {
-    async function fetchData() {
+    // Step 1: load the list immediately
+    async function fetchList() {
       setLoading(true)
       setError(null)
       try {
-        const [suppRes, interactRes, evidenceRes] = await Promise.allSettled([
-          api.cabinet.list(),
+        const suppRes = await api.cabinet.list()
+        setSupplements(suppRes.data || [])
+      } catch (err) {
+        setError(err.message || 'Failed to load supplements')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Step 2: load AI data in background after list is shown
+    async function fetchAiData() {
+      setAiLoading(true)
+      try {
+        const [interactRes, evidenceRes] = await Promise.allSettled([
           api.cabinet.interactions(),
           api.cabinet.evidenceScores(),
         ])
-
-        if (suppRes.status === 'fulfilled') {
-          setSupplements(suppRes.value.data || [])
-        } else {
-          setError('Failed to load supplements')
-        }
 
         if (interactRes.status === 'fulfilled') {
           const ixData = interactRes.value.data
@@ -90,19 +98,15 @@ export default function Cabinet() {
           const scoresData = evidenceRes.value.data
           const scores = Array.isArray(scoresData) ? scoresData : scoresData?.scores ?? []
           const map = {}
-          scores.forEach((s) => {
-            if (s.name) map[s.name] = s
-          })
+          scores.forEach((s) => { if (s.name) map[s.name] = s })
           setEvidenceMap(map)
         }
-      } catch (err) {
-        setError(err.message || 'Failed to load data')
       } finally {
-        setLoading(false)
+        setAiLoading(false)
       }
     }
 
-    fetchData()
+    fetchList().then(() => fetchAiData())
   }, [])
 
   const outOfStockCount = supplements.filter((s) => s.outOfStock).length
@@ -186,7 +190,10 @@ export default function Cabinet() {
       </div>
 
       {/* Interaction warning banner */}
-      {interactions.length > 0 && (
+      {aiLoading && (
+        <div className="mx-5 md:mx-8 mb-3 h-10 rounded-card bg-sand animate-pulse max-w-[960px]" />
+      )}
+      {!aiLoading && interactions.length > 0 && (
         <div
           className="mx-5 md:mx-8 mb-3 px-4 py-3 rounded-card flex items-start gap-3 max-w-[960px]"
           style={{ background: '#FDE8DE', border: '1px solid #E8C4B0' }}
