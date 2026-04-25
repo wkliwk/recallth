@@ -159,4 +159,21 @@ export const api = {
     suggest: (id) => request(`/exercise/${id}/suggest`, { method: 'POST' }),
     progress: (id) => request(`/exercise/${id}/progress`, { method: 'POST' }),
   },
+  admin: {
+    foodDb: {
+      list: (params = {}) => {
+        const p = new URLSearchParams()
+        if (params.q) p.set('q', params.q)
+        if (params.category) p.set('category', params.category)
+        if (params.status) p.set('status', params.status)
+        if (params.page) p.set('page', String(params.page))
+        if (params.limit) p.set('limit', String(params.limit))
+        return request(`/admin/food-db?${p.toString()}`)
+      },
+      get: (id) => request(`/admin/food-db/${id}`),
+      create: (data) => request('/admin/food-db', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id, data) => request(`/admin/food-db/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      remove: (id) => request(`/admin/food-db/${id}`, { method: 'DELETE' }),
+    },
+  },
 }
