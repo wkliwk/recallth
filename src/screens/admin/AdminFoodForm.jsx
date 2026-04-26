@@ -109,6 +109,9 @@ export default function AdminFoodForm() {
   const [urlLookupError, setUrlLookupError] = useState(null)
   const [urlLookupSuccess, setUrlLookupSuccess] = useState(false)
 
+  const [dupWarning, setDupWarning] = useState(null)
+  const [dupDismissed, setDupDismissed] = useState(false)
+
   useEffect(() => {
     if (!isEdit) return
     api.admin.foodDb.get(id)
@@ -117,7 +120,28 @@ export default function AdminFoodForm() {
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
-  const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
+  useEffect(() => {
+    const trimmed = form.name.trim()
+    if (trimmed.length < 2) {
+      setDupWarning(null)
+      return
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.admin.foodDb.list({ q: trimmed, limit: 5 })
+        const similar = (res.data ?? []).filter(item => item._id !== id)
+        setDupWarning(similar.slice(0, 3))
+      } catch {
+        // ignore lookup errors silently
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [form.name, id])
+
+  const set = (field, value) => {
+    setForm(f => ({ ...f, [field]: value }))
+    if (field === 'name') setDupDismissed(false)
+  }
   const setNutr = (field, value) => setForm(f => ({ ...f, per100g: { ...f.per100g, [field]: value } }))
 
   const handleUrlLookup = async () => {
@@ -155,6 +179,8 @@ export default function AdminFoodForm() {
   }
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400">Loading...</div>
+
+  const showDupWarning = !dupDismissed && dupWarning && dupWarning.length > 0
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -200,9 +226,33 @@ export default function AdminFoodForm() {
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Basic Info</h2>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Name (internal)" required>
-                <input className={inputCls} value={form.name} onChange={e => set('name', e.target.value)} required />
-              </Field>
+              <div>
+                <Field label="Name (internal)" required>
+                  <input className={inputCls} value={form.name} onChange={e => set('name', e.target.value)} required />
+                </Field>
+                {showDupWarning && (
+                  <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="font-medium">Similar items already exist: </span>
+                        {dupWarning.map((item, i) => (
+                          <span key={item._id}>
+                            {i > 0 && ', '}
+                            <span className="font-medium">{item.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDupDismissed(true)}
+                        className="text-amber-500 hover:text-amber-700 shrink-0 font-medium"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <Field label="Display Name" required>
                 <input className={inputCls} value={form.displayName} onChange={e => set('displayName', e.target.value)} required />
               </Field>
