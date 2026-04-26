@@ -104,6 +104,11 @@ export default function AdminFoodForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
+  const [urlLookupUrl, setUrlLookupUrl] = useState('')
+  const [urlLooking, setUrlLooking] = useState(false)
+  const [urlLookupError, setUrlLookupError] = useState(null)
+  const [urlLookupSuccess, setUrlLookupSuccess] = useState(false)
+
   useEffect(() => {
     if (!isEdit) return
     api.admin.foodDb.get(id)
@@ -114,6 +119,24 @@ export default function AdminFoodForm() {
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
   const setNutr = (field, value) => setForm(f => ({ ...f, per100g: { ...f.per100g, [field]: value } }))
+
+  const handleUrlLookup = async () => {
+    if (!urlLookupUrl.trim()) return
+    setUrlLooking(true)
+    setUrlLookupError(null)
+    setUrlLookupSuccess(false)
+    try {
+      const res = await api.admin.foodDb.urlLookup(urlLookupUrl.trim())
+      if (res.data) {
+        setForm(prev => ({ ...prev, ...toForm(res.data) }))
+        setUrlLookupSuccess(true)
+      }
+    } catch (e) {
+      setUrlLookupError(e.message)
+    } finally {
+      setUrlLooking(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -148,6 +171,31 @@ export default function AdminFoodForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* URL Auto-fill */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-blue-700">Auto-fill from URL</h2>
+            <p className="text-xs text-blue-500">Paste a product page URL (e.g. Open Food Facts, supermarket, brand site) to auto-populate all fields.</p>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 border border-blue-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                value={urlLookupUrl}
+                onChange={e => { setUrlLookupUrl(e.target.value); setUrlLookupSuccess(false); setUrlLookupError(null) }}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleUrlLookup())}
+                placeholder="https://www.openfoodfacts.org/product/..."
+              />
+              <button
+                type="button"
+                onClick={handleUrlLookup}
+                disabled={urlLooking || !urlLookupUrl.trim()}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+              >
+                {urlLooking ? 'Looking up...' : 'Lookup'}
+              </button>
+            </div>
+            {urlLookupError && <p className="text-red-500 text-xs">{urlLookupError}</p>}
+            {urlLookupSuccess && <p className="text-green-600 text-xs font-medium">Fields updated — review and save.</p>}
+          </div>
+
           {/* Basic Info */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Basic Info</h2>
