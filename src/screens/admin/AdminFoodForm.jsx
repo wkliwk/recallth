@@ -255,7 +255,7 @@ export default function AdminFoodForm() {
               ].map(({ key, label, required }) => (
                 <Field key={key} label={label} required={required}>
                   <input
-                    type="number" step="0.1" min="0"
+                    type="number" step="any" min="0"
                     className={inputCls}
                     value={form.per100g[key]}
                     onChange={e => setNutr(key, e.target.value)}
