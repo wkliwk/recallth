@@ -243,7 +243,7 @@ export default function Cabinet() {
                     : 'bg-white border border-border text-ink3 hover:border-ink3/40'
                 }`}
               >
-                用完 {outOfStockCount}
+                {t('cabinetFilterOutOfStock')} {outOfStockCount}
               </button>
             )}
           </div>
@@ -326,7 +326,7 @@ export default function Cabinet() {
                     : 'bg-white border border-border text-ink3 hover:border-ink3/40'
                 }`}
               >
-                用完 {outOfStockCount}
+                {t('cabinetFilterOutOfStock')} {outOfStockCount}
               </button>
             )}
           </div>
