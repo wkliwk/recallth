@@ -177,6 +177,7 @@ export const api = {
       remove: (id) => request(`/admin/food-db/${id}`, { method: 'DELETE' }),
       grabImage: (id) => request(`/admin/food-db/${id}/grab-image`, { method: 'POST' }),
       hardDelete: (id) => request(`/admin/food-db/${id}/hard`, { method: 'DELETE' }),
+      urlLookup: (url) => request('/admin/food-db/url-lookup', { method: 'POST', body: JSON.stringify({ url }) }),
     },
   },
 }
