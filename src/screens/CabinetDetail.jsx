@@ -877,7 +877,9 @@ export default function CabinetDetail() {
 
           {confirmDelete ? (
             <div className="rounded-card border border-[#E8C4B0] bg-[#FDE8DE] p-4 flex flex-col gap-3">
-              <p className="text-[14px] text-ink1 text-center font-medium">{t('confirmDelete')}</p>
+              <p className="text-[14px] text-ink1 text-center font-medium">
+                {t('removeFromCabinetPrefix')}<strong>{supp.name}</strong>{t('removeFromCabinetSuffix')}
+              </p>
               <p className="text-[12px] text-ink3 text-center">{t('cannotUndo')}</p>
               <div className="flex gap-3">
                 <button
@@ -891,7 +893,7 @@ export default function CabinetDetail() {
                   disabled={deleting}
                   className="flex-1 rounded-pill bg-[#C05A28] text-white text-[14px] font-medium py-[10px] cursor-pointer disabled:opacity-60 hover:bg-[#A04820] transition-colors"
                 >
-                  {deleting ? t('deleting') : t('deleteButton')}
+                  {deleting ? t('deleting') : t('removeButton')}
                 </button>
               </div>
             </div>
