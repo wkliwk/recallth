@@ -10,21 +10,21 @@ function today() {
 
 const SEVERITY_CONFIG = {
   mild: {
-    label: 'Mild',
+    labelKey: 'sideEffectsMild',
     badgeClass: 'bg-[#E8F0E8] text-[#3D6B3D] border border-[#C5D8C5]',
     borderColor: '#3D6B3D',
     buttonClass: 'bg-[#3D6B3D] text-white border-[#3D6B3D]',
     idleClass: 'bg-white text-[#3D6B3D] border-[#C5D8C5]',
   },
   moderate: {
-    label: 'Moderate',
+    labelKey: 'sideEffectsModerate',
     badgeClass: 'bg-[#FDE8DE] text-[#C05A28] border border-[#E8C4B0]',
     borderColor: '#C05A28',
     buttonClass: 'bg-[#E07B4A] text-white border-[#E07B4A]',
     idleClass: 'bg-white text-[#C05A28] border-[#E8C4B0]',
   },
   severe: {
-    label: 'Severe',
+    labelKey: 'sideEffectsSevere',
     badgeClass: 'bg-[#FDE8DE] text-[#C05A28] border border-[#E8C4B0]',
     borderColor: '#C05A28',
     buttonClass: 'bg-[#C05A28] text-white border-[#C05A28]',
@@ -47,7 +47,7 @@ function Skeleton({ className = '' }) {
 
 function SeverityBadge({ severity, t }) {
   const cfg = SEVERITY_CONFIG[severity] ?? SEVERITY_CONFIG.mild
-  const label = t ? { mild: t('sideEffectsMild'), moderate: t('sideEffectsModerate'), severe: t('sideEffectsSevere') }[severity] ?? cfg.label : cfg.label
+  const label = t(cfg.labelKey)
   return (
     <span className={`inline-flex items-center px-2 py-[2px] rounded-full text-[11px] font-medium capitalize ${cfg.badgeClass}`}>
       {label}
@@ -315,7 +315,7 @@ export default function SideEffects() {
               {(['mild', 'moderate', 'severe']).map((s) => {
                 const cfg = SEVERITY_CONFIG[s]
                 const selected = severity === s
-                const severityLabel = { mild: t('sideEffectsMild'), moderate: t('sideEffectsModerate'), severe: t('sideEffectsSevere') }[s]
+                const severityLabel = t(cfg.labelKey)
                 return (
                   <button
                     key={s}
