@@ -103,6 +103,11 @@ export const api = {
     streak: () => request('/intake/streak'),
     log: () => request('/intake/log', { method: 'POST' }),
   },
+  schedule: {
+    doseLogs: (from, to) => request(`/schedule/dose-logs?from=${from}&to=${to}`),
+    logDose: (data) => request('/schedule/log-dose', { method: 'POST', body: JSON.stringify(data) }),
+    unlogDose: (id) => request(`/schedule/log-dose/${id}`, { method: 'DELETE' }),
+  },
   bloodwork: {
     list: () => request('/bloodwork'),
     create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
