@@ -175,6 +175,7 @@ export const api = {
       update: (id, data) => request(`/admin/food-db/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
       remove: (id) => request(`/admin/food-db/${id}`, { method: 'DELETE' }),
       grabImage: (id) => request(`/admin/food-db/${id}/grab-image`, { method: 'POST' }),
+      hardDelete: (id) => request(`/admin/food-db/${id}/hard`, { method: 'DELETE' }),
     },
   },
 }
