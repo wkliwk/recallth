@@ -46,6 +46,25 @@ function useRelativeTime(t) {
   }, [t])
 }
 
+// ── Parse suggestion chips from AI response ──────────────────────────────────
+function parseSuggestions(text) {
+  if (!text) return { cleanText: text || '', suggestions: [] }
+  const match = text.match(/\n?\{"suggestions"\s*:\s*\[[^\]]*\]\}\s*$/)
+  if (!match) return { cleanText: text, suggestions: [] }
+  try {
+    const parsed = JSON.parse(match[0].trim())
+    if (Array.isArray(parsed.suggestions)) {
+      return {
+        cleanText: text.slice(0, text.length - match[0].length).trimEnd(),
+        suggestions: parsed.suggestions.filter((s) => typeof s === 'string' && s.trim()),
+      }
+    }
+  } catch {
+    // ignore malformed JSON
+  }
+  return { cleanText: text, suggestions: [] }
+}
+
 // ── History sidebar ──────────────────────────────────────────────────────────
 function HistoryDrawer({ open, onClose, conversations, loading, onSelect, onDelete, activeId, t }) {
   const [search, setSearch] = useState('')
@@ -239,11 +258,13 @@ export default function Chat() {
       if (res.success && res.data) {
         setConversationId(res.data._id)
         setConversationTitle(res.data.title || '')
-        const mapped = res.data.messages.map((m) => ({
-          type: m.role === 'assistant' ? 'ai' : 'user',
-          text: m.content,
-          actions: m.actions || [],
-        }))
+        const mapped = res.data.messages.map((m) => {
+          if (m.role === 'assistant') {
+            const { cleanText, suggestions } = parseSuggestions(m.content)
+            return { type: 'ai', text: cleanText, actions: m.actions || [], suggestions }
+          }
+          return { type: 'user', text: m.content, actions: [] }
+        })
         // Restore applied state from persisted actions
         const applied = new Set()
         res.data.messages.forEach((m, mi) => {
@@ -287,12 +308,14 @@ export default function Chat() {
       const res = await chatService.send(trimmed || t('chatImagePrompt'), conversationId, imageData)
       if (res.success && res.data) {
         setConversationId(res.data.conversationId)
+        const { cleanText, suggestions } = parseSuggestions(res.data.message?.content ?? t('chatNoResponse'))
         setMessages((prev) => [
           ...prev,
           {
             type: 'ai',
-            text: res.data.message?.content ?? t('chatNoResponse'),
+            text: cleanText,
             actions: res.data.actions || [],
+            suggestions,
           },
         ])
         if (!conversationId) fetchHistory()
@@ -316,10 +339,12 @@ export default function Chat() {
       const res = await chatService.send(lastUserMsg.text, conversationId)
       if (res.success && res.data) {
         setConversationId(res.data.conversationId)
+        const { cleanText, suggestions } = parseSuggestions(res.data.message?.content ?? t('chatNoResponse'))
         setMessages(m => [...m, {
           type: 'ai',
-          text: res.data.message?.content ?? t('chatNoResponse'),
+          text: cleanText,
           actions: res.data.actions || [],
+          suggestions,
         }])
         if (!conversationId) fetchHistory()
       }
@@ -388,10 +413,12 @@ export default function Chat() {
       const res = await chatService.send(trimmed, null)
       if (res.success && res.data) {
         setConversationId(res.data.conversationId)
+        const { cleanText, suggestions } = parseSuggestions(res.data.message?.content ?? t('chatNoResponse'))
         setMessages(m => [...m, {
           type: 'ai',
-          text: res.data.message?.content ?? t('chatNoResponse'),
+          text: cleanText,
           actions: res.data.actions || [],
+          suggestions,
         }])
       }
     } catch {
@@ -695,6 +722,19 @@ export default function Chat() {
             </svg>
             {t('chatRetry')}
           </button>
+        )}
+        {msg.type === 'ai' && msg.suggestions?.length > 0 && !isTyping && (
+          <div className="flex flex-wrap gap-2 ml-9 mt-2">
+            {msg.suggestions.map((suggestion, si) => (
+              <button
+                key={si}
+                onClick={() => sendMessage(suggestion)}
+                className="text-[12px] text-ink2 bg-white border border-border rounded-full px-3 py-[6px] hover:border-orange/50 hover:text-orange transition-colors cursor-pointer"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
         )}
         </div>
       ))}
