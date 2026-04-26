@@ -540,6 +540,7 @@ const TRANSLATIONS = {
     timeMinAgo: (n) => `${n}m ago`,
     timeHrAgo: (n) => `${n}h ago`,
     timeDaysAgo: (n) => `${n}d ago`,
+    timeToday: 'Today',
     timeYesterday: 'Yesterday',
     // ── Nutrition Tracker ────────────────────────────────────────────────
     nutritionTitle: 'Nutrition Tracker',
@@ -1198,6 +1199,7 @@ const TRANSLATIONS = {
     timeMinAgo: (n) => `${n}分鐘前`,
     timeHrAgo: (n) => `${n}小時前`,
     timeDaysAgo: (n) => `${n}天前`,
+    timeToday: '今天',
     timeYesterday: '昨天',
     // ── Nutrition Tracker ────────────────────────────────────────────────
     nutritionTitle: '營養追蹤',
@@ -1850,6 +1852,7 @@ const TRANSLATIONS = {
     timeMinAgo: (n) => `${n}分鐘前`,
     timeHrAgo: (n) => `${n}個鐘前`,
     timeDaysAgo: (n) => `${n}日前`,
+    timeToday: '今日',
     timeYesterday: '尋日',
     // ── Nutrition Tracker ────────────────────────────────────────────────
     nutritionTitle: '營養追蹤',

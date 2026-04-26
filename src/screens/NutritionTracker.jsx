@@ -35,12 +35,12 @@ function offsetDate(iso, days) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-function formatDateLabel(iso) {
+function formatDateLabel(iso, t, language) {
   const today = todayISO()
-  if (iso === today) return 'Today'
-  if (iso === offsetDate(today, -1)) return 'Yesterday'
+  if (iso === today) return t('timeToday')
+  if (iso === offsetDate(today, -1)) return t('timeYesterday')
   const d = new Date(iso + 'T00:00:00')
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  return d.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 // ── Skeleton primitive ────────────────────────────────────────────────────────
@@ -1569,7 +1569,7 @@ function CustomiseModal({ open, onClose, config, onSave, t }) {
 const DOW_SHORT = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [expanded, setExpanded] = useState(false)
 
   // Current month for record dot fetching
@@ -1669,7 +1669,7 @@ function WeekStrip({ viewDate, onSelectDate, todayStr, refreshKey = 0 }) {
       {/* Bottom row: date label + today + expand toggle */}
       <div className="flex items-center justify-between px-4 pb-2 max-w-[560px] mx-auto">
         <div className="flex items-center gap-2">
-          <p className="text-[11px] font-medium text-ink3">{viewDate === todayStr ? t('nutritionCalToday') : formatDateLabel(viewDate)}</p>
+          <p className="text-[11px] font-medium text-ink3">{viewDate === todayStr ? t('nutritionCalToday') : formatDateLabel(viewDate, t, language)}</p>
           {viewDate !== todayStr && (
             <button
               type="button"
@@ -2304,7 +2304,7 @@ export default function NutritionTracker() {
   // Allow browsing up to today+3 (matches drag-to-date strip range)
   const maxViewDate = offsetDate(todayStr, 3)
   const isAtMaxDate = viewDate >= maxViewDate
-  const dateLabel = isToday ? t('nutritionCalToday') : formatDateLabel(viewDate)
+  const dateLabel = isToday ? t('nutritionCalToday') : formatDateLabel(viewDate, t, language)
 
   // ── Feature flag ──────────────────────────────────────────────────────────
   const [useV2, setUseV2] = useState(() => getFlag('NUTRITION_V2'))
