@@ -129,18 +129,23 @@ export default function CabinetAdd() {
     }
   }
 
+  const isUrl = (s) => /^https?:\/\/.+/.test(s.trim())
+
   async function handleAiLookup() {
     if (!aiQuery.trim() || aiLooking) return
     setAiLooking(true)
     setErrors({})
     try {
-      const res = await api.cabinet.aiLookup(aiQuery.trim())
+      const query = aiQuery.trim()
+      const res = isUrl(query)
+        ? await api.cabinet.urlLookup(query)
+        : await api.cabinet.aiLookup(query)
       if (res.success && res.data) {
         const results = Array.isArray(res.data) ? res.data : [res.data]
         setAiResults(results)
         setAiSelected(0)
         if (res.aiUsage) showUsage(res.aiUsage, 'ai-lookup', {
-          input: aiQuery.trim(),
+          input: query,
           output: results.map(p => p.name ?? p.productName ?? JSON.stringify(p)).join(', '),
         })
       }

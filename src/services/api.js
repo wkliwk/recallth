@@ -54,6 +54,7 @@ export const api = {
     interactions: () => request('/cabinet/interactions'),
     evidenceScores: () => request('/cabinet/evidence-scores'),
     aiLookup: (query) => request('/cabinet/ai-lookup', { method: 'POST', body: JSON.stringify({ query }) }),
+    urlLookup: (url) => request('/cabinet/url-lookup', { method: 'POST', body: JSON.stringify({ url }) }),
   },
   chat: {
     history: () => request('/chat/history'),
