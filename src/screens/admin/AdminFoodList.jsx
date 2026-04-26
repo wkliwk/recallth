@@ -51,6 +51,17 @@ export default function AdminFoodList() {
     }
   }
 
+  const handleHardDelete = async (id, name) => {
+    if (!confirm(`Permanently delete "${name}"?\n\nThis cannot be undone.`)) return
+    try {
+      await api.admin.foodDb.hardDelete(id)
+      setItems(prev => prev.filter(item => item._id !== id))
+      setTotal(t => t - 1)
+    } catch (e) {
+      alert(e.message)
+    }
+  }
+
   const handleGrabImage = async (id) => {
     setGrabbing(g => ({ ...g, [id]: true }))
     setGrabError(null)
@@ -238,6 +249,14 @@ export default function AdminFoodList() {
                         className="text-red-500 hover:underline text-xs"
                       >
                         Deprecate
+                      </button>
+                    )}
+                    {item.status === 'deprecated' && (
+                      <button
+                        onClick={() => handleHardDelete(item._id, item.name)}
+                        className="text-red-700 hover:underline text-xs font-semibold"
+                      >
+                        Delete
                       </button>
                     )}
                   </td>
