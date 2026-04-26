@@ -67,7 +67,9 @@ function HistoryDrawer({ open, onClose, conversations, loading, onSelect, onDele
         style={{ transform: open ? 'translateX(0)' : 'translateX(-100%)' }}
       >
         <div className="flex items-center justify-between px-4 py-4 border-b border-border shrink-0">
-          <h2 className="text-[15px] font-semibold text-ink1">{t('chatConversations')}</h2>
+          <h2 className="text-[15px] font-semibold text-ink1">
+            {t('chatConversations')}{!loading && ` (${filtered.length})`}
+          </h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-sand transition-colors text-ink3 cursor-pointer"
