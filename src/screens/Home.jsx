@@ -274,7 +274,7 @@ export default function Home() {
         </div>
 
         {/* ── Profile completeness nudge ── */}
-        {profileCompleteness !== null && profileCompleteness < 100 && (
+        {!statsLoading && profileCompleteness !== null && profileCompleteness < 100 && (
           <button
             onClick={() => navigateToChat(`Tell me about my ${firstMissingLabel}`)}
             className="w-full bg-orange-lt border border-orange-md rounded-[14px] px-4 py-4 mb-6 flex items-center gap-3 cursor-pointer hover:bg-orange-lt/80 transition-colors text-left"
