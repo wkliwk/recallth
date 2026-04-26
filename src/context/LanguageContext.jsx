@@ -115,6 +115,7 @@ const TRANSLATIONS = {
     notThisOne: "Not this one — add manually",
     aiLookupNoMatch: 'No match found — add it manually.',
     recent: 'Recent',
+    cabinetFilterOutOfStock: 'Out of stock',
     interactionWarning: (n) => `${n} interaction${n !== 1 ? 's' : ''} detected in your cabinet`,
     // ── Cabinet Add ──────────────────────────────────────────────────────
     addTitle: 'Add Supplement',
@@ -792,6 +793,7 @@ const TRANSLATIONS = {
     notThisOne: '不是這個 — 手動新增',
     aiLookupNoMatch: '找不到結果 — 請手動新增。',
     recent: '最近',
+    cabinetFilterOutOfStock: '用完',
     interactionWarning: (n) => `您的藥箱中偵測到 ${n} 個交互作用`,
     addTitle: '新增補充品',
     addSubtitle: '追蹤新項目',
@@ -1456,6 +1458,7 @@ const TRANSLATIONS = {
     notThisOne: '唔係呢個 — 手動加',
     aiLookupNoMatch: '搵唔到結果 — 請手動加。',
     recent: '最近',
+    cabinetFilterOutOfStock: '用完',
     interactionWarning: (n) => `你嘅藥箱有 ${n} 個交互作用`,
     addTitle: '加補充品',
     addSubtitle: '追蹤新項目',
