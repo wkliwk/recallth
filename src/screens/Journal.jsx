@@ -10,17 +10,17 @@ const MOODS = [
   { value: 5, emoji: '😄' },
 ]
 
-function relativeTime(dateStr) {
+function relativeTime(dateStr, t) {
   const now = Date.now()
   const then = new Date(dateStr).getTime()
   const diffMs = now - then
   const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 60) return `${diffMin || 1} min ago`
+  if (diffMin < 60) return t('timeMinAgo', diffMin || 1)
   const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`
+  if (diffHr < 24) return t('timeHrAgo', diffHr)
   const diffDay = Math.floor(diffHr / 24)
-  if (diffDay === 1) return 'Yesterday'
-  return `${diffDay} days ago`
+  if (diffDay === 1) return t('timeYesterday')
+  return t('timeDaysAgo', diffDay)
 }
 
 function Skeleton({ className = '' }) {
@@ -245,7 +245,7 @@ export default function Journal() {
             <div key={entry._id} className="rounded-[14px] border border-border bg-white px-5 py-4">
               {editingId === entry._id ? (
                 <div>
-                  <p className="text-[12px] text-ink3 mb-3">{relativeTime(entry.createdAt)}</p>
+                  <p className="text-[12px] text-ink3 mb-3">{relativeTime(entry.createdAt, t)}</p>
                   <EntryForm
                     initial={editDraft}
                     submitting={submitting}
@@ -262,7 +262,7 @@ export default function Journal() {
                     <div className="flex items-center gap-3">
                       <span className="text-[24px]" aria-label={`Mood: ${entry.mood}`}>{moodEmoji(entry.mood)}</span>
                       <div>
-                        <p className="text-[12px] text-ink3">{relativeTime(entry.createdAt)}</p>
+                        <p className="text-[12px] text-ink3">{relativeTime(entry.createdAt, t)}</p>
                         <div className="mt-1">
                           <EnergyDots value={entry.energy ?? 0} onChange={null} />
                         </div>
