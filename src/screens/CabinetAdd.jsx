@@ -14,10 +14,16 @@ const FREQUENCY_OPTIONS = [
 ]
 const TIMING_OPTIONS = [
   { value: 'Morning', key: 'timingMorning' },
+  { value: 'With breakfast', key: 'timingWithBreakfast' },
   { value: 'Pre-workout', key: 'timingPreWorkout' },
+  { value: 'Afternoon', key: 'timingAfternoon' },
+  { value: 'With lunch', key: 'timingWithLunch' },
+  { value: 'Post-workout', key: 'timingPostWorkout' },
   { value: 'With meals', key: 'timingWithMeals' },
   { value: 'Evening', key: 'timingEvening' },
+  { value: 'With dinner', key: 'timingWithDinner' },
   { value: 'Before bed', key: 'timingBeforeBed' },
+  { value: 'As needed', key: 'timingAsNeeded' },
 ]
 
 function Field({ label, required, error, children }) {
