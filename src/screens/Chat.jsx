@@ -172,6 +172,8 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [appliedActions, setAppliedActions] = useState(new Set())
+  const [pendingActions, setPendingActions] = useState(new Set())
+  const [failedActions, setFailedActions] = useState(new Set())
   const [editingIndex, setEditingIndex] = useState(null)
   const [editingText, setEditingText] = useState('')
 
@@ -327,7 +329,9 @@ export default function Chat() {
   }
 
   const handleApplyAction = async (action, actionKey, messageIndex, actionIndex) => {
-    if (appliedActions.has(actionKey)) return
+    if (appliedActions.has(actionKey) || pendingActions.has(actionKey)) return
+    setPendingActions((prev) => new Set([...prev, actionKey]))
+    setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n })
     try {
       const res = await chatService.applyAction(action.type, action.data, {
         conversationId,
@@ -336,9 +340,15 @@ export default function Chat() {
       })
       if (res.success) {
         setAppliedActions((prev) => new Set([...prev, actionKey]))
+      } else {
+        setFailedActions((prev) => new Set([...prev, actionKey]))
+        setTimeout(() => setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n }), 3000)
       }
     } catch {
-      // ignore
+      setFailedActions((prev) => new Set([...prev, actionKey]))
+      setTimeout(() => setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n }), 3000)
+    } finally {
+      setPendingActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n })
     }
   }
 
@@ -616,20 +626,36 @@ export default function Chat() {
                     {msg.actions.map((action, ai) => {
                       const actionKey = `${i}-${ai}`
                       const applied = appliedActions.has(actionKey)
+                      const pending = pendingActions.has(actionKey)
+                      const failed = failedActions.has(actionKey)
                       return (
                         <button
                           key={ai}
                           onClick={() => handleApplyAction(action, actionKey, i, ai)}
-                          disabled={applied}
-                          className={`flex items-center gap-2 text-left text-[12px] rounded-[10px] px-3 py-[8px] transition-all cursor-pointer ${
+                          disabled={applied || pending}
+                          className={`flex items-center gap-2 text-left text-[12px] rounded-[10px] px-3 py-[8px] transition-all ${
                             applied
-                              ? 'bg-[#D4ECD8] text-[#2C5A38] border border-[#2C5A38]/20'
-                              : 'bg-orange/10 text-orange border border-orange/20 hover:bg-orange/20'
+                              ? 'bg-[#D4ECD8] text-[#2C5A38] border border-[#2C5A38]/20 cursor-default'
+                              : pending
+                              ? 'bg-orange/20 text-orange border border-orange/30 cursor-wait'
+                              : failed
+                              ? 'bg-red-50 text-red-600 border border-red-200 cursor-pointer hover:bg-red-100'
+                              : 'bg-orange/10 text-orange border border-orange/20 hover:bg-orange/20 cursor-pointer'
                           }`}
                         >
                           {applied ? (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                               <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : pending ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 animate-spin">
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                          ) : failed ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                              <circle cx="12" cy="12" r="10"/>
+                              <line x1="12" y1="8" x2="12" y2="12"/>
+                              <line x1="12" y1="16" x2="12.01" y2="16"/>
                             </svg>
                           ) : (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -637,7 +663,15 @@ export default function Chat() {
                               <line x1="5" y1="12" x2="19" y2="12"/>
                             </svg>
                           )}
-                          <span>{applied ? `${action.label} ✓` : action.label}</span>
+                          <span>
+                            {applied
+                              ? `${action.label} ✓`
+                              : pending
+                              ? (t('chatApplying') || 'Applying...')
+                              : failed
+                              ? (t('chatApplyFailed') || 'Failed — tap to retry')
+                              : action.label}
+                          </span>
                         </button>
                       )
                     })}
