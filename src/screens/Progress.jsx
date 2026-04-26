@@ -58,11 +58,14 @@ function LineChart({ entries, valueKey, label }) {
 
   const points = last30.map((e, i) => `${xOf(i)},${yOf(Number(e[valueKey]))}`).join(' ')
 
-  // Y axis labels: min and max
-  const yLabels = [
-    { val: rawMax, y: yOf(rawMax) },
-    { val: rawMin, y: yOf(rawMin) },
-  ]
+  // Y axis ticks: 5 evenly-spaced lines including min and max (3 intermediate)
+  const TICK_COUNT = rawMax === rawMin ? 1 : 5
+  const yLabels = Array.from({ length: TICK_COUNT }, (_, i) => {
+    const val = TICK_COUNT === 1
+      ? rawMin
+      : parseFloat((rawMin + (rawMax - rawMin) * (i / (TICK_COUNT - 1))).toFixed(1))
+    return { val, y: yOf(val) }
+  })
 
   return (
     <div>
