@@ -308,6 +308,7 @@ export default function CabinetDetail() {
     setDeleting(true)
     try {
       await api.cabinet.remove(id)
+      try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
       navigate('/cabinet')
     } catch (err) {
       setFormErrors({ submit: err.message || t('failedToDelete') })

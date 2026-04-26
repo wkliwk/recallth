@@ -127,6 +127,7 @@ export default function CabinetAdd() {
         ...(form.imageUrl ? { imageUrl: form.imageUrl } : {}),
       }
       await api.cabinet.create(payload)
+      try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
       navigate('/cabinet')
     } catch (err) {
       setErrors({ submit: err.message || t('failedToAdd') })

@@ -82,11 +82,30 @@ export default function Cabinet() {
 
     // Step 2: load AI data in background after list is shown
     async function fetchAiData() {
+      const CACHE_KEY = 'recallth_evidence_scores'
+      const CACHE_TTL = 3600 * 1000 // 1 hour
+
       setAiLoading(true)
       try {
+        // Check sessionStorage cache for evidence scores
+        let cachedScores = null
+        try {
+          const cached = sessionStorage.getItem(CACHE_KEY)
+          if (cached) {
+            const { data, timestamp } = JSON.parse(cached)
+            if (Date.now() - timestamp < CACHE_TTL) {
+              cachedScores = data
+            } else {
+              sessionStorage.removeItem(CACHE_KEY)
+            }
+          }
+        } catch {
+          // sessionStorage unavailable or corrupted — ignore
+        }
+
         const [interactRes, evidenceRes] = await Promise.allSettled([
           api.cabinet.interactions(),
-          api.cabinet.evidenceScores(),
+          cachedScores ? Promise.resolve({ data: cachedScores }) : api.cabinet.evidenceScores(),
         ])
 
         if (interactRes.status === 'fulfilled') {
@@ -100,6 +119,15 @@ export default function Cabinet() {
           const map = {}
           scores.forEach((s) => { if (s.name) map[s.name] = s })
           setEvidenceMap(map)
+
+          // Store fetched data in sessionStorage if it wasn't already cached
+          if (!cachedScores) {
+            try {
+              sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: scoresData, timestamp: Date.now() }))
+            } catch {
+              // sessionStorage write failed (quota exceeded etc.) — ignore
+            }
+          }
         }
       } finally {
         setAiLoading(false)
