@@ -167,6 +167,8 @@ function ChatPanel({
   const quickChips = getQuickChips(pathname)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [pendingActions, setPendingActions] = useState(new Set())
+  const [failedActions, setFailedActions] = useState(new Set())
   const [imagePreview, setImagePreview] = useState(null)
   const [view, setView] = useState('chat') // 'chat' | 'history'
   const [loadingConversation, setLoadingConversation] = useState(false)
@@ -287,7 +289,9 @@ function ChatPanel({
   }, []) // intentionally only on mount
 
   const handleApplyAction = async (action, actionKey, messageIndex, actionIndex) => {
-    if (appliedActions.has(actionKey)) return
+    if (appliedActions.has(actionKey) || pendingActions.has(actionKey)) return
+    setPendingActions((prev) => new Set([...prev, actionKey]))
+    setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n })
     try {
       const res = await chatService.applyAction(action.type, action.data, {
         conversationId,
@@ -297,8 +301,16 @@ function ChatPanel({
       if (res.success) {
         setAppliedActions((prev) => new Set([...prev, actionKey]))
         pageContext?.onActionApplied?.({ type: action.type, data: res.data })
+      } else {
+        setFailedActions((prev) => new Set([...prev, actionKey]))
+        setTimeout(() => setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n }), 3000)
       }
-    } catch { /* ignore */ }
+    } catch {
+      setFailedActions((prev) => new Set([...prev, actionKey]))
+      setTimeout(() => setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n }), 3000)
+    } finally {
+      setPendingActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n })
+    }
   }
 
   async function handleSelectConversation(id) {
@@ -643,22 +655,38 @@ function ChatPanel({
                         {msg.actions.map((action, ai) => {
                           const actionKey = `${i}-${ai}`
                           const applied = appliedActions.has(actionKey)
+                          const pending = pendingActions.has(actionKey)
+                          const failed = failedActions.has(actionKey)
                           const isPlan = action.type === 'plan_exercise'
                           return (
                             <button
                               key={ai}
                               onClick={() => handleApplyAction(action, actionKey, i, ai)}
-                              disabled={applied}
-                              className={`flex items-center gap-1.5 text-left text-[11px] rounded-[8px] px-2 py-[6px] transition-all cursor-pointer ${
+                              disabled={applied || pending}
+                              className={`flex items-center gap-1.5 text-left text-[11px] rounded-[8px] px-2 py-[6px] transition-all ${
                                 applied
-                                  ? 'bg-[#D4ECD8] text-[#2C5A38]'
+                                  ? 'bg-[#D4ECD8] text-[#2C5A38] cursor-default'
+                                  : pending
+                                  ? 'bg-orange/20 text-orange cursor-wait'
+                                  : failed
+                                  ? 'bg-red-50 text-red-600 cursor-pointer hover:bg-red-100'
                                   : isPlan
-                                    ? 'bg-[#1976D2]/10 text-[#1565C0] hover:bg-[#1976D2]/20'
-                                    : 'bg-orange/10 text-orange hover:bg-orange/20'
+                                    ? 'bg-[#1976D2]/10 text-[#1565C0] hover:bg-[#1976D2]/20 cursor-pointer'
+                                    : 'bg-orange/10 text-orange hover:bg-orange/20 cursor-pointer'
                               }`}
                             >
-                              {applied ? '✓' : isPlan ? '📅' : '+'}
-                              <span>{action.label}</span>
+                              {applied ? '✓' : pending ? (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 animate-spin">
+                                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                                </svg>
+                              ) : failed ? '⚠' : isPlan ? '📅' : '+'}
+                              <span>{applied
+                                ? action.label
+                                : pending
+                                ? (t('chatApplying') || 'Applying...')
+                                : failed
+                                ? (t('chatApplyFailed') || 'Failed — tap to retry')
+                                : action.label}</span>
                             </button>
                           )
                         })}
