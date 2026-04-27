@@ -40,9 +40,9 @@ function startOfWeek(date) {
   return d
 }
 
-function formatCardDate(iso) {
+function formatCardDate(iso, locale) {
   const d = new Date(iso + 'T00:00:00')
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  return d.toLocaleDateString(locale || 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 function groupByDate(sessions) {
@@ -58,7 +58,7 @@ function groupByDate(sessions) {
   return groups
 }
 
-function groupSessionsByWeek(sessions) {
+function groupSessionsByWeek(sessions, locale) {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   const thisWeekStart = startOfWeek(now)
@@ -76,7 +76,7 @@ function groupSessionsByWeek(sessions) {
     } else if (d >= lastWeekStart) {
       lastWeek.push(s)
     } else {
-      const label = d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      const label = d.toLocaleDateString(locale || 'en-GB', { month: 'long', year: 'numeric' })
       if (!older[label]) older[label] = []
       older[label].push(s)
     }
@@ -177,7 +177,7 @@ function SessionCard({ session, onClick, hideDate, t }) {
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-medium text-ink1 capitalize leading-tight">{label}</p>
-        {!hideDate && <p className="text-[12px] text-ink3 mt-[2px]">{formatCardDate(session.date)}</p>}
+        {!hideDate && <p className="text-[12px] text-ink3 mt-[2px]">{formatCardDate(session.date, t('locale'))}</p>}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         {session.durationMinutes > 0 && (
@@ -202,7 +202,7 @@ function WeekSection({ label, sessions, onCardClick, t }) {
       <div className="flex flex-col gap-4">
         {groups.map(({ date, sessions: daySessions }) => (
           <div key={date} className="flex flex-col gap-2">
-            <p className="text-[12px] font-semibold text-ink2 px-1">{formatCardDate(date)}</p>
+            <p className="text-[12px] font-semibold text-ink2 px-1">{formatCardDate(date, t('locale'))}</p>
             {daySessions.map((s) => (
               <SessionCard
                 key={s._id || s.id || s.date + s.activityType}
@@ -539,7 +539,7 @@ export default function Exercise() {
   const planned = sessions.filter(s => s.status === 'planned')
   const completed = sessions.filter(s => s.status !== 'planned')
   const filtered = filter === 'all' ? completed : completed.filter(s => s.activityType === filter)
-  const { thisWeek, lastWeek, older } = groupSessionsByWeek(filtered)
+  const { thisWeek, lastWeek, older } = groupSessionsByWeek(filtered, t('locale'))
   const hasSessions = sessions.length > 0
 
   return (
