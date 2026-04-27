@@ -111,6 +111,7 @@ export const api = {
   bloodwork: {
     list: () => request('/bloodwork'),
     create: (data) => request('/bloodwork', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/bloodwork/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     interpret: () => request('/bloodwork/interpret', { method: 'POST' }),
   },
   nutrition: {

@@ -67,6 +67,11 @@ export default function Bloodwork() {
   const [customUnit, setCustomUnit] = useState('')
   const [customValue, setCustomValue] = useState('')
 
+  // Edit state
+  const [editingId, setEditingId] = useState(null)
+  const [editValue, setEditValue] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -138,6 +143,40 @@ export default function Bloodwork() {
       // silently degrade
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  function startEdit(entry) {
+    setEditingId(entry._id)
+    setEditValue(String(entry.value))
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditValue('')
+  }
+
+  async function saveEdit(entry) {
+    const parsed = parseFloat(editValue)
+    if (isNaN(parsed)) return
+    setEditSaving(true)
+    try {
+      const res = await api.bloodwork.update(entry._id, {
+        date: entry.date,
+        marker: entry.marker,
+        value: parsed,
+        unit: entry.unit,
+        ...(entry.refLow != null ? { refLow: entry.refLow } : {}),
+        ...(entry.refHigh != null ? { refHigh: entry.refHigh } : {}),
+      })
+      const updated = res?.data ?? res
+      setEntries((prev) => prev.map((e) => (e._id === entry._id ? { ...e, ...updated } : e)))
+      setEditingId(null)
+      setEditValue('')
+    } catch {
+      // stay in edit mode on failure
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -350,19 +389,72 @@ export default function Bloodwork() {
               </div>
               <div className="divide-y divide-border">
                 {grouped[date].map((entry) => {
-                  const status = getStatus(entry.value, entry.refLow, entry.refHigh)
+                  const isEditing = editingId === entry._id
+                  const displayValue = isEditing ? editValue : entry.value
+                  const status = getStatus(displayValue, entry.refLow, entry.refHigh)
                   return (
-                    <div key={entry._id} className="flex items-center justify-between px-5 py-3 gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-medium text-ink1">{entry.marker}</p>
-                        <p className="text-[12px] text-ink3">
-                          {entry.value} {entry.unit}
-                          {entry.refLow != null && entry.refHigh != null && (
-                            <span className="ml-1">(ref: {entry.refLow}–{entry.refHigh})</span>
-                          )}
-                        </p>
-                      </div>
-                      <StatusBadge status={status} />
+                    <div key={entry._id} className="px-5 py-3">
+                      {isEditing ? (
+                        <div>
+                          <p className="text-[13px] font-medium text-ink1 mb-2">{entry.marker}</p>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              step="any"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="w-[110px] border border-orange rounded-[8px] px-3 py-[6px] text-[13px] text-ink1 text-right focus:outline-none focus:ring-2 focus:ring-orange/50"
+                              autoFocus
+                            />
+                            <span className="text-[12px] text-ink3">{entry.unit}</span>
+                            {editValue !== '' && (
+                              <StatusBadge status={getStatus(editValue, entry.refLow, entry.refHigh)} />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => saveEdit(entry)}
+                              disabled={editSaving || editValue === '' || isNaN(parseFloat(editValue))}
+                              className="px-3 py-[5px] rounded-[8px] bg-orange text-white text-[12px] font-medium hover:bg-orange/90 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                            >
+                              {editSaving ? t('bloodworkSaving') : t('save')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              disabled={editSaving}
+                              className="px-3 py-[5px] rounded-[8px] bg-sand text-ink2 text-[12px] font-medium hover:bg-orange/10 hover:text-orange transition-colors focus:outline-none"
+                            >
+                              {t('cancel')}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-medium text-ink1">{entry.marker}</p>
+                            <p className="text-[12px] text-ink3">
+                              {entry.value} {entry.unit}
+                              {entry.refLow != null && entry.refHigh != null && (
+                                <span className="ml-1">(ref: {entry.refLow}–{entry.refHigh})</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <StatusBadge status={status} />
+                            <button
+                              type="button"
+                              onClick={() => startEdit(entry)}
+                              aria-label={`Edit ${entry.marker}`}
+                              className="w-7 h-7 flex items-center justify-center rounded-[6px] text-ink3 hover:bg-sand hover:text-ink1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
