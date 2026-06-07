@@ -180,7 +180,7 @@ function NutrientBar({ label, actual, target, unit }) {
 }
 
 // ── Daily summary card ────────────────────────────────────────────────────────
-function SummaryCard({ category, loading, summary, t, dateLabel = 'Today', customConfig }) {
+function SummaryCard({ category, loading, summary, t, dateLabel = '', customConfig }) {
   const nutrients = category === 'custom'
     ? (customConfig?.nutrients ?? []).map(k => ALL_NUTRIENTS.find(n => n.key === k)).filter(Boolean)
     : (CATEGORY_NUTRIENTS[category] ?? CATEGORY_NUTRIENTS.custom)
