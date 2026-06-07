@@ -1095,7 +1095,7 @@ export default function Profile() {
         )}
 
         {/* Accordion sections */}
-        <div className="flex flex-col gap-3 px-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-5">
           <AboutSection    data={bodyData}      onSave={handleSave} />
           <GoalsSection    data={goalsData}     onSave={handleSave} focusAreas={focusAreasData} />
           <ExerciseSection data={exerciseData}  onSave={handleSave} />

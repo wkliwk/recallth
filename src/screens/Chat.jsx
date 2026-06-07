@@ -501,7 +501,7 @@ export default function Chat() {
   // ── Header ─────────────────────────────────────────────────────────────────
   const header = (
     <div className="bg-white border-b border-border px-4 py-3 shrink-0">
-      <div className="flex items-center justify-between max-w-[960px] mx-auto">
+      <div className="flex items-center justify-between max-w-2xl mx-auto w-full">
         <button
           onClick={() => setDrawerOpen(true)}
           className="w-9 h-9 rounded-[10px] flex items-center justify-center cursor-pointer text-ink2 hover:bg-sand transition-colors"
@@ -547,7 +547,7 @@ export default function Chat() {
 
   // ── Empty state ────────────────────────────────────────────────────────────
   const emptyState = (
-    <div className="flex-1 flex flex-col px-5">
+    <div className="flex-1 flex flex-col px-5 max-w-2xl mx-auto w-full">
       <div className="pt-2 pb-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-11 h-11 rounded-full bg-orange flex items-center justify-center shrink-0">
@@ -641,7 +641,7 @@ export default function Chat() {
 
   // ── Active chat messages ───────────────────────────────────────────────────
   const chatMessages = (
-    <div className="flex-1 flex flex-col gap-3 px-4 py-4 overflow-y-auto">
+    <div className="flex-1 flex flex-col gap-3 px-4 py-4 overflow-y-auto max-w-2xl mx-auto w-full">
       {messages.map((msg, i) => (
         <div key={i} className="flex flex-col">
         <div className={`flex items-end gap-1 ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
@@ -810,12 +810,14 @@ export default function Chat() {
         {active ? chatMessages : emptyState}
       </div>
 
-      <div className="sticky bottom-[60px] px-4 py-3 bg-page border-t border-border z-40">
-        <InputPill
-          placeholder={active ? t('chatFollowUp') : t('chatAskAnything')}
-          onSend={sendMessage}
-        />
-        <RateLimitBadge count={msgCount} />
+      <div className="sticky bottom-[60px] md:bottom-0 px-4 py-3 bg-page border-t border-border z-40">
+        <div className="max-w-2xl mx-auto">
+          <InputPill
+            placeholder={active ? t('chatFollowUp') : t('chatAskAnything')}
+            onSend={sendMessage}
+          />
+          <RateLimitBadge count={msgCount} />
+        </div>
       </div>
 
       {/* ── Action toast ──────────────────────────────────────────────── */}
