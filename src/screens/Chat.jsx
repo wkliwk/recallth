@@ -170,6 +170,45 @@ function HistoryDrawer({ open, onClose, conversations, loading, onSelect, onDele
   )
 }
 
+// ── Rate limit counter ───────────────────────────────────────────────────────
+const CHAT_DAILY_LIMIT = 20
+const RATE_LIMIT_KEY = 'recallth_chat_rate'
+
+function getRateTodayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function loadRateCount() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '{}')
+    if (raw.date === getRateTodayStr()) return raw.count ?? 0
+    return 0
+  } catch {
+    return 0
+  }
+}
+
+function saveRateCount(count) {
+  localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ date: getRateTodayStr(), count }))
+}
+
+function RateLimitBadge({ count }) {
+  const remaining = Math.max(0, CHAT_DAILY_LIMIT - count)
+  if (remaining > 5) return null
+  if (remaining === 0) {
+    return (
+      <p className="text-[11px] text-center text-[#C05A28] font-medium mt-1">
+        Daily limit reached — resets tomorrow
+      </p>
+    )
+  }
+  return (
+    <p className={`text-[11px] text-center font-medium mt-1 ${remaining <= 3 ? 'text-amber-500' : 'text-ink3'}`}>
+      {remaining} message{remaining !== 1 ? 's' : ''} remaining today
+    </p>
+  )
+}
+
 // ── Main Chat component ──────────────────────────────────────────────────────
 export default function Chat() {
   const [searchParams] = useSearchParams()
@@ -177,6 +216,7 @@ export default function Chat() {
   const { t } = useLanguage()
   const displayName = email ? email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1) : 'there'
   const relativeTime = useRelativeTime(t)
+  const [msgCount, setMsgCount] = useState(() => loadRateCount())
 
   const SUGGESTIONS = [
     { icon: '💊', label: t('chatSugg1') },
@@ -295,6 +335,10 @@ export default function Chat() {
   const sendMessage = async (text, imageData) => {
     const trimmed = typeof text === 'string' ? text.trim() : ''
     if (!trimmed && !imageData) return
+
+    const newCount = msgCount + 1
+    setMsgCount(newCount)
+    saveRateCount(newCount)
 
     const userMsg = {
       type: 'user',
@@ -756,6 +800,7 @@ export default function Chat() {
           placeholder={active ? t('chatFollowUp') : t('chatAskAnything')}
           onSend={sendMessage}
         />
+        <RateLimitBadge count={msgCount} />
       </div>
 
       <HistoryDrawer

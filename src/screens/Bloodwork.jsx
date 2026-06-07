@@ -59,6 +59,9 @@ export default function Bloodwork() {
   const [submitting, setSubmitting] = useState(false)
   const [interpretation, setInterpretation] = useState(null)
   const [interpreting, setInterpreting] = useState(false)
+  const [lastInterpretDate, setLastInterpretDate] = useState(
+    () => localStorage.getItem('recallth_bloodwork_last_interpret') || null
+  )
 
   // Form state
   const [formDate, setFormDate] = useState(todayStr())
@@ -187,6 +190,9 @@ export default function Bloodwork() {
       const res = await api.bloodwork.interpret({})
       const d = res?.data ?? res
       setInterpretation(d)
+      const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      localStorage.setItem('recallth_bloodwork_last_interpret', dateStr)
+      setLastInterpretDate(dateStr)
       if (d?.aiUsage) showUsage(d.aiUsage, 'bloodwork-interpret', {
         output: d.overall_summary,
       })
@@ -328,16 +334,21 @@ export default function Bloodwork() {
       {/* ── AI interpretation ── */}
       {entries.length > 0 && (
         <div className="mb-5">
-          <button
-            onClick={handleInterpret}
-            disabled={interpreting}
-            className="flex items-center gap-2 px-4 py-[9px] rounded-[10px] border border-orange text-orange text-[13px] font-medium hover:bg-orange/5 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-            </svg>
-            {interpreting ? t('bloodworkAnalysing') : t('bloodworkGetAI')}
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={handleInterpret}
+              disabled={interpreting}
+              className="flex items-center gap-2 px-4 py-[9px] rounded-[10px] border border-orange text-orange text-[13px] font-medium hover:bg-orange/5 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+              </svg>
+              {interpreting ? t('bloodworkAnalysing') : t('bloodworkGetAI')}
+            </button>
+            {lastInterpretDate && !interpreting && (
+              <p className="text-[11px] text-ink3">Last interpreted: {lastInterpretDate}</p>
+            )}
+          </div>
 
           {interpretation && !interpretation.error && (
             <div className="mt-3 rounded-[14px] border border-orange/20 bg-orange/5 px-5 py-4">
