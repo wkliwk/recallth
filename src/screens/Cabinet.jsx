@@ -231,7 +231,7 @@ export default function Cabinet() {
       </div>
 
       {/* Desktop header */}
-      <div className="hidden md:block px-8 pt-7 pb-2 max-w-[960px]">
+      <div className="hidden md:block px-8 pt-7 pb-2 max-w-[960px] mx-auto">
         <h1 className="font-display text-[28px] text-ink1">{t('cabinetTitle')}</h1>
         <p className="text-[14px] text-ink3 mt-1">{supplements.length} {t('statsSupplements').toLowerCase()}</p>
         {!loading && (
@@ -248,11 +248,11 @@ export default function Cabinet() {
 
       {/* Interaction warning banner */}
       {aiLoading && (
-        <div className="mx-5 md:mx-8 mb-3 h-10 rounded-card bg-sand animate-pulse max-w-[960px]" />
+        <div className="mx-5 mb-3 h-10 rounded-card bg-sand animate-pulse md:max-w-[960px] md:mx-auto md:px-8" />
       )}
       {!aiLoading && interactions.length > 0 && (
         <div
-          className="mx-5 md:mx-8 mb-3 px-4 py-3 rounded-card flex items-start gap-3 max-w-[960px]"
+          className="mx-5 mb-3 px-4 py-3 rounded-card flex items-start gap-3 md:max-w-[960px] md:mx-auto"
           style={{ background: '#FDE8DE', border: '1px solid #E8C4B0' }}
         >
           <svg
@@ -276,7 +276,7 @@ export default function Cabinet() {
 
       {/* Desktop toolbar (search + sort in one row) */}
       {!loading && supplements.length > 0 && (
-        <div className="hidden md:flex items-center justify-between px-8 py-4 max-w-[960px]">
+        <div className="hidden md:flex items-center justify-between px-8 py-4 max-w-[960px] mx-auto">
           <div className="flex items-center gap-1.5">
             {SORT_OPTIONS.map((opt) => (
               <button
@@ -409,7 +409,7 @@ export default function Cabinet() {
       )}
 
       {/* Supplement card grid/list */}
-      <div className={`${viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col'} gap-3 px-5 md:px-8 pb-[100px] md:pb-10 max-w-[960px]`}>
+      <div className={`${viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'flex flex-col'} gap-3 px-5 md:px-8 pb-[100px] md:pb-10 max-w-[960px] md:mx-auto w-full`}>
         {loading ? (
           <>
             <SkeletonCard />
