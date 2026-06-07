@@ -17,7 +17,10 @@ export default function AdminFoodList() {
   const [error, setError] = useState(null)
   const [grabbing, setGrabbing] = useState({}) // { [id]: true }
   const [grabError, setGrabError] = useState(null)
-  const [batchProgress, setBatchProgress] = useState(null) // { done, total } | null
+  // { done, total, phase: 'fetching'|'done', failed: [{id, name}] } | null
+  const [batchProgress, setBatchProgress] = useState(null)
+  // { [id]: true } — items that failed in last batch run
+  const [grabFailed, setGrabFailed] = useState({})
 
   const [q, setQ] = useState('')
   const [category, setCategory] = useState('')
@@ -81,18 +84,36 @@ export default function AdminFoodList() {
   const handleGrabAllMissing = async () => {
     const missing = items.filter(item => !item.dishImageUrl)
     if (missing.length === 0) return
-    setBatchProgress({ done: 0, total: missing.length })
+
+    setGrabFailed({})
+    setBatchProgress({ done: 0, total: missing.length, phase: 'fetching', failed: [] })
+
+    // Process sequentially so the progress counter ticks up one at a time.
+    // Each item gets its own loading state; failures never block the rest.
+    const failed = []
     for (let i = 0; i < missing.length; i++) {
       const item = missing[i]
+      setGrabbing(g => ({ ...g, [item._id]: true }))
       try {
         const res = await api.admin.foodDb.grabImage(item._id)
         setItems(prev => prev.map(it =>
           it._id === item._id ? { ...it, dishImageUrl: res.data.dishImageUrl } : it
         ))
-      } catch { /* skip failed items */ }
-      setBatchProgress({ done: i + 1, total: missing.length })
+      } catch {
+        failed.push({ id: item._id, name: item.name || item.displayName || item._id })
+      } finally {
+        setGrabbing(g => { const n = { ...g }; delete n[item._id]; return n })
+      }
+      setBatchProgress({ done: i + 1, total: missing.length, phase: 'fetching', failed })
     }
-    setTimeout(() => setBatchProgress(null), 2000)
+
+    // Mark failed items so their rows can be highlighted
+    const failedMap = {}
+    failed.forEach(f => { failedMap[f.id] = true })
+    setGrabFailed(failedMap)
+
+    // Switch to done phase — stays visible until user dismisses
+    setBatchProgress({ done: missing.length, total: missing.length, phase: 'done', failed })
   }
 
   const totalPages = Math.ceil(total / LIMIT)
@@ -107,27 +128,43 @@ export default function AdminFoodList() {
             <h1 className="text-2xl font-semibold text-gray-900">Food Database</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleGrabAllMissing}
-              disabled={!!batchProgress || loading || items.filter(i => !i.dishImageUrl).length === 0}
-              className="flex items-center gap-1.5 border border-gray-200 text-gray-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
-            >
-              {batchProgress ? (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
-                  {batchProgress.done === batchProgress.total ? 'Done' : `${batchProgress.done} / ${batchProgress.total}`}
-                </>
-              ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
-                  </svg>
-                  Grab All Missing
-                </>
-              )}
-            </button>
+            {batchProgress?.phase === 'done' ? (
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${batchProgress.failed.length > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                  {batchProgress.failed.length === 0
+                    ? `Done: all ${batchProgress.total} succeeded`
+                    : `Done: ${batchProgress.total - batchProgress.failed.length} succeeded, ${batchProgress.failed.length} failed`}
+                </span>
+                <button
+                  onClick={() => { setBatchProgress(null); setGrabFailed({}) }}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGrabAllMissing}
+                disabled={!!batchProgress || loading || items.filter(i => !i.dishImageUrl).length === 0}
+                className="flex items-center gap-1.5 border border-gray-200 text-gray-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              >
+                {batchProgress?.phase === 'fetching' ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    Fetching images: {batchProgress.done}/{batchProgress.total}...
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    Grab All Missing
+                  </>
+                )}
+              </button>
+            )}
             <button
               onClick={() => navigate('/admin/food-db/new')}
               className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -136,6 +173,18 @@ export default function AdminFoodList() {
             </button>
           </div>
         </div>
+
+        {/* Failed items summary — shown below header when batch has failures */}
+        {batchProgress?.phase === 'done' && batchProgress.failed.length > 0 && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+            <p className="font-medium text-amber-800 mb-1">Failed to fetch images for:</p>
+            <ul className="list-disc list-inside text-amber-700 space-y-0.5">
+              {batchProgress.failed.map(f => (
+                <li key={f.id}>{f.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-5">
@@ -189,7 +238,10 @@ export default function AdminFoodList() {
               ) : items.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No items found</td></tr>
               ) : items.map(item => (
-                <tr key={item._id} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr
+                  key={item._id}
+                  className={`border-b border-gray-50 hover:bg-gray-50 ${grabFailed[item._id] ? 'outline outline-1 outline-red-300 bg-red-50 hover:bg-red-50' : ''}`}
+                >
                   {/* Image thumbnail */}
                   <td className="px-3 py-2 w-12">
                     {item.dishImageUrl ? (
@@ -200,10 +252,16 @@ export default function AdminFoodList() {
                         onError={e => { e.target.style.display = 'none' }}
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-                        </svg>
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${grabFailed[item._id] ? 'bg-red-100 text-red-400' : 'bg-gray-100 text-gray-300'}`}>
+                        {grabFailed[item._id] ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                          </svg>
+                        )}
                       </div>
                     )}
                   </td>
