@@ -121,7 +121,15 @@ export const api = {
     update: (id, data) => request(`/nutrition/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     remove: (id) => request(`/nutrition/${id}`, { method: 'DELETE' }),
     removeBatch: (ids) => Promise.all(ids.map((id) => request(`/nutrition/${id}`, { method: 'DELETE' }))),
-    aiParse: (text, category) => request('/nutrition/parse', { method: 'POST', body: JSON.stringify({ text, category }) }),
+    // #430 — pass languageHint so backend can handle Cantonese/Traditional Chinese food
+    aiParse: (text, category) => {
+      // Detect if the input contains Chinese characters → hint the backend
+      const hasChinese = /[一-鿿㐀-䶿]/.test(text)
+      const languageHint = hasChinese
+        ? 'This input may contain Cantonese or Traditional Chinese food names (e.g. Hong Kong dim sum: 腸粉, 蝦餃, 叉燒包, 雲吞麵). Please recognise these and return accurate nutrition estimates. If a food item is unrecognised, return a best-effort estimate with confidence: "low".'
+        : undefined
+      return request('/nutrition/parse', { method: 'POST', body: JSON.stringify({ text, category, ...(languageHint ? { languageHint } : {}) }) })
+    },
     search: (q) => request(`/nutrition/search?q=${encodeURIComponent(q)}`),
     foodDb: {
       search: (params) => {

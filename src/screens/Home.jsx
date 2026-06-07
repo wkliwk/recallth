@@ -5,6 +5,120 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { calcProfileCompleteness, getFirstMissingLabel } from '../utils/profileCompleteness'
 
+// ── #441 Onboarding welcome modal ────────────────────────────────────────────
+const ONBOARDED_KEY = 'recallth_onboarded'
+
+function OnboardingModal({ onDone }) {
+  const navigate = useNavigate()
+  const [step, setStep] = useState(0)
+
+  function finish() {
+    localStorage.setItem(ONBOARDED_KEY, 'true')
+    onDone()
+  }
+
+  const steps = [
+    {
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+        </svg>
+      ),
+      title: 'Welcome to Recallth',
+      body: 'Your personal AI health advisor — tracking supplements, nutrition, and your overall wellness in one place.',
+      cta: 'Next',
+      onCta: () => setStep(1),
+    },
+    {
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      ),
+      title: 'Set up your health profile',
+      body: 'Tell us about your goals, conditions and lifestyle so your AI advisor can give personalised recommendations.',
+      cta: 'Go to Profile',
+      onCta: () => { finish(); navigate('/profile') },
+      skip: () => setStep(2),
+    },
+    {
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </svg>
+      ),
+      title: 'Add your supplements',
+      body: 'Build your supplement cabinet and get AI-powered interaction checks, evidence scores, and a daily schedule.',
+      cta: 'Go to Cabinet',
+      onCta: () => { finish(); navigate('/cabinet') },
+      skip: finish,
+    },
+  ]
+
+  const current = steps[step]
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.45)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) finish() }}
+    >
+      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full sm:max-w-[400px] px-6 pt-8 pb-8 flex flex-col items-center gap-5 animate-slide-up">
+        {/* Step dots */}
+        <div className="flex gap-1.5">
+          {steps.map((_, i) => (
+            <span
+              key={i}
+              className="rounded-full transition-all"
+              style={{
+                width: i === step ? 20 : 6,
+                height: 6,
+                background: i === step ? '#E07B4A' : '#E8DDD4',
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Icon */}
+        <div className="w-[72px] h-[72px] rounded-full bg-orange/10 flex items-center justify-center">
+          {current.icon}
+        </div>
+
+        {/* Text */}
+        <div className="text-center">
+          <h2 className="font-display text-[22px] text-ink1 mb-2">{current.title}</h2>
+          <p className="text-[14px] text-ink2 leading-relaxed">{current.body}</p>
+        </div>
+
+        {/* CTA */}
+        <button
+          onClick={current.onCta}
+          className="w-full rounded-pill bg-orange text-white text-[15px] font-semibold py-[13px] cursor-pointer hover:bg-orange/90 transition-colors"
+        >
+          {current.cta}
+        </button>
+
+        {/* Skip / Dismiss */}
+        {current.skip ? (
+          <button
+            onClick={current.skip}
+            className="text-[13px] text-ink3 cursor-pointer hover:text-ink2 transition-colors"
+          >
+            Skip for now
+          </button>
+        ) : (
+          <button
+            onClick={finish}
+            className="text-[13px] text-ink3 cursor-pointer hover:text-ink2 transition-colors"
+          >
+            Dismiss
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Colour palette for schedule time slots ──────────────────────────────────
 const SLOT_COLOURS = [
   { bg: '#FDE8DE', border: '#E8C4B0', dot: '#E07B4A' },  // orange
@@ -83,6 +197,14 @@ export default function Home() {
   const displayName = email
     ? email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1)
     : ''
+
+  // ── #441 Onboarding modal state ────────────────────────────────────────────
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    const done = localStorage.getItem(ONBOARDED_KEY)
+    if (!done) setShowOnboarding(true)
+  }, [])
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [statsLoading, setStatsLoading] = useState(true)
@@ -504,6 +626,8 @@ export default function Home() {
           </div>
         </div>
 
+      {/* #441 — First-time user onboarding modal */}
+      {showOnboarding && <OnboardingModal onDone={() => setShowOnboarding(false)} />}
     </div>
   )
 }
