@@ -139,8 +139,37 @@ export default function Cabinet() {
 
   const outOfStockCount = supplements.filter((s) => s.outOfStock).length
 
+  // #446 — also search through ingredients list
+  function matchesSearch(s) {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    if (s.name.toLowerCase().includes(q)) return true
+    // ingredients can be an array of strings or a single comma-separated string
+    if (Array.isArray(s.ingredients)) {
+      return s.ingredients.some((ing) => String(ing).toLowerCase().includes(q))
+    }
+    if (typeof s.ingredients === 'string' && s.ingredients) {
+      return s.ingredients.toLowerCase().includes(q)
+    }
+    return false
+  }
+
+  // Determine what field matched (for display note)
+  function matchedIngredient(s) {
+    if (!search.trim()) return null
+    if (s.name.toLowerCase().includes(search.toLowerCase())) return null
+    const q = search.toLowerCase()
+    if (Array.isArray(s.ingredients)) {
+      return s.ingredients.find((ing) => String(ing).toLowerCase().includes(q)) || null
+    }
+    if (typeof s.ingredients === 'string') {
+      return s.ingredients.split(',').map((x) => x.trim()).find((x) => x.toLowerCase().includes(q)) || null
+    }
+    return null
+  }
+
   const filtered = supplements
-    .filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(matchesSearch)
     .filter((s) => stockFilter === 'out' ? s.outOfStock : true)
     .sort((a, b) => {
       if (sortBy === 'brand') return (a.brand || '').localeCompare(b.brand || '')
@@ -490,6 +519,7 @@ export default function Cabinet() {
             const colors = getLetterColors(supp.name)
             const evidenceScore = evidenceMap[supp.name] || supp.evidenceScore
             const evidenceLevel = evidenceScore?.level
+            const ingMatch = matchedIngredient(supp)
 
             return (
               <div
@@ -509,6 +539,11 @@ export default function Cabinet() {
                   variant={viewMode}
                   outOfStock={!!supp.outOfStock}
                 />
+                {ingMatch && (
+                  <p className="text-[10px] text-ink3 mt-1 px-1 truncate">
+                    matched ingredient: <span className="font-medium text-orange">{ingMatch}</span>
+                  </p>
+                )}
               </div>
             )
           })
