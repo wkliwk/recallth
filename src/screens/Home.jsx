@@ -273,6 +273,26 @@ export default function Home() {
               ))}
         </div>
 
+        {/* ── Log today's intake shortcut ── */}
+        <button
+          onClick={() => navigate('/schedule')}
+          className="w-full flex items-center gap-3 bg-orange text-white rounded-[14px] px-4 py-4 mb-6 hover:bg-orange/90 transition-colors text-left cursor-pointer"
+        >
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 12l2 2 4-4"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold">Log today&apos;s intake</p>
+            <p className="text-[12px] text-white/80">View your supplement schedule for today</p>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+
         {/* ── Profile completeness nudge ── */}
         {!statsLoading && profileCompleteness !== null && profileCompleteness < 100 && (
           <button
