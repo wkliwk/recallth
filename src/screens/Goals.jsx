@@ -481,7 +481,7 @@ export default function Goals() {
           role="status"
           aria-live="polite"
         >
-          Goals saved successfully.
+          {t('goalsSavedSuccess')}
         </p>
       )}
 
@@ -527,7 +527,7 @@ export default function Goals() {
 
           <div className="flex flex-wrap gap-2 mb-4">
             {interpretedGoals.length === 0 ? (
-              <p className="text-[13px] text-ink2">No goals could be extracted. Try rephrasing.</p>
+              <p className="text-[13px] text-ink2">{t('goalsExtractFailed')}</p>
             ) : (
               interpretedGoals.map((g) => (
                 <span

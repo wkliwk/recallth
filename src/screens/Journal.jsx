@@ -132,6 +132,12 @@ export default function Journal() {
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState({})
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  function showToast(msg) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2500)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -179,6 +185,7 @@ export default function Journal() {
         prev.map((e) => (e._id === id ? { ...e, ...updated } : e))
       )
       setEditingId(null)
+      showToast(t('journalSave'))
     } catch {
       // silently degrade
     } finally {
@@ -200,6 +207,7 @@ export default function Journal() {
   const moodEmoji = (value) => MOODS.find((m) => m.value === value)?.emoji ?? '😐'
 
   return (
+    <>
     <div className="px-5 py-6 md:px-8 md:py-7 max-w-[760px]">
 
       {/* ── Page header ── */}
@@ -328,5 +336,13 @@ export default function Journal() {
       </div>
 
     </div>
+
+    {/* Saved toast */}
+    {toast && (
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-ink1 text-white text-[13px] font-medium px-4 py-2 rounded-full shadow-lg whitespace-nowrap pointer-events-none">
+        {toast}
+      </div>
+    )}
+    </>
   )
 }
