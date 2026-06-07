@@ -108,6 +108,94 @@ const ACTIVITY_OPTIONS = [
   { value: 'very_active', label: 'Very active (2x/day)' },
 ]
 
+const BLOOD_TYPE_OPTIONS = [
+  { value: 'A+',  label: 'A+' },
+  { value: 'A-',  label: 'A-' },
+  { value: 'B+',  label: 'B+' },
+  { value: 'B-',  label: 'B-' },
+  { value: 'AB+', label: 'AB+' },
+  { value: 'AB-', label: 'AB-' },
+  { value: 'O+',  label: 'O+' },
+  { value: 'O-',  label: 'O-' },
+]
+
+const DIET_TYPE_OPTIONS = [
+  { value: 'omnivore',     label: 'Omnivore' },
+  { value: 'vegetarian',   label: 'Vegetarian' },
+  { value: 'vegan',        label: 'Vegan' },
+  { value: 'pescatarian',  label: 'Pescatarian' },
+  { value: 'keto',         label: 'Keto' },
+  { value: 'paleo',        label: 'Paleo' },
+  { value: 'gluten_free',  label: 'Gluten-free' },
+]
+
+// ── Pill tag input for allergies ───────────────────────────────────────────
+function AllergyTagInput({ label, tags, onChange }) {
+  const [inputVal, setInputVal] = useState('')
+
+  function addTag(raw) {
+    const trimmed = raw.trim()
+    if (!trimmed) return
+    if (!tags.includes(trimmed)) {
+      onChange([...tags, trimmed])
+    }
+    setInputVal('')
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addTag(inputVal)
+    } else if (e.key === 'Backspace' && inputVal === '' && tags.length > 0) {
+      onChange(tags.slice(0, -1))
+    }
+  }
+
+  function handleBlur() {
+    if (inputVal.trim()) addTag(inputVal)
+  }
+
+  function removeTag(tag) {
+    onChange(tags.filter((t) => t !== tag))
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] uppercase tracking-[0.08em] text-ink3 font-medium">
+        {label}
+      </label>
+      <div className="min-h-[38px] flex flex-wrap gap-1.5 items-center bg-white border border-border-md rounded-[10px] px-2 py-[6px] focus-within:border-orange-md transition-colors">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1 bg-orange/10 text-orange-dk border border-orange/20 rounded-full px-2 py-[2px] text-[12px] font-medium"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => removeTag(tag)}
+              className="text-orange-dk/60 hover:text-orange-dk transition-colors leading-none ml-[2px]"
+              aria-label={`Remove ${tag}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={inputVal}
+          onChange={(e) => setInputVal(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder={tags.length === 0 ? 'Type and press Enter or comma…' : ''}
+          className="flex-1 min-w-[100px] text-[13px] text-ink1 outline-none bg-transparent placeholder:text-ink4"
+        />
+      </div>
+      <p className="text-[10px] text-ink3">Press Enter or comma to add each allergy as a tag</p>
+    </div>
+  )
+}
+
 function EditActions({ saving, error, onSave, onCancel }) {
   const { t } = useLanguage()
   return (
@@ -214,6 +302,7 @@ function AboutSection({ data, onSave }) {
           <Field label={t('fieldWeight')} value={draft.weight} onChange={(v) => set('weight', v)} />
           <SelectField label={t('fieldGender')} value={draft.sex} onChange={(v) => set('sex', v)} options={SEX_OPTIONS} />
           <SelectField label={t('fieldActivityLevel')} value={draft.activityLevel} onChange={(v) => set('activityLevel', v)} options={ACTIVITY_OPTIONS} />
+          <SelectField label="Blood Type" value={draft.bloodType} onChange={(v) => set('bloodType', v)} options={BLOOD_TYPE_OPTIONS} />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
@@ -223,6 +312,7 @@ function AboutSection({ data, onSave }) {
           <ReadRow label={t('fieldWeight')} value={data.weight} />
           <ReadRow label={t('fieldGender')} value={SEX_OPTIONS.find((o) => o.value === data.sex)?.label ?? data.sex} />
           <ReadRow label={t('fieldActivityLevel')} value={ACTIVITY_OPTIONS.find((o) => o.value === data.activityLevel)?.label ?? data.activityLevel} />
+          <ReadRow label="Blood Type" value={data.bloodType} />
         </div>
       )}
     </ProfileSection>
@@ -383,20 +473,27 @@ function DietSection({ data, onSave }) {
     >
       {editing ? (
         <div className="flex flex-col gap-3">
+          <SelectField
+            label="Diet Type"
+            value={draft.dietType}
+            onChange={(v) => set('dietType', v)}
+            options={DIET_TYPE_OPTIONS}
+          />
           <Field
             label={t('fieldRestrictions')}
             value={toCommaString(draft.restrictions)}
             onChange={(v) => set('restrictions', fromCommaString(v))}
           />
-          <Field
+          <AllergyTagInput
             label={t('fieldAllergies')}
-            value={toCommaString(draft.allergies)}
-            onChange={(v) => set('allergies', fromCommaString(v))}
+            tags={Array.isArray(draft.allergies) ? draft.allergies : []}
+            onChange={(tags) => set('allergies', tags)}
           />
           <EditActions saving={saving} error={error} onSave={save} onCancel={cancel} />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
+          <ReadRow label="Diet Type" value={DIET_TYPE_OPTIONS.find((o) => o.value === data.dietType)?.label ?? data.dietType} />
           <ReadRow label={t('fieldRestrictions')} value={data.restrictions} />
           <ReadRow label={t('fieldAllergies')} value={data.allergies} />
         </div>
@@ -842,10 +939,10 @@ function ConditionsSection({ data, t }) {
 }
 
 // ── Empty state fallbacks ──────────────────────────────────────────────────
-const EMPTY_BODY       = { weight: '', height: '', age: '', sex: '', activityLevel: '' }
+const EMPTY_BODY       = { weight: '', height: '', age: '', sex: '', activityLevel: '', bloodType: '' }
 const EMPTY_GOALS      = { primary: [], primaryGoal: '' }
 const EMPTY_EXERCISE   = { frequency: '', type: '', fitnessLevel: '' }
-const EMPTY_DIET       = { restrictions: [], allergies: [] }
+const EMPTY_DIET       = { restrictions: [], allergies: [], dietType: '' }
 const EMPTY_SLEEP      = { hoursPerNight: '', issues: [] }
 const EMPTY_LIFESTYLE  = { stressLevel: '', smokingStatus: '', alcoholConsumption: '' }
 

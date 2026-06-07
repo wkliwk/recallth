@@ -162,18 +162,29 @@ export default function Goals() {
 
   // ── Confirm save handler ─────────────────────────────────────────────
   async function handleConfirmSave() {
-    if (!interpretedGoals || interpretedGoals.length === 0) return
-
     setSaving(true)
     setSaveError('')
 
+    // Build a notes string from AI chips (if any) as supplementary context
+    const aiChipsNote = interpretedGoals && interpretedGoals.length > 0
+      ? interpretedGoals.map((g) => `${g.emoji ?? ''} ${g.name}`.trim()).join(', ')
+      : ''
+
+    // Verbatim user text is always the goal title
+    const verbatimText = inputText.trim()
+    if (!verbatimText) {
+      setSaving(false)
+      return
+    }
+
     try {
       const existingNames = goals.map((g) => (typeof g === 'string' ? g : g.name))
-      const newGoalObjects = interpretedGoals
-        .filter((g) => !existingNames.includes(g.name))
-        .map((g) => ({ name: g.name, emoji: g.emoji ?? '🎯', notes: '' }))
+      const newGoal = existingNames.includes(verbatimText)
+        ? null
+        : { name: verbatimText, emoji: '🎯', notes: aiChipsNote }
+
       const existingObjects = goals.map((g) => normaliseGoal(g))
-      const merged = [...existingObjects, ...newGoalObjects]
+      const merged = newGoal ? [...existingObjects, newGoal] : existingObjects
 
       await api.profile.update({ goals: { primary: merged } })
 
@@ -521,25 +532,34 @@ export default function Goals() {
       {/* ── AI interpretation result ── */}
       {interpretedGoals !== null && (
         <div className="rounded-[14px] border border-[#C5D8C5] bg-[#F0F7F0] px-5 py-4 mb-6">
-          <p className="text-[13px] font-semibold text-[#3D6B3D] mb-3">
+          <p className="text-[13px] font-semibold text-[#3D6B3D] mb-2">
             {t('goalsInterpretedTitle')}
           </p>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {interpretedGoals.length === 0 ? (
-              <p className="text-[13px] text-ink2">{t('goalsExtractFailed')}</p>
-            ) : (
-              interpretedGoals.map((g) => (
-                <span
-                  key={g.name}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[var(--color-border)] rounded-full px-3 py-1 text-[13px] font-medium text-ink1"
-                >
-                  <span aria-hidden="true">{g.emoji}</span>
-                  {g.name}
-                </span>
-              ))
-            )}
+          {/* Verbatim goal title — displayed prominently */}
+          <div className="mb-3 bg-white border border-[#C5D8C5] rounded-[10px] px-3 py-[9px]">
+            <p className="text-[11px] text-ink3 font-medium uppercase tracking-[0.06em] mb-[2px]">Your goal</p>
+            <p className="text-[14px] font-semibold text-ink1">{inputText.trim()}</p>
           </div>
+
+          {/* AI sub-goals as supplementary chips */}
+          {interpretedGoals.length > 0 && (
+            <div className="mb-4">
+              <p className="text-[11px] text-ink3 font-medium uppercase tracking-[0.06em] mb-2">AI breakdown (saved as notes)</p>
+              <div className="flex flex-wrap gap-2">
+                {interpretedGoals.map((g) => (
+                  <span
+                    key={g.name}
+                    className="inline-flex items-center gap-1.5 bg-white border border-[var(--color-border)] rounded-full px-3 py-1 text-[13px] font-medium text-ink2"
+                  >
+                    <span aria-hidden="true">{g.emoji}</span>
+                    {g.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           {/* Save error */}
           {saveError && (
@@ -552,7 +572,7 @@ export default function Goals() {
             <button
               type="button"
               onClick={handleConfirmSave}
-              disabled={saving || interpretedGoals.length === 0}
+              disabled={saving}
               className="flex items-center gap-2 bg-orange text-white text-[13px] font-semibold rounded-[10px] px-4 py-[9px] hover:opacity-90 transition-opacity disabled:opacity-60 cursor-pointer"
             >
               {saving && <Spinner />}

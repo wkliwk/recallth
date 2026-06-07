@@ -235,6 +235,8 @@ export default function Chat() {
   const [appliedActions, setAppliedActions] = useState(new Set())
   const [pendingActions, setPendingActions] = useState(new Set())
   const [failedActions, setFailedActions] = useState(new Set())
+  const [actionToast, setActionToast] = useState(null) // { message, type: 'success' | 'error' }
+  const actionToastTimerRef = useRef(null)
   const [editingIndex, setEditingIndex] = useState(null)
   const [editingText, setEditingText] = useState('')
 
@@ -247,6 +249,10 @@ export default function Chat() {
   const autoSentRef = useRef(false)
 
   const active = messages.length > 0 || isTyping
+
+  useEffect(() => {
+    return () => clearTimeout(actionToastTimerRef.current)
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -399,6 +405,12 @@ export default function Chat() {
     }
   }
 
+  function showActionToast(message, type = 'success') {
+    clearTimeout(actionToastTimerRef.current)
+    setActionToast({ message, type })
+    actionToastTimerRef.current = setTimeout(() => setActionToast(null), 2500)
+  }
+
   const handleApplyAction = async (action, actionKey, messageIndex, actionIndex) => {
     if (appliedActions.has(actionKey) || pendingActions.has(actionKey)) return
     setPendingActions((prev) => new Set([...prev, actionKey]))
@@ -411,12 +423,15 @@ export default function Chat() {
       })
       if (res.success) {
         setAppliedActions((prev) => new Set([...prev, actionKey]))
+        showActionToast(`${action.label} ✓`)
       } else {
         setFailedActions((prev) => new Set([...prev, actionKey]))
+        showActionToast(t('chatApplyFailed') || 'Action failed — tap to retry', 'error')
         setTimeout(() => setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n }), 3000)
       }
     } catch {
       setFailedActions((prev) => new Set([...prev, actionKey]))
+      showActionToast(t('chatApplyFailed') || 'Action failed — tap to retry', 'error')
       setTimeout(() => setFailedActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n }), 3000)
     } finally {
       setPendingActions((prev) => { const n = new Set(prev); n.delete(actionKey); return n })
@@ -802,6 +817,21 @@ export default function Chat() {
         />
         <RateLimitBadge count={msgCount} />
       </div>
+
+      {/* ── Action toast ──────────────────────────────────────────────── */}
+      {actionToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed bottom-[130px] left-1/2 -translate-x-1/2 z-50 px-4 py-[10px] rounded-[12px] shadow-lg text-[13px] font-medium whitespace-nowrap pointer-events-none transition-opacity ${
+            actionToast.type === 'error'
+              ? 'bg-[#C05A28] text-white'
+              : 'bg-[#2C5A38] text-white'
+          }`}
+        >
+          {actionToast.message}
+        </div>
+      )}
 
       <HistoryDrawer
         open={drawerOpen}
