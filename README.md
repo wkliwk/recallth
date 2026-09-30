@@ -1,16 +1,23 @@
-# React + Vite
+# Recallth
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI supplement advisor that knows your full health profile and remembers it across every conversation.
 
-Currently, two official plugins are available:
+> "Your stack, finally clear." — supplement tracking that thinks alongside you.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+Recallth centralizes your supplement stack, flags conflicts, and answers questions specific to *your* stack instead of generic advice — no re-explaining your supplements to a chatbot every session.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Core product principle:** every input supports free natural-language text (goals, food logging, supplement search) — chip/dropdown UIs exist only as shortcuts, never as the only path. This is the app's main differentiator, not an afterthought.
 
-## Expanding the ESLint configuration
+Built for health-conscious people who take 3+ supplements and are tired of Googling dosing/interaction questions or losing track of what they take.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Stack
+
+React + Vite frontend (this repo). See also `recallth-backend` (Express/TypeScript API, AI chat via Gemini) and `recallth-mobile` (Expo/React Native).
+
+Not a medical device — supplements and wellness only.
+
+## Status
+
+Active — see `PRODUCT.md` for full feature specs and acceptance criteria.
