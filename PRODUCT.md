@@ -209,6 +209,7 @@ Navigate to `/cabinet` → see all supplements with name, dose, timing → tap F
 - [ ] Evidence score badge shown per supplement (A/B/C/D)
 - [ ] Empty state shown if cabinet is empty with add CTA
 - [ ] FAB button opens add form
+- [ ] Select mode + bulk delete (Cabinet list): "Select" enters select mode — cards get checkboxes and tapping toggles instead of opening the detail page; bar shows "N selected", "Select all" (visible/filtered items only) and "Cancel"; "Delete (N)" opens a confirmation naming the count and the first names; deleting uses the same soft delete as the detail page (archived, not removed from the database); failed items stay selected and are named in the toast; after deleting, "Deleted N · Undo" shows for ~8 s and Undo restores the items (active again, end date cleared); normal mode tap still opens the detail page
 - [ ] Photo scan (Cabinet Add): "Scan label with photo" accepts camera or library photos; 1 photo prefills name/type/dosage/brand/ingredients for review, 2+ photos open the batch review modal and land on /cabinet after saving
 - [ ] Batch scan (Cabinet list): "Batch scan photos" accepts up to 10 photos (extras dropped with a message), scans max 3 at a time, shows per-photo status with single-photo retry
 - [ ] Batch review: editable name/dosage/brand/type per row; rows missing name or dosage are highlighted and block "Add to cabinet"; rows already in the cabinet (same name) are marked and unchecked by default
