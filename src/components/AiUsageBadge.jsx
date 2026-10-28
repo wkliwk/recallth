@@ -14,17 +14,37 @@ const isDebugMode = () => {
   return localStorage.getItem(DEBUG_KEY) === '1'
 }
 
+const PANEL_W = 300
+const MARGIN = 8
+const DOT_HIT = 28
+const isNarrow = () => window.innerWidth < 768
+const panelWidth = () => Math.min(PANEL_W, window.innerWidth - MARGIN * 2)
+
+// Keep the badge fully inside the viewport (saved positions can go stale after resize/rotate).
+function clampPos(p, w, h = DOT_HIT) {
+  return {
+    x: Math.max(0, Math.min(window.innerWidth - w, p.x)),
+    y: Math.max(0, Math.min(window.innerHeight - h, p.y)),
+  }
+}
+
 function loadPos() {
   try {
     const saved = localStorage.getItem(POS_KEY)
     if (saved) {
       const p = JSON.parse(saved)
-      if (typeof p.x === 'number' && typeof p.y === 'number') return p
+      if (typeof p.x === 'number' && typeof p.y === 'number') return clampPos(p, DOT_HIT)
     }
-  } catch {}
+  } catch { /* corrupted saved position — fall back to the default */ }
+  // Phones: park the (collapsed) dot at the left edge, clear of the bottom nav and action buttons.
+  if (isNarrow()) return { x: MARGIN, y: Math.round(window.innerHeight / 2) }
   return { x: window.innerWidth - 316, y: window.innerHeight - 160 }
 }
-function loadHidden() { return localStorage.getItem(HIDDEN_KEY) === '1' }
+// With no saved choice, phones start collapsed so the 300px panel never covers the UI.
+function loadHidden() {
+  const v = localStorage.getItem(HIDDEN_KEY)
+  return v === null ? isNarrow() : v === '1'
+}
 function savePos(p)   { localStorage.setItem(POS_KEY, JSON.stringify(p)) }
 
 const fmt     = (n)   => n?.toLocaleString() ?? '0'
@@ -85,41 +105,41 @@ function LogEntry({ entry, isLast }) {
   )
 }
 
-function useDrag(posRef, setPos) {
+function useDrag(posRef, setPos, sizeRef) {
   const dragging   = useRef(false)
   const dragOffset = useRef({ x: 0, y: 0 })
   const didMove    = useRef(false)
 
-  const onMouseDown = useCallback((e) => {
-    if (e.button !== 0) return
+  const onPointerDown = useCallback((e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
     dragging.current  = true
     didMove.current   = false
     dragOffset.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y }
-    e.preventDefault()
+    if (e.pointerType === 'mouse') e.preventDefault()
   }, [posRef])
 
   useEffect(() => {
     const onMove = (e) => {
       if (!dragging.current) return
       didMove.current = true
-      const x = Math.max(0, Math.min(window.innerWidth  - 300, e.clientX - dragOffset.current.x))
-      const y = Math.max(0, Math.min(window.innerHeight -  40, e.clientY - dragOffset.current.y))
-      setPos({ x, y })
+      setPos(clampPos({ x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y }, sizeRef.current.w, sizeRef.current.h))
     }
     const onUp = () => {
       if (!dragging.current) return
       dragging.current = false
       setPos(p => { savePos(p); return p })
     }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup',   onUp)
+    window.addEventListener('pointermove',   onMove)
+    window.addEventListener('pointerup',     onUp)
+    window.addEventListener('pointercancel', onUp)
     return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup',   onUp)
+      window.removeEventListener('pointermove',   onMove)
+      window.removeEventListener('pointerup',     onUp)
+      window.removeEventListener('pointercancel', onUp)
     }
-  }, [setPos])
+  }, [setPos, sizeRef])
 
-  return { onMouseDown, didMove }
+  return { onPointerDown, didMove }
 }
 
 export default function AiUsageBadge() {
@@ -132,7 +152,31 @@ export default function AiUsageBadge() {
   const posRef = useRef(pos)
   useEffect(() => { posRef.current = pos }, [pos])
 
-  const { onMouseDown, didMove } = useDrag(posRef, setPos)
+  // Current badge size (dot or panel), used to keep it fully inside the viewport.
+  const panelRef = useRef(null)
+  const sizeRef = useRef({ w: hidden ? DOT_HIT : panelWidth(), h: hidden ? DOT_HIT : 66 })
+  const measure = useCallback((isHidden) => {
+    sizeRef.current = isHidden
+      ? { w: DOT_HIT, h: DOT_HIT }
+      : { w: panelWidth(), h: panelRef.current?.offsetHeight || 66 }
+  }, [])
+
+  const { onPointerDown, didMove } = useDrag(posRef, setPos, sizeRef)
+
+  // Re-clamp on mount, when expanding/collapsing (panel is bigger than the dot), and on
+  // viewport changes (rotation, resize) so a stale saved position can't push it off-screen.
+  useEffect(() => {
+    measure(hidden)
+    setPos(p => clampPos(p, sizeRef.current.w, sizeRef.current.h))
+  }, [hidden, measure])
+  useEffect(() => {
+    const onResize = () => {
+      measure(hidden)
+      setPos(p => clampPos(p, sizeRef.current.w, sizeRef.current.h))
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [hidden, measure])
 
   const toggle = useCallback(() => {
     setHidden(v => {
@@ -160,23 +204,29 @@ export default function AiUsageBadge() {
   if (hidden) {
     return (
       <div
-        onMouseDown={onMouseDown}
+        onPointerDown={onPointerDown}
         onClick={() => { if (!didMove.current) toggle() }}
         title="Show AI Usage (Ctrl+Shift+D)"
+        data-testid="ai-badge-dot"
         style={{
           position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
-          width: 12, height: 12, borderRadius: '50%',
-          background: '#f97316', border: 'none', cursor: 'grab',
-          boxShadow: '0 0 6px rgba(249,115,22,0.7)',
+          width: DOT_HIT, height: DOT_HIT, cursor: 'grab', touchAction: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
-      />
+      >
+        <div style={{
+          width: 12, height: 12, borderRadius: '50%',
+          background: '#f97316',
+          boxShadow: '0 0 6px rgba(249,115,22,0.7)',
+        }} />
+      </div>
     )
   }
 
   return (
-    <div style={{
+    <div ref={panelRef} data-testid="ai-badge-panel" style={{
       position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
-      width: 300,
+      width: panelWidth(),
       background: 'rgba(18,18,18,0.92)',
       color: '#e0e0e0',
       borderRadius: 12, border,
@@ -188,19 +238,20 @@ export default function AiUsageBadge() {
 
       {/* ── Header (drag handle) ── */}
       <div
-        onMouseDown={onMouseDown}
+        onPointerDown={onPointerDown}
         style={{
           padding: '8px 10px',
           borderBottom: usage ? border : 'none',
           cursor: 'grab',
           userSelect: 'none',
+          touchAction: 'none',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: usage ? 5 : 0 }}>
           <span style={{ color: '#f97316', fontWeight: 700, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
             ⠿ AI Usage
           </span>
-          <div style={{ display: 'flex', gap: 4 }} onMouseDown={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', gap: 4 }} onPointerDown={e => e.stopPropagation()}>
             <button
               onClick={toggle}
               title="Hide (Ctrl+Shift+D)"
