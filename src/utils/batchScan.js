@@ -1,3 +1,5 @@
+import { UNIT_FORMS, applyDose, isStructured, parseServingUnits } from './dose.js'
+
 export const MAX_BATCH = 10
 export const SCAN_CONCURRENCY = 3
 
@@ -51,22 +53,44 @@ export async function runPool(items, worker, limit = SCAN_CONCURRENCY) {
   await Promise.all(runners)
 }
 
-// Choose the ai-lookup result that is actually the scanned product.
-// Returns null when nothing matches, so we never guess a dosage for a different product.
-export function pickLookupMatch(results, scannedName) {
-  const target = normalizeName(scannedName)
-  if (!target) return null
-  const list = Array.isArray(results) ? results : results ? [results] : []
-  return (
-    list.find((r) => {
-      const n = normalizeName(r?.name)
-      return n && (n.includes(target) || target.includes(n))
-    }) || null
-  )
+// "500 mg Meriva® (providing …)" -> "500mg" so label strength and web strength can be compared.
+export function strengthKey(s) {
+  const m = String(s || '').match(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|g|iu|ui)\b/i)
+  return m ? `${m[1]}${m[2].toLowerCase().replace('µg', 'mcg').replace('ui', 'iu')}` : ''
 }
 
+// Choose the ai-lookup result that is actually the scanned product.
+// 1) same product name (either contains the other), else
+// 2) same brand AND same strength (e.g. label "Curcuma" vs web "Turmeric" — same Webber 500 mg product).
+// Returns null when nothing matches, so we never use data for a different product.
+export function pickLookupMatch(results, scannedName, scanned = {}) {
+  const list = Array.isArray(results) ? results : results ? [results] : []
+  const target = normalizeName(scannedName)
+  if (target) {
+    const byName = list.find((r) => {
+      const n = normalizeName(r?.name)
+      return n && (n.includes(target) || target.includes(n))
+    })
+    if (byName) return byName
+  }
+  const brand = normalizeName(scanned.brand)
+  const strength = strengthKey(scanned.strength)
+  if (brand && strength) {
+    return (
+      list.find((r) => {
+        const rb = normalizeName(r?.brand)
+        return rb && (rb.includes(brand) || brand.includes(rb)) && strengthKey(r?.strength || r?.dosage) === strength
+      }) || null
+    )
+  }
+  return null
+}
+
+// Search text for the web lookup: brand + name + strength (+ pack size when the label showed it),
+// which pins the exact product/pack (directions can differ between products).
 export function lookupQuery(form) {
-  return [form.brand, form.name].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
+  const pack = Number(form.bottleCount) > 0 ? `${form.bottleCount} ${form.unitForm || ''}s`.trim() : ''
+  return [form.brand, form.name, form.strength, pack].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
 }
 
 // Returns run(fn) that executes fn with at most `limit` running concurrently.
@@ -142,4 +166,27 @@ export function queryFromUrl(url) {
   if (slugs.length === 0) return ''
   const best = slugs.sort((a, b) => b.length - a.length)[0]
   return best.replace(/[-_]+/g, ' ').trim()
+}
+
+// Merge a web/link lookup into a form, filling ONLY what is empty. In structured mode (strength known from
+// the label) Dosage is derived: the per-dose count and unit are filled, never the strength, and never over
+// a value from the label or the user. Returns { form, filled, directions } (directions only when the count
+// came from the web).
+export function mergeFound(form, found) {
+  if (!found) return { form, filled: [], directions: '' }
+  if (!isStructured(form)) {
+    const { form: next, filled } = mergeMissing(form, found)
+    return { form: next, filled, directions: '' }
+  }
+  const { form: base, filled } = mergeMissing(form, found, ['brand', 'ingredients', 'description'])
+  const next = { ...base }
+  let directions = ''
+  const units = parseServingUnits(found.servingUnits)
+  if (!String(next.servingUnits || '').trim() && units) {
+    next.servingUnits = units
+    filled.push('servingUnits')
+    directions = String(found.directions || '').trim()
+    if (!String(next.unitForm || '').trim() && UNIT_FORMS.includes(found.unitForm)) next.unitForm = found.unitForm
+  }
+  return { form: applyDose(next), filled, directions }
 }

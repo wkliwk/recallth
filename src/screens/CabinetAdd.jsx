@@ -7,7 +7,9 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
-import { limitFiles, hasMissing, mergeMissing } from '../utils/batchScan'
+import { limitFiles, hasMissing, mergeFound } from '../utils/batchScan'
+import DoseInput from '../components/DoseInput'
+import { isStructured, applyDose } from '../utils/dose'
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
 import PasteLinkFill from '../components/PasteLinkFill'
 import PurchaseFields from '../components/PurchaseFields'
@@ -49,6 +51,9 @@ function Field({ label, required, error, children }) {
 const inputClass =
   'w-full bg-page border-[1.5px] border-border rounded-[12px] px-4 py-[10px] text-[14px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors'
 
+// Structured dosage fields (see DoseInput): reset whenever a new source fills the form.
+const EMPTY_DOSE = { strength: '', unitForm: '', servingUnits: '', bottleCount: '', dosageFreeText: false }
+
 const webInputClass = inputClass.replace('bg-page', 'bg-[#EEF4FC]').replace('border-border', 'border-[#7BA3D6]')
 
 const selectClass =
@@ -73,6 +78,7 @@ export default function CabinetAdd() {
   const batchSavedRef = useRef(false)
   const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
   const [webFields, setWebFields] = useState({})
+  const [webDirections, setWebDirections] = useState('')
 
   const prefilled = location.state?.aiResult
   const [aiFilled, setAiFilled] = useState(!!prefilled)
@@ -93,6 +99,7 @@ export default function CabinetAdd() {
         purchasePrice: '',
         purchaseCurrency: 'HKD',
         purchaseDate: '',
+        ...EMPTY_DOSE,
       }
     }
     return {
@@ -109,6 +116,7 @@ export default function CabinetAdd() {
       purchasePrice: '',
       purchaseCurrency: 'HKD',
       purchaseDate: '',
+      ...EMPTY_DOSE,
     }
   })
 
@@ -211,7 +219,8 @@ export default function CabinetAdd() {
       const { imageBase64, mimeType } = await imageFileToBase64(file)
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
-      setForm((prev) => ({ ...prev, ...scanResultToForm(res.data) }))
+      setForm((prev) => ({ ...prev, ...EMPTY_DOSE, ...scanResultToForm(res.data) }))
+      setWebDirections('')
       setScanned(true)
       setAiFilled(false)
       if (res.aiUsage) showUsage(res.aiUsage, 'label-scan', {
@@ -233,23 +242,37 @@ export default function CabinetAdd() {
     setFillStatus('looking')
     try {
       const found = await lookupMissingDetails(form, showUsage)
-      const { filled } = mergeMissing(form, found)
-      setForm((prev) => mergeMissing(prev, found).form)
-      setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])) }))
+      const { filled, directions } = mergeFound(form, found)
+      setForm((prev) => mergeFound(prev, found).form)
+      setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])), ...(filled.includes('servingUnits') ? { dosage: true } : {}) }))
+      if (directions) setWebDirections(directions)
       setFillStatus(found ? 'idle' : 'none')
-          } catch {
+    } catch {
       setFillStatus('failed')
     }
   }
 
   // Fallback: fill empty fields from a product page the user pasted. Throws on failure.
   async function handleFillFromLink(url) {
-    const found = await lookupFromUrl(url, showUsage, form.name)
-    const { filled } = mergeMissing(form, found)
-    setForm((prev) => mergeMissing(prev, found).form)
-    setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])) }))
+    const found = await lookupFromUrl(url, showUsage, form)
+    const { filled, directions } = mergeFound(form, found)
+    setForm((prev) => mergeFound(prev, found).form)
+    setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])), ...(filled.includes('servingUnits') ? { dosage: true } : {}) }))
+    if (directions) setWebDirections(directions)
     if (filled.length) setFillStatus('idle')
     return filled.length ? 'filled' : 'nothing'
+  }
+
+  // Structured dosage edits (count / unit): recompute the Dosage string.
+  function handleDoseChange(patch) {
+    if (patch.dosageFreeText) {
+      handleChange('dosageFreeText', true)
+      return
+    }
+    setForm((prev) => applyDose({ ...prev, ...patch }))
+    setWebFields((prev) => ({ ...prev, servingUnits: false, dosage: false }))
+    setWebDirections('')
+    if (errors.dosage) setErrors((prev) => ({ ...prev, dosage: undefined }))
   }
 
   function handleAiConfirm() {
@@ -257,6 +280,7 @@ export default function CabinetAdd() {
     if (!p) return
     setForm((prev) => ({
       ...prev,
+      ...EMPTY_DOSE,
       name: p.name || '',
       type: p.type || 'supplement',
       dosage: p.dosage || '',
@@ -558,13 +582,23 @@ export default function CabinetAdd() {
           </Field>
 
           <Field label={t('fieldDosage')} required error={errors.dosage}>
-            <input
-              className={webFields.dosage ? webInputClass : inputClass}
-              type="text"
-              value={form.dosage}
-              onChange={(e) => handleChange('dosage', e.target.value)}
-              placeholder="e.g. 5g, 1000mg, 2 capsules"
-            />
+            {isStructured(form) ? (
+              <DoseInput
+                form={form}
+                onChange={handleDoseChange}
+                invalid={Boolean(errors.dosage)}
+                webFilled={Boolean(webFields.servingUnits)}
+                directions={webDirections}
+              />
+            ) : (
+              <input
+                className={webFields.dosage ? webInputClass : inputClass}
+                type="text"
+                value={form.dosage}
+                onChange={(e) => handleChange('dosage', e.target.value)}
+                placeholder="e.g. 5g, 1000mg, 2 capsules"
+              />
+            )}
           </Field>
 
           <Field label={t('fieldFrequency')}>
