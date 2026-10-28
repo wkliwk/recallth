@@ -11,10 +11,12 @@ import {
   runPool,
   createLimiter,
   hasMissing,
-  mergeMissing,
+  mergeFound,
 } from '../utils/batchScan'
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
 import PasteLinkFill from './PasteLinkFill'
+import DoseInput from './DoseInput'
+import { isStructured, applyDose } from '../utils/dose'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 
@@ -42,6 +44,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       dup: false,
       lookupStatus: 'idle', // idle | looking | none | failed
       webFields: {}, // fields filled from the web, shown highlighted
+      webDirections: '', // directions text a web-found per-dose count came from
       linkBusy: false,
       saveStatus: 'idle', // idle | saving | saved | error
       saveError: '',
@@ -83,10 +86,11 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       setRows((prev) =>
         prev.map((r) => {
           if (r.id !== rowId) return r
-          const { form: merged, filled } = mergeMissing(r.form, found)
+          const { form: merged, filled, directions } = mergeFound(r.form, found)
           const webFields = { ...r.webFields }
           filled.forEach((f) => { webFields[f] = true })
-          return { ...r, form: merged, webFields, lookupStatus: found ? 'idle' : 'none' }
+          if (filled.includes('servingUnits')) webFields.dosage = true
+          return { ...r, form: merged, webFields, webDirections: directions || r.webDirections, lookupStatus: found ? 'idle' : 'none' }
         })
       )
     } catch {
@@ -97,15 +101,16 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
   // Fallback: fill empty fields from a product page the user pasted. Throws on failure.
   async function fillFromLink(rowId, url) {
     const current = rows.find((r) => r.id === rowId)
-    const found = await lookupLimiter.current(() => lookupFromUrl(url, showUsage, current.form.name))
-    const willFill = mergeMissing(current.form, found).filled
+    const found = await lookupLimiter.current(() => lookupFromUrl(url, showUsage, current.form))
+    const willFill = mergeFound(current.form, found).filled
     setRows((prev) =>
       prev.map((r) => {
         if (r.id !== rowId) return r
-        const { form: merged, filled } = mergeMissing(r.form, found)
+        const { form: merged, filled, directions } = mergeFound(r.form, found)
         const webFields = { ...r.webFields }
         filled.forEach((f) => { webFields[f] = true })
-        return { ...r, form: merged, webFields, lookupStatus: filled.length ? 'idle' : r.lookupStatus }
+        if (filled.includes('servingUnits')) webFields.dosage = true
+        return { ...r, form: merged, webFields, webDirections: directions || r.webDirections, lookupStatus: filled.length ? 'idle' : r.lookupStatus }
       })
     )
     return willFill.length ? 'filled' : 'nothing'
@@ -134,6 +139,23 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
           form,
           dup: field === 'name' ? isDuplicate(value, existingNames) : r.dup,
           webFields: { ...r.webFields, [field]: false },
+        }
+      })
+    )
+  }
+
+  // Structured dosage: patch strength/unit/count and recompute the Dosage string.
+  function updateDose(id, patch) {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r
+        const form = applyDose({ ...r.form, ...patch })
+        const edited = 'servingUnits' in patch || 'unitForm' in patch
+        return {
+          ...r,
+          form,
+          webFields: edited ? { ...r.webFields, servingUnits: false, dosage: false } : r.webFields,
+          webDirections: edited ? '' : r.webDirections,
         }
       })
     )
@@ -241,21 +263,23 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input
-                        className={row.include && errs.name ? errorInputClass : row.webFields.name ? webClass : inputClass}
+                        className={`${row.include && errs.name ? errorInputClass : row.webFields.name ? webClass : inputClass}${isStructured(row.form) ? ' col-span-2' : ''}`}
                         value={row.form.name}
                         disabled={locked}
                         placeholder={t('fieldName')}
                         onChange={(e) => updateForm(row.id, 'name', e.target.value)}
                         data-testid="batch-name"
                       />
-                      <input
-                        className={row.include && errs.dosage ? errorInputClass : row.webFields.dosage ? webClass : inputClass}
-                        value={row.form.dosage}
-                        disabled={locked}
-                        placeholder={t('fieldDosage')}
-                        onChange={(e) => updateForm(row.id, 'dosage', e.target.value)}
-                        data-testid="batch-dosage"
-                      />
+                      {!isStructured(row.form) && (
+                        <input
+                          className={row.include && errs.dosage ? errorInputClass : row.webFields.dosage ? webClass : inputClass}
+                          value={row.form.dosage}
+                          disabled={locked}
+                          placeholder={t('fieldDosage')}
+                          onChange={(e) => updateForm(row.id, 'dosage', e.target.value)}
+                          data-testid="batch-dosage"
+                        />
+                      )}
                       <input
                         className={row.webFields.brand ? webClass : inputClass}
                         value={row.form.brand}
@@ -274,6 +298,16 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                         ))}
                       </select>
                     </div>
+                    {isStructured(row.form) && (
+                      <DoseInput
+                        form={row.form}
+                        onChange={(patch) => (patch.dosageFreeText ? updateForm(row.id, 'dosageFreeText', true) : updateDose(row.id, patch))}
+                        invalid={row.include && Boolean(errs.dosage)}
+                        disabled={locked}
+                        webFilled={Boolean(row.webFields.servingUnits)}
+                        directions={row.webDirections}
+                      />
+                    )}
                     {hasMissing(row.form) && row.form.name.trim() && !locked && (
                       <button
                         type="button"
