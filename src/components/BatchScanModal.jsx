@@ -9,13 +9,19 @@ import {
   rowErrors,
   buildCreatePayload,
   runPool,
+  createLimiter,
+  hasMissing,
+  mergeMissing,
 } from '../utils/batchScan'
+import { lookupMissingDetails } from '../utils/dosageLookup'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 
 const inputClass =
   'w-full bg-page border-[1.5px] border-border rounded-[10px] px-3 py-[7px] text-[13px] text-ink1 outline-none focus:border-orange transition-colors'
-const errorInputClass = 'border-[#C05A28] bg-[#FDF1EA]'
+// Swap (not stack) the base bg/border so state colours actually apply.
+const errorInputClass = inputClass.replace('bg-page', 'bg-[#FDF1EA]').replace('border-border', 'border-[#C05A28]')
+const webClass = inputClass.replace('bg-page', 'bg-[#EEF4FC]').replace('border-border', 'border-[#7BA3D6]')
 
 /**
  * Batch label scan. `files` is already limited to MAX_BATCH by the caller.
@@ -33,12 +39,15 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       form: { name: '', type: 'supplement', dosage: '', brand: '', ingredients: '' },
       include: false,
       dup: false,
+      lookupStatus: 'idle', // idle | looking | none | failed
+      webFields: {}, // fields filled from the web, shown highlighted
       saveStatus: 'idle', // idle | saving | saved | error
       saveError: '',
     }))
   )
   const [saving, setSaving] = useState(false)
   const startedRef = useRef(false)
+  const lookupLimiter = useRef(createLimiter(2))
 
   function patchRow(id, patch) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
@@ -64,6 +73,31 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
     }
   }
 
+  // Search online for fields the label scan could not read. Only empty fields are filled.
+  async function fillMissing(rowId, form) {
+    patchRow(rowId, { lookupStatus: 'looking' })
+    try {
+      const found = await lookupLimiter.current(() => lookupMissingDetails(form, showUsage))
+      setRows((prev) =>
+        prev.map((r) => {
+          if (r.id !== rowId) return r
+          const { form: merged, filled } = mergeMissing(r.form, found)
+          const webFields = { ...r.webFields }
+          filled.forEach((f) => { webFields[f] = true })
+          return { ...r, form: merged, webFields, lookupStatus: found ? 'idle' : 'none' }
+        })
+      )
+    } catch {
+      patchRow(rowId, { lookupStatus: 'failed' })
+    }
+  }
+
+  function fillAllMissing() {
+    rows
+      .filter((r) => r.scanStatus === 'done' && r.saveStatus !== 'saved' && r.lookupStatus !== 'looking' && r.form.name.trim() && hasMissing(r.form))
+      .forEach((r) => fillMissing(r.id, r.form))
+  }
+
   useEffect(() => {
     if (startedRef.current) return
     startedRef.current = true
@@ -76,17 +110,26 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       prev.map((r) => {
         if (r.id !== id) return r
         const form = { ...r.form, [field]: value }
-        return { ...r, form, dup: field === 'name' ? isDuplicate(value, existingNames) : r.dup }
+        return {
+          ...r,
+          form,
+          dup: field === 'name' ? isDuplicate(value, existingNames) : r.dup,
+          webFields: { ...r.webFields, [field]: false },
+        }
       })
     )
   }
 
   const scanning = rows.some((r) => r.scanStatus === 'scanning')
+  const looking = rows.some((r) => r.lookupStatus === 'looking')
+  const fillableCount = rows.filter(
+    (r) => r.scanStatus === 'done' && r.saveStatus !== 'saved' && r.lookupStatus !== 'looking' && r.form.name.trim() && hasMissing(r.form)
+  ).length
   const pending = rows.filter((r) => r.scanStatus === 'done' && r.include && r.saveStatus !== 'saved')
   const hasInvalid = pending.some((r) => Object.keys(rowErrors(r.form)).length > 0)
   const savedCount = rows.filter((r) => r.saveStatus === 'saved').length
   const allSettled = !scanning && pending.length === 0
-  const canSave = !scanning && !saving && pending.length > 0 && !hasInvalid
+  const canSave = !scanning && !looking && !saving && pending.length > 0 && !hasInvalid
 
   async function handleSaveAll() {
     setSaving(true)
@@ -121,6 +164,17 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
             <p className="text-[12px] text-[#C05A28]" data-testid="batch-truncated">
               {t('batchScanLimit').replace('{n}', MAX_BATCH)}
             </p>
+          )}
+
+          {fillableCount > 0 && (
+            <button
+              type="button"
+              onClick={fillAllMissing}
+              data-testid="batch-fill-all"
+              className="self-start rounded-full border border-orange text-orange text-[12px] font-medium px-4 py-[6px] cursor-pointer hover:bg-orange-lt transition-colors"
+            >
+              {t('batchScanFillAll').replace('{n}', fillableCount)}
+            </button>
           )}
 
           {rows.map((row, i) => {
@@ -168,7 +222,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input
-                        className={`${inputClass} ${row.include && errs.name ? errorInputClass : ''}`}
+                        className={row.include && errs.name ? errorInputClass : row.webFields.name ? webClass : inputClass}
                         value={row.form.name}
                         disabled={locked}
                         placeholder={t('fieldName')}
@@ -176,7 +230,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                         data-testid="batch-name"
                       />
                       <input
-                        className={`${inputClass} ${row.include && errs.dosage ? errorInputClass : ''}`}
+                        className={row.include && errs.dosage ? errorInputClass : row.webFields.dosage ? webClass : inputClass}
                         value={row.form.dosage}
                         disabled={locked}
                         placeholder={t('fieldDosage')}
@@ -184,7 +238,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                         data-testid="batch-dosage"
                       />
                       <input
-                        className={inputClass}
+                        className={row.webFields.brand ? webClass : inputClass}
                         value={row.form.brand}
                         disabled={locked}
                         placeholder={t('fieldBrand')}
@@ -201,7 +255,27 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                         ))}
                       </select>
                     </div>
-                    {row.include && Object.keys(errs).length > 0 && (
+                    {hasMissing(row.form) && row.form.name.trim() && !locked && (
+                      <button
+                        type="button"
+                        onClick={() => fillMissing(row.id, row.form)}
+                        disabled={row.lookupStatus === 'looking'}
+                        data-testid="batch-fill-row"
+                        className="self-start text-[12px] font-medium text-orange hover:underline cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                      >
+                        {row.lookupStatus === 'looking' ? t('batchScanLooking') : t('batchScanFillRow')}
+                      </button>
+                    )}
+                    {row.lookupStatus === 'none' && (
+                      <p className="text-[11px] text-ink3" data-testid="batch-no-match">{t('batchScanNoMatch')}</p>
+                    )}
+                    {row.lookupStatus === 'failed' && (
+                      <p className="text-[11px] text-[#C05A28]">{t('batchScanLookupFailed')}</p>
+                    )}
+                    {Object.values(row.webFields).some(Boolean) && (
+                      <p className="text-[11px] text-[#1A3A6A]" data-testid="batch-web-note">{t('batchScanWebSuggested')}</p>
+                    )}
+                    {row.include && row.lookupStatus !== 'looking' && Object.keys(errs).length > 0 && (
                       <p className="text-[11px] text-[#C05A28]">{t('batchScanNeedFields')}</p>
                     )}
                     {row.saveStatus === 'error' && (
@@ -235,7 +309,9 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                 ? t('batchScanSaving')
                 : scanning
                   ? t('batchScanScanning')
-                  : t('batchScanAddAll').replace('{n}', pending.length)}
+                  : looking
+                    ? t('batchScanLooking')
+                    : t('batchScanAddAll').replace('{n}', pending.length)}
             </button>
           )}
         </div>

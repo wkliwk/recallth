@@ -7,7 +7,8 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
-import { limitFiles } from '../utils/batchScan'
+import { limitFiles, hasMissing, mergeMissing } from '../utils/batchScan'
+import { lookupMissingDetails } from '../utils/dosageLookup'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 const FREQUENCY_OPTIONS = [
@@ -45,6 +46,8 @@ function Field({ label, required, error, children }) {
 const inputClass =
   'w-full bg-page border-[1.5px] border-border rounded-[12px] px-4 py-[10px] text-[14px] text-ink1 placeholder:text-ink4 outline-none focus:border-orange transition-colors'
 
+const webInputClass = inputClass.replace('bg-page', 'bg-[#EEF4FC]').replace('border-border', 'border-[#7BA3D6]')
+
 const selectClass =
   'w-full bg-page border-[1.5px] border-border rounded-[12px] px-4 py-[10px] text-[14px] text-ink1 outline-none focus:border-orange transition-colors appearance-none cursor-pointer'
 
@@ -65,6 +68,8 @@ export default function CabinetAdd() {
   const scanInputRef = useRef(null)
   const [batch, setBatch] = useState(null) // { files, truncated, existingNames } | null
   const batchSavedRef = useRef(false)
+  const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
+  const [webFields, setWebFields] = useState({})
 
   const prefilled = location.state?.aiResult
   const [aiFilled, setAiFilled] = useState(!!prefilled)
@@ -100,6 +105,7 @@ export default function CabinetAdd() {
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
+    setWebFields((prev) => (prev[field] ? { ...prev, [field]: false } : prev))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
@@ -199,10 +205,27 @@ export default function CabinetAdd() {
         input: file.name,
         output: res.data.name ?? '',
       })
+      setFillStatus('idle')
+      setWebFields({})
     } catch (err) {
       setErrors({ submit: err.message || t('scanLabelError') })
     } finally {
       setScanning(false)
+    }
+  }
+
+  // Search online for fields the scan left empty; only empty fields are filled.
+  async function handleFillMissing() {
+    if (fillStatus === 'looking') return
+    setFillStatus('looking')
+    try {
+      const found = await lookupMissingDetails(form, showUsage)
+      const { filled } = mergeMissing(form, found)
+      setForm((prev) => mergeMissing(prev, found).form)
+      setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])) }))
+      setFillStatus(found ? 'idle' : 'none')
+          } catch {
+      setFillStatus('failed')
     }
   }
 
@@ -439,10 +462,26 @@ export default function CabinetAdd() {
         {/* Scan-filled banner */}
         {scanned && (
           <div
-            className="rounded-card px-4 py-3 flex items-center gap-2"
+            className="rounded-card px-4 py-3 flex flex-col gap-2"
             style={{ background: '#DAE8F8', border: '1px solid #B0C8E8' }}
           >
             <span className="text-[12px] text-[#1A3A6A]">{t('scanLabelDone')}</span>
+            {form.name.trim() && hasMissing(form) && (
+              <button
+                type="button"
+                onClick={handleFillMissing}
+                disabled={fillStatus === 'looking'}
+                data-testid="single-fill-missing"
+                className="self-start text-[12px] font-medium text-orange hover:underline cursor-pointer disabled:opacity-60 disabled:cursor-default"
+              >
+                {fillStatus === 'looking' ? t('batchScanLooking') : t('batchScanFillRow')}
+              </button>
+            )}
+            {fillStatus === 'none' && <span className="text-[12px] text-ink3" data-testid="single-no-match">{t('batchScanNoMatch')}</span>}
+            {fillStatus === 'failed' && <span className="text-[12px] text-[#C05A28]">{t('batchScanLookupFailed')}</span>}
+            {Object.values(webFields).some(Boolean) && (
+              <span className="text-[12px] text-[#1A3A6A]" data-testid="single-web-note">{t('batchScanWebSuggested')}</span>
+            )}
           </div>
         )}
 
@@ -490,7 +529,7 @@ export default function CabinetAdd() {
 
           <Field label={t('fieldDosage')} required error={errors.dosage}>
             <input
-              className={inputClass}
+              className={webFields.dosage ? webInputClass : inputClass}
               type="text"
               value={form.dosage}
               onChange={(e) => handleChange('dosage', e.target.value)}
@@ -534,7 +573,7 @@ export default function CabinetAdd() {
 
           <Field label={t('fieldBrand')}>
             <input
-              className={inputClass}
+              className={webFields.brand ? webInputClass : inputClass}
               type="text"
               value={form.brand}
               onChange={(e) => handleChange('brand', e.target.value)}
