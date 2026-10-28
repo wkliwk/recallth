@@ -599,7 +599,7 @@ export default function Cabinet() {
         <BatchScanModal
           files={batch.files}
           truncated={batch.truncated}
-          existingNames={supplements.map((x) => x.name)}
+          existingItems={supplements}
           onClose={() => setBatch(null)}
           onSaved={handleBatchSaved}
         />

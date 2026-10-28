@@ -74,7 +74,7 @@ export default function CabinetAdd() {
   const [scanning, setScanning] = useState(false)
   const [scanned, setScanned] = useState(false)
   const scanInputRef = useRef(null)
-  const [batch, setBatch] = useState(null) // { files, truncated, existingNames } | null
+  const [batch, setBatch] = useState(null) // { files, truncated, existingItems } | null
   const batchSavedRef = useRef(false)
   const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
   const [webFields, setWebFields] = useState({})
@@ -204,13 +204,13 @@ export default function CabinetAdd() {
     e.target.value = ''
     if (picked.files.length === 0 || scanning) return
     if (picked.files.length > 1 || picked.truncated) {
-      let existingNames = []
+      let existingItems = []
       try {
         const res = await api.cabinet.list()
-        existingNames = (res.data || []).map((x) => x.name)
+        existingItems = res.data || []
       } catch { /* duplicate marking is best-effort */ }
       batchSavedRef.current = false
-      setBatch({ ...picked, existingNames })
+      setBatch({ ...picked, existingItems })
       return
     }
     const file = picked.files[0]
@@ -701,7 +701,7 @@ export default function CabinetAdd() {
         <BatchScanModal
           files={batch.files}
           truncated={batch.truncated}
-          existingNames={batch.existingNames}
+          existingItems={batch.existingItems}
           onSaved={() => {
             batchSavedRef.current = true
             try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
