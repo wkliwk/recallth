@@ -39,7 +39,8 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       file,
       scanStatus: 'scanning', // scanning | done | failed
       scanError: '',
-      form: { name: '', type: 'supplement', dosage: '', brand: '', ingredients: '' },
+      form: { name: '', type: 'supplement', dosage: '', brand: '', ingredients: '', imageUrl: '' },
+      photoThumb: '', // small data-URL thumbnail of the user's own photo
       include: false,
       dup: false,
       lookupStatus: 'idle', // idle | looking | none | failed
@@ -61,13 +62,14 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
   async function scanOne(row) {
     patchRow(row.id, { scanStatus: 'scanning', scanError: '' })
     try {
-      const { imageBase64, mimeType } = await imageFileToBase64(row.file)
+      const { imageBase64, mimeType, thumbnail } = await imageFileToBase64(row.file)
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
-      const form = { ingredients: '', ...scanResultToForm(res.data) }
+      const form = { ingredients: '', imageUrl: '', ...scanResultToForm(res.data) }
       const dup = isDuplicate(form.name, existingNames)
       patchRow(row.id, {
         scanStatus: 'done',
+        photoThumb: thumbnail || '',
         form,
         dup,
         include: !dup,
@@ -177,7 +179,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
     for (const row of pending) {
       patchRow(row.id, { saveStatus: 'saving', saveError: '' })
       try {
-        await api.cabinet.create(buildCreatePayload(row.form))
+        await api.cabinet.create(buildCreatePayload(row.form, row.photoThumb))
         patchRow(row.id, { saveStatus: 'saved' })
       } catch (err) {
         patchRow(row.id, { saveStatus: 'error', saveError: err.message || t('batchScanSaveFailed') })
@@ -224,6 +226,18 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
             return (
               <div key={row.id} className="rounded-card border border-border p-3 flex flex-col gap-2" data-testid="batch-row">
                 <div className="flex items-center gap-2 text-[12px] text-ink3">
+                  {row.scanStatus === 'done' && (row.form.imageUrl || row.photoThumb) && (
+                    <img
+                      src={row.form.imageUrl || row.photoThumb}
+                      alt=""
+                      width="36"
+                      height="36"
+                      className="w-[36px] h-[36px] rounded-[8px] object-cover border border-border shrink-0"
+                      data-testid="batch-preview"
+                      data-source={row.form.imageUrl ? 'web' : 'photo'}
+                      onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
+                    />
+                  )}
                   <span className="font-medium text-ink2">#{i + 1}</span>
                   <span className="truncate flex-1">{row.file.name}</span>
                   {row.scanStatus === 'scanning' && <span>{t('batchScanScanning')}</span>}
@@ -234,6 +248,16 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                       className="text-orange hover:underline cursor-pointer"
                     >
                       {t('batchScanRetry')}
+                    </button>
+                  )}
+                  {row.scanStatus === 'done' && row.form.imageUrl && row.photoThumb && row.saveStatus !== 'saved' && (
+                    <button
+                      type="button"
+                      onClick={() => updateForm(row.id, 'imageUrl', '')}
+                      className="text-orange hover:underline cursor-pointer whitespace-nowrap"
+                      data-testid="batch-use-my-photo"
+                    >
+                      {t('batchScanUseMyPhoto')}
                     </button>
                   )}
                   {row.saveStatus === 'saved' && <span className="text-[#2E7D32]">{t('batchScanSaved')}</span>}

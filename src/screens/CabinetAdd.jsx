@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
-import { limitFiles, hasMissing, mergeFound } from '../utils/batchScan'
+import { limitFiles, hasMissing, mergeFound, chooseImage } from '../utils/batchScan'
 import DoseInput from '../components/DoseInput'
 import { isStructured, applyDose } from '../utils/dose'
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
@@ -79,6 +79,7 @@ export default function CabinetAdd() {
   const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
   const [webFields, setWebFields] = useState({})
   const [webDirections, setWebDirections] = useState('')
+  const [photoThumb, setPhotoThumb] = useState('') // small data-URL thumbnail of the scanned photo
 
   const prefilled = location.state?.aiResult
   const [aiFilled, setAiFilled] = useState(!!prefilled)
@@ -157,7 +158,7 @@ export default function CabinetAdd() {
         ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
         ...(form.description?.trim() ? { description: form.description.trim() } : {}),
         ...(form.ingredients?.trim() ? { ingredients: form.ingredients.trim() } : {}),
-        ...(form.imageUrl ? { imageUrl: form.imageUrl } : {}),
+        ...(chooseImage(form, photoThumb) ? { imageUrl: chooseImage(form, photoThumb) } : {}),
         ...(price.value !== null ? { purchasePrice: price.value, currency: form.purchaseCurrency } : {}),
         ...(form.purchaseDate ? { purchaseDate: form.purchaseDate } : {}),
       }
@@ -216,10 +217,11 @@ export default function CabinetAdd() {
     setScanning(true)
     setErrors({})
     try {
-      const { imageBase64, mimeType } = await imageFileToBase64(file)
+      const { imageBase64, mimeType, thumbnail } = await imageFileToBase64(file)
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
-      setForm((prev) => ({ ...prev, ...EMPTY_DOSE, ...scanResultToForm(res.data) }))
+      setForm((prev) => ({ ...prev, ...EMPTY_DOSE, imageUrl: '', ...scanResultToForm(res.data) }))
+      setPhotoThumb(thumbnail || '')
       setWebDirections('')
       setScanned(true)
       setAiFilled(false)
@@ -513,7 +515,31 @@ export default function CabinetAdd() {
             className="rounded-card px-4 py-3 flex flex-col gap-2"
             style={{ background: '#DAE8F8', border: '1px solid #B0C8E8' }}
           >
-            <span className="text-[12px] text-[#1A3A6A]">{t('scanLabelDone')}</span>
+            <div className="flex items-center gap-3">
+              {chooseImage(form, photoThumb) && (
+                <img
+                  src={chooseImage(form, photoThumb)}
+                  alt=""
+                  width="44"
+                  height="44"
+                  className="w-[44px] h-[44px] rounded-[8px] object-cover border border-[#B0C8E8] shrink-0"
+                  data-testid="single-preview"
+                  data-source={form.imageUrl ? 'web' : 'photo'}
+                  onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
+                />
+              )}
+              <span className="text-[12px] text-[#1A3A6A]">{t('scanLabelDone')}</span>
+              {form.imageUrl && photoThumb && (
+                <button
+                  type="button"
+                  onClick={() => handleChange('imageUrl', '')}
+                  className="text-[12px] text-orange hover:underline cursor-pointer whitespace-nowrap"
+                  data-testid="single-use-my-photo"
+                >
+                  {t('batchScanUseMyPhoto')}
+                </button>
+              )}
+            </div>
             {form.name.trim() && hasMissing(form) && (
               <button
                 type="button"
