@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound } from './batchScan.js'
+import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload } from './batchScan.js'
 
 test('limitFiles keeps first 10 and flags truncation', () => {
   const r = limitFiles(Array.from({ length: 12 }, (_, i) => i))
@@ -162,4 +162,26 @@ test('mergeFound (free-text form): behaves like mergeMissing', () => {
   const r = mergeFound({ name: 'Zinc', dosage: '', brand: '', ingredients: '' }, { dosage: '1 capsule', brand: 'NOW' })
   assert.equal(r.form.dosage, '1 capsule')
   assert.equal(r.form.brand, 'NOW')
+})
+
+test('chooseImage: web image wins, else the user photo, else nothing', () => {
+  assert.equal(chooseImage({ imageUrl: 'https://api/img/image-proxy?url=x' }, 'data:image/jpeg;base64,AAA'), 'https://api/img/image-proxy?url=x')
+  assert.equal(chooseImage({ imageUrl: '' }, 'data:image/jpeg;base64,AAA'), 'data:image/jpeg;base64,AAA')
+  assert.equal(chooseImage({}, ''), '')
+})
+
+test('buildCreatePayload carries the chosen image only when there is one', () => {
+  const form = { name: 'Zinc', dosage: '1 capsule', brand: '', ingredients: '', type: 'vitamin' }
+  assert.equal(buildPayload(form, 'data:image/jpeg;base64,AAA').imageUrl, 'data:image/jpeg;base64,AAA')
+  assert.equal('imageUrl' in buildPayload(form, ''), false)
+  assert.equal(buildPayload({ ...form, imageUrl: 'https://x/y' }, 'data:image/jpeg;base64,AAA').imageUrl, 'https://x/y')
+})
+
+test('mergeFound fills a web image only when the form has none', () => {
+  const base = { name: 'Zinc', brand: 'NOW', dosage: '', ingredients: '', description: '', imageUrl: '' }
+  const r = mergeFound(base, { imageUrl: 'https://api/img/image-proxy?url=a', dosage: '1 capsule' })
+  assert.equal(r.form.imageUrl, 'https://api/img/image-proxy?url=a')
+  assert.ok(r.filled.includes('imageUrl'))
+  const keep = mergeFound({ ...base, imageUrl: 'https://mine/x.png' }, { imageUrl: 'https://api/img/image-proxy?url=a' })
+  assert.equal(keep.form.imageUrl, 'https://mine/x.png')
 })

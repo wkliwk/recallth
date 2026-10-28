@@ -46,6 +46,7 @@ function pickFields(p) {
     servingUnits: p.servingUnits ?? null,
     unitForm: p.unitForm ?? null,
     directions: String(p.directions || '').trim(),
+    imageUrl: /^https?:\/\//i.test(String(p.imageUrl || '')) ? String(p.imageUrl).trim() : '',
     dosage: String(p.dosage || '').trim(),
     brand: String(p.brand || '').trim(),
     ingredients: String(p.ingredients || '').trim(),

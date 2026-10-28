@@ -1,6 +1,8 @@
 import { UNIT_FORMS, applyDose, parseServingUnits } from './dose.js'
 
 const MAX_EDGE = 1280
+// Saved thumbnail of the user's own photo (a few tens of KB as a data URL).
+const THUMB_EDGE = 320
 
 // HEIC/HEIF photos (iPhone originals): many browsers (desktop Chrome) cannot decode them in a canvas.
 export function heicMimeType(file) {
@@ -24,8 +26,17 @@ function decodeAndDownscale(file) {
       canvas.width = Math.round(img.width * scale)
       canvas.height = Math.round(img.height * scale)
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      let thumbnail = ''
+      try {
+        const ts = Math.min(1, THUMB_EDGE / Math.max(img.width, img.height))
+        const tc = document.createElement('canvas')
+        tc.width = Math.max(1, Math.round(img.width * ts))
+        tc.height = Math.max(1, Math.round(img.height * ts))
+        tc.getContext('2d').drawImage(img, 0, 0, tc.width, tc.height)
+        thumbnail = tc.toDataURL('image/jpeg', 0.7)
+      } catch { /* a missing thumbnail must never fail the scan */ }
       URL.revokeObjectURL(url)
-      resolve({ imageBase64: canvas.toDataURL('image/jpeg', 0.85).split(',')[1], mimeType: 'image/jpeg' })
+      resolve({ imageBase64: canvas.toDataURL('image/jpeg', 0.85).split(',')[1], mimeType: 'image/jpeg', thumbnail })
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
@@ -44,7 +55,7 @@ function readRawBase64(file) {
   })
 }
 
-// Photo -> { imageBase64, mimeType } for /cabinet/scan.
+// Photo -> { imageBase64, mimeType, thumbnail } for /cabinet/scan (thumbnail = small data-URL JPEG or '').
 // Normal photos are downscaled to JPEG (phone photos are several MB). If the browser can't decode a
 // HEIC/HEIF file, send the original — the backend/Gemini read HEIC directly.
 export async function imageFileToBase64(file) {
@@ -56,7 +67,7 @@ export async function imageFileToBase64(file) {
     if (file.size > MAX_RAW_BYTES) throw new Error('Photo too large to read in this browser — export it as JPEG')
     const imageBase64 = await readRawBase64(file)
     if (!imageBase64) throw err
-    return { imageBase64, mimeType }
+    return { imageBase64, mimeType, thumbnail: '' } // can't decode HEIC here → no thumbnail
   }
 }
 

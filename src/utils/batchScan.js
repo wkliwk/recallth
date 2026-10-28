@@ -27,9 +27,15 @@ export function rowErrors(form) {
   return errors
 }
 
-export function buildCreatePayload(form) {
+// The image to save: a web product image already on the form wins, otherwise the user's own photo thumbnail.
+export function chooseImage(form, photoThumb = '') {
+  return String(form?.imageUrl || '').trim() || String(photoThumb || '').trim()
+}
+
+export function buildCreatePayload(form, photoThumb = '') {
   const brand = String(form.brand || '').trim()
   const ingredients = String(form.ingredients || '').trim()
+  const imageUrl = chooseImage(form, photoThumb)
   return {
     name: form.name.trim(),
     type: form.type || 'supplement',
@@ -38,6 +44,7 @@ export function buildCreatePayload(form) {
     timing: 'Morning',
     ...(brand ? { brand } : {}),
     ...(ingredients ? { ingredients } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
   }
 }
 
@@ -113,7 +120,7 @@ export function createLimiter(limit) {
     })
 }
 
-export const FILLABLE_FIELDS = ['dosage', 'brand', 'ingredients', 'description']
+export const FILLABLE_FIELDS = ['dosage', 'brand', 'ingredients', 'description', 'imageUrl']
 // Fields a user sees and expects to be complete; the button shows when one of these is empty.
 export const VISIBLE_FIELDS = ['dosage', 'brand']
 
@@ -178,7 +185,7 @@ export function mergeFound(form, found) {
     const { form: next, filled } = mergeMissing(form, found)
     return { form: next, filled, directions: '' }
   }
-  const { form: base, filled } = mergeMissing(form, found, ['brand', 'ingredients', 'description'])
+  const { form: base, filled } = mergeMissing(form, found, ['brand', 'ingredients', 'description', 'imageUrl'])
   const next = { ...base }
   let directions = ''
   const units = parseServingUnits(found.servingUnits)
