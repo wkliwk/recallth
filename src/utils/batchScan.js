@@ -110,3 +110,36 @@ export function mergeMissing(form, found, fields = FILLABLE_FIELDS) {
   }
   return { form: next, filled }
 }
+
+export function isHttpUrl(s) {
+  const v = String(s || '').trim()
+  if (!/^https?:\/\/\S+$/i.test(v)) return false
+  try {
+    const u = new URL(v)
+    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname.includes('.')
+  } catch {
+    return false
+  }
+}
+
+// Derive a search query from a product link's slug, e.g.
+// .../pr/now-foods-zinc-picolinate-50-mg-120-veg-capsules/22436 -> "now foods zinc picolinate 50 mg 120 veg capsules".
+// Returns '' when the link has no readable slug (e.g. amazon.com/dp/B0013OXKHC).
+export function queryFromUrl(url) {
+  let path = ''
+  try {
+    path = new URL(String(url || '').trim()).pathname
+  } catch {
+    return ''
+  }
+  const slugs = path
+    .split('/')
+    .map((seg) => {
+      try { return decodeURIComponent(seg) } catch { return seg }
+    })
+    .map((seg) => seg.replace(/\.(html?|php|aspx?)$/i, ''))
+    .filter((seg) => /^[a-z0-9]+([-_][a-z0-9]+){2,}$/i.test(seg)) // at least 3 words joined by - or _
+  if (slugs.length === 0) return ''
+  const best = slugs.sort((a, b) => b.length - a.length)[0]
+  return best.replace(/[-_]+/g, ' ').trim()
+}

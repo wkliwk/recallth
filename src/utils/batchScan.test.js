@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing } from './batchScan.js'
+import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl } from './batchScan.js'
 
 test('limitFiles keeps first 10 and flags truncation', () => {
   const r = limitFiles(Array.from({ length: 12 }, (_, i) => i))
@@ -81,4 +81,24 @@ test('mergeMissing fills only empty fields and never overwrites', () => {
   assert.deepEqual(filled, ['brand', 'ingredients', 'description'])
   assert.equal(form.brand, '')
   assert.deepEqual(mergeMissing(form, null).filled, [])
+})
+
+test('isHttpUrl accepts http(s) links only', () => {
+  assert.equal(isHttpUrl('https://www.iherb.com/pr/now-foods-zinc/123'), true)
+  assert.equal(isHttpUrl(' http://example.com/a '), true)
+  assert.equal(isHttpUrl('abc'), false)
+  assert.equal(isHttpUrl('ftp://example.com/x'), false)
+  assert.equal(isHttpUrl('javascript:alert(1)'), false)
+  assert.equal(isHttpUrl('https://localhost/x'), false)
+  assert.equal(isHttpUrl('https://exa mple.com'), false)
+  assert.equal(isHttpUrl(''), false)
+})
+
+test('queryFromUrl reads the product slug from a link', () => {
+  assert.equal(queryFromUrl('https://www.iherb.com/pr/now-foods-zinc-picolinate-50-mg-120-veg-capsules/22436'), 'now foods zinc picolinate 50 mg 120 veg capsules')
+  assert.equal(queryFromUrl('https://www.nowfoods.com/products/supplements/zinc-picolinate-50-mg'), 'zinc picolinate 50 mg')
+  assert.equal(queryFromUrl('https://shop.example.com/Nutricost_L-Arginine_500mg.html?ref=1'), 'Nutricost L Arginine 500mg')
+  assert.equal(queryFromUrl('https://www.amazon.com/dp/B0013OXKHC'), '')
+  assert.equal(queryFromUrl('https://example.com/'), '')
+  assert.equal(queryFromUrl('nonsense'), '')
 })

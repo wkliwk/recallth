@@ -13,7 +13,8 @@ import {
   hasMissing,
   mergeMissing,
 } from '../utils/batchScan'
-import { lookupMissingDetails } from '../utils/dosageLookup'
+import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
+import PasteLinkFill from './PasteLinkFill'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 
@@ -41,6 +42,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       dup: false,
       lookupStatus: 'idle', // idle | looking | none | failed
       webFields: {}, // fields filled from the web, shown highlighted
+      linkBusy: false,
       saveStatus: 'idle', // idle | saving | saved | error
       saveError: '',
     }))
@@ -92,6 +94,23 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
     }
   }
 
+  // Fallback: fill empty fields from a product page the user pasted. Throws on failure.
+  async function fillFromLink(rowId, url) {
+    const current = rows.find((r) => r.id === rowId)
+    const found = await lookupLimiter.current(() => lookupFromUrl(url, showUsage, current.form.name))
+    const willFill = mergeMissing(current.form, found).filled
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== rowId) return r
+        const { form: merged, filled } = mergeMissing(r.form, found)
+        const webFields = { ...r.webFields }
+        filled.forEach((f) => { webFields[f] = true })
+        return { ...r, form: merged, webFields, lookupStatus: filled.length ? 'idle' : r.lookupStatus }
+      })
+    )
+    return willFill.length ? 'filled' : 'nothing'
+  }
+
   function fillAllMissing() {
     rows
       .filter((r) => r.scanStatus === 'done' && r.saveStatus !== 'saved' && r.lookupStatus !== 'looking' && r.form.name.trim() && hasMissing(r.form))
@@ -121,7 +140,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
   }
 
   const scanning = rows.some((r) => r.scanStatus === 'scanning')
-  const looking = rows.some((r) => r.lookupStatus === 'looking')
+  const looking = rows.some((r) => r.lookupStatus === 'looking' || r.linkBusy)
   const fillableCount = rows.filter(
     (r) => r.scanStatus === 'done' && r.saveStatus !== 'saved' && r.lookupStatus !== 'looking' && r.form.name.trim() && hasMissing(r.form)
   ).length
@@ -271,6 +290,13 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                     )}
                     {row.lookupStatus === 'failed' && (
                       <p className="text-[11px] text-[#C05A28]">{t('batchScanLookupFailed')}</p>
+                    )}
+                    {hasMissing(row.form) && row.form.name.trim() && !locked && (
+                      <PasteLinkFill
+                        forceOpen={row.lookupStatus === 'none' || row.lookupStatus === 'failed'}
+                        onSubmit={(url) => fillFromLink(row.id, url)}
+                        onBusyChange={(busy) => patchRow(row.id, { linkBusy: busy })}
+                      />
                     )}
                     {Object.values(row.webFields).some(Boolean) && (
                       <p className="text-[11px] text-[#1A3A6A]" data-testid="batch-web-note">{t('batchScanWebSuggested')}</p>
