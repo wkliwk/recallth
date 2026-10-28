@@ -5,7 +5,8 @@ import { useAiUsage } from '../context/AiUsageContext'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import {
   MAX_BATCH,
-  isDuplicate,
+  findDuplicate,
+  buildUpdatePayload,
   rowErrors,
   buildCreatePayload,
   runPool,
@@ -28,9 +29,9 @@ const webClass = inputClass.replace('bg-page', 'bg-[#EEF4FC]').replace('border-b
 
 /**
  * Batch label scan. `files` is already limited to MAX_BATCH by the caller.
- * `existingNames` are the names currently in the cabinet (for duplicate marking).
+ * `existingItems` are the items currently in the cabinet (for duplicate marking and overwrite).
  */
-export default function BatchScanModal({ files, truncated, existingNames, onClose, onSaved }) {
+export default function BatchScanModal({ files, truncated, existingItems = [], onClose, onSaved }) {
   const { t } = useLanguage()
   const { showUsage } = useAiUsage()
   const [rows, setRows] = useState(() =>
@@ -52,6 +53,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
     }))
   )
   const [saving, setSaving] = useState(false)
+  const [confirming, setConfirming] = useState(null) // { choices: { [rowId]: 'new' | 'overwrite' } } | null
   const startedRef = useRef(false)
   const lookupLimiter = useRef(createLimiter(2))
 
@@ -66,7 +68,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
       const form = { ingredients: '', imageUrl: '', ...scanResultToForm(res.data) }
-      const dup = isDuplicate(form.name, existingNames)
+      const dup = Boolean(findDuplicate(form.name, existingItems))
       patchRow(row.id, {
         scanStatus: 'done',
         photoThumb: thumbnail || '',
@@ -139,7 +141,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
         return {
           ...r,
           form,
-          dup: field === 'name' ? isDuplicate(value, existingNames) : r.dup,
+          dup: field === 'name' ? Boolean(findDuplicate(value, existingItems)) : r.dup,
           webFields: { ...r.webFields, [field]: false },
         }
       })
@@ -174,13 +176,30 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
   const allSettled = !scanning && pending.length === 0
   const canSave = !scanning && !looking && !saving && pending.length > 0 && !hasInvalid
 
-  async function handleSaveAll() {
+  // Pressing "Add N": if an included row matches an item already in the cabinet, ask first.
+  function handleSaveAll() {
+    const dups = pending.filter((r) => findDuplicate(r.form.name, existingItems))
+    if (dups.length > 0) {
+      setConfirming({ choices: Object.fromEntries(dups.map((r) => [r.id, 'new'])) }) // default: non-destructive
+      return
+    }
+    saveRows({})
+  }
+
+  async function saveRows(choices) {
+    setConfirming(null)
     setSaving(true)
     for (const row of pending) {
       patchRow(row.id, { saveStatus: 'saving', saveError: '' })
       try {
-        await api.cabinet.create(buildCreatePayload(row.form, row.photoThumb))
-        patchRow(row.id, { saveStatus: 'saved' })
+        const existing = choices[row.id] === 'overwrite' ? findDuplicate(row.form.name, existingItems) : null
+        if (existing) {
+          await api.cabinet.update(existing._id, buildUpdatePayload(row.form, row.photoThumb, existing))
+          patchRow(row.id, { saveStatus: 'saved', savedAs: 'updated' })
+        } else {
+          await api.cabinet.create(buildCreatePayload(row.form, row.photoThumb))
+          patchRow(row.id, { saveStatus: 'saved', savedAs: 'created' })
+        }
       } catch (err) {
         patchRow(row.id, { saveStatus: 'error', saveError: err.message || t('batchScanSaveFailed') })
       }
@@ -194,7 +213,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
       className="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center"
       data-testid="batch-scan-modal"
     >
-      <div className="bg-white w-full md:max-w-[720px] max-h-[92vh] rounded-t-[20px] md:rounded-[20px] flex flex-col">
+      <div className="relative bg-white w-full md:max-w-[720px] max-h-[92vh] rounded-t-[20px] md:rounded-[20px] flex flex-col">
         <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-border">
           <h2 className="font-display text-[20px] text-ink1">{t('batchScanTitle')}</h2>
           <button type="button" onClick={onClose} className="text-ink3 hover:text-ink1 cursor-pointer text-[13px]">
@@ -260,7 +279,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                       {t('batchScanUseMyPhoto')}
                     </button>
                   )}
-                  {row.saveStatus === 'saved' && <span className="text-[#2E7D32]">{t('batchScanSaved')}</span>}
+                  {row.saveStatus === 'saved' && <span className="text-[#2E7D32]">{row.savedAs === 'updated' ? t('batchScanUpdated') : t('batchScanSaved')}</span>}
                   {row.saveStatus === 'saving' && <span>{t('batchScanSaving')}</span>}
                 </div>
 
@@ -400,6 +419,59 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
           )}
         </div>
       </div>
+        {confirming && (
+          <div className="absolute inset-0 z-10 bg-white rounded-t-[20px] md:rounded-[20px] flex flex-col" data-testid="dup-confirm">
+            <div className="px-5 pt-5 pb-3 border-b border-border">
+              <h3 className="font-display text-[18px] text-ink1">{t('batchScanDupTitle')}</h3>
+              <p className="text-[12px] text-ink3 mt-1">{t('batchScanDupBody')}</p>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto flex flex-col gap-3">
+              {pending
+                .filter((r) => r.id in confirming.choices)
+                .map((r) => {
+                  const existing = findDuplicate(r.form.name, existingItems)
+                  const choice = confirming.choices[r.id]
+                  const setChoice = (v) => setConfirming((c) => ({ ...c, choices: { ...c.choices, [r.id]: v } }))
+                  return (
+                    <div key={r.id} className="rounded-card border border-border p-3 flex flex-col gap-2" data-testid="dup-item">
+                      <p className="text-[14px] font-medium text-ink1">{existing?.name || r.form.name}</p>
+                      <p className="text-[12px] text-ink3">
+                        {t('batchScanDupCurrent')}: <span className="text-ink1">{existing?.dosage || '—'}</span>
+                        {' → '}
+                        {t('batchScanDupNew')}: <span className="text-ink1">{r.form.dosage || '—'}</span>
+                      </p>
+                      <label className="flex items-center gap-2 text-[13px] text-ink1 cursor-pointer">
+                        <input type="radio" name={`dup-${r.id}`} checked={choice === 'new'} onChange={() => setChoice('new')} data-testid="dup-keep-both" />
+                        {t('batchScanDupKeepBoth')}
+                      </label>
+                      <label className="flex items-center gap-2 text-[13px] text-ink1 cursor-pointer">
+                        <input type="radio" name={`dup-${r.id}`} checked={choice === 'overwrite'} onChange={() => setChoice('overwrite')} data-testid="dup-overwrite" />
+                        {t('batchScanDupOverwrite')}
+                      </label>
+                    </div>
+                  )
+                })}
+            </div>
+            <div className="mt-auto px-5 py-4 border-t border-border flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirming(null)}
+                data-testid="dup-back"
+                className="flex-1 rounded-full border-[1.5px] border-border text-ink2 text-[14px] font-medium py-[11px] cursor-pointer"
+              >
+                {t('batchScanDupBack')}
+              </button>
+              <button
+                type="button"
+                onClick={() => saveRows(confirming.choices)}
+                data-testid="dup-continue"
+                className="flex-1 rounded-full bg-orange text-white text-[14px] font-semibold py-[11px] cursor-pointer hover:opacity-90"
+              >
+                {t('batchScanDupContinue')}
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload } from './batchScan.js'
+import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload } from './batchScan.js'
 
 test('limitFiles keeps first 10 and flags truncation', () => {
   const r = limitFiles(Array.from({ length: 12 }, (_, i) => i))
@@ -184,4 +184,30 @@ test('mergeFound fills a web image only when the form has none', () => {
   assert.ok(r.filled.includes('imageUrl'))
   const keep = mergeFound({ ...base, imageUrl: 'https://mine/x.png' }, { imageUrl: 'https://api/img/image-proxy?url=a' })
   assert.equal(keep.form.imageUrl, 'https://mine/x.png')
+})
+
+test('findDuplicate matches by normalised name and returns the item', () => {
+  const items = [{ _id: 'a', name: 'L-Arginine' }, { _id: 'b', name: 'Vitamin D3' }]
+  assert.equal(findDuplicate('l arginine', items)._id, 'a')
+  assert.equal(findDuplicate('VITAMIN d3', items)._id, 'b')
+  assert.equal(findDuplicate('Zinc', items), null)
+  assert.equal(findDuplicate('', items), null)
+  assert.equal(findDuplicate('Zinc', null), null)
+})
+
+test('buildUpdatePayload is narrow: no name/schedule/notes/purchase, no blanking', () => {
+  const form = { name: 'L-arginine', type: 'supplement', dosage: ' 2 capsules (500 mg each) ', brand: '', ingredients: '', imageUrl: '' }
+  const p = buildUpdatePayload(form, '', { _id: 'a', type: 'supplement' })
+  assert.deepEqual(p, { type: 'supplement', dosage: '2 capsules (500 mg each)' })
+  for (const k of ['name', 'frequency', 'timing', 'notes', 'purchasePrice', 'purchaseDate', 'startDate', 'brand', 'ingredients']) assert.equal(k in p, false)
+})
+
+test('buildUpdatePayload image rules: keep existing, web wins, thumbnail only fills a gap', () => {
+  const base = { name: 'X', type: 'vitamin', dosage: '1', brand: 'NOW', ingredients: 'Zinc' }
+  assert.equal('imageUrl' in buildUpdatePayload(base, 'data:image/jpeg;base64,AAA', { imageUrl: 'https://old/img' }), false)
+  assert.equal(buildUpdatePayload(base, 'data:image/jpeg;base64,AAA', {}).imageUrl, 'data:image/jpeg;base64,AAA')
+  assert.equal(buildUpdatePayload({ ...base, imageUrl: 'https://web/x.png' }, 'data:image/jpeg;base64,AAA', { imageUrl: 'https://old/img' }).imageUrl, 'https://web/x.png')
+  const p = buildUpdatePayload(base, '', {})
+  assert.equal(p.brand, 'NOW')
+  assert.equal(p.ingredients, 'Zinc')
 })

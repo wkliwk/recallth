@@ -197,3 +197,28 @@ export function mergeFound(form, found) {
   }
   return { form: applyDose(next), filled, directions }
 }
+
+// The existing cabinet item with the same (normalised) name, or null.
+export function findDuplicate(name, items) {
+  const n = normalizeName(name)
+  if (!n) return null
+  return (items || []).find((i) => normalizeName(i?.name) === n) || null
+}
+
+// Payload for overwriting an existing item with a scanned row. Deliberately narrow:
+// never renames, never touches schedule/notes/purchase/start date, and empty scanned values never blank
+// saved ones. An existing image is kept unless a web product image was found; a photo thumbnail only
+// fills a missing image.
+export function buildUpdatePayload(form, photoThumb = '', existing = {}) {
+  const brand = String(form.brand || '').trim()
+  const ingredients = String(form.ingredients || '').trim()
+  const webImage = String(form.imageUrl || '').trim()
+  const image = webImage || (existing.imageUrl ? '' : String(photoThumb || '').trim())
+  return {
+    type: form.type || existing.type || 'supplement',
+    dosage: form.dosage.trim(),
+    ...(brand ? { brand } : {}),
+    ...(ingredients ? { ingredients } : {}),
+    ...(image ? { imageUrl: image } : {}),
+  }
+}
