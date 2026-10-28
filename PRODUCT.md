@@ -209,7 +209,7 @@ Navigate to `/cabinet` → see all supplements with name, dose, timing → tap F
 - [ ] Evidence score badge shown per supplement (A/B/C/D)
 - [ ] Empty state shown if cabinet is empty with add CTA
 - [ ] FAB button opens add form
-- [ ] Photo scan (Cabinet Add): "Scan label with photo" accepts camera or library photo, prefills name/type/dosage/brand/ingredients for review
+- [ ] Photo scan (Cabinet Add): "Scan label with photo" accepts camera or library photos; 1 photo prefills name/type/dosage/brand/ingredients for review, 2+ photos open the batch review modal and land on /cabinet after saving
 - [ ] Batch scan (Cabinet list): "Batch scan photos" accepts up to 10 photos (extras dropped with a message), scans max 3 at a time, shows per-photo status with single-photo retry
 - [ ] Batch review: editable name/dosage/brand/type per row; rows missing name or dosage are highlighted and block "Add to cabinet"; rows already in the cabinet (same name) are marked and unchecked by default
 - [ ] Batch save creates checked rows with frequency Daily / timing Morning; per-row failures are shown and can be retried; list refreshes afterwards

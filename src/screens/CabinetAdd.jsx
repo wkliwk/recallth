@@ -5,7 +5,9 @@ import Wave from '../components/Wave'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
+import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
+import { limitFiles } from '../utils/batchScan'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 const FREQUENCY_OPTIONS = [
@@ -61,6 +63,8 @@ export default function CabinetAdd() {
   const [scanning, setScanning] = useState(false)
   const [scanned, setScanned] = useState(false)
   const scanInputRef = useRef(null)
+  const [batch, setBatch] = useState(null) // { files, truncated, existingNames } | null
+  const batchSavedRef = useRef(false)
 
   const prefilled = location.state?.aiResult
   const [aiFilled, setAiFilled] = useState(!!prefilled)
@@ -168,9 +172,20 @@ export default function CabinetAdd() {
   }
 
   async function handleScanFile(e) {
-    const file = e.target.files?.[0]
+    const picked = limitFiles(e.target.files)
     e.target.value = ''
-    if (!file || scanning) return
+    if (picked.files.length === 0 || scanning) return
+    if (picked.files.length > 1 || picked.truncated) {
+      let existingNames = []
+      try {
+        const res = await api.cabinet.list()
+        existingNames = (res.data || []).map((x) => x.name)
+      } catch { /* duplicate marking is best-effort */ }
+      batchSavedRef.current = false
+      setBatch({ ...picked, existingNames })
+      return
+    }
+    const file = picked.files[0]
     setScanning(true)
     setErrors({})
     try {
@@ -402,6 +417,7 @@ export default function CabinetAdd() {
             ref={scanInputRef}
             type="file"
             accept="image/*"
+            multiple
             onChange={handleScanFile}
             className="hidden"
             data-testid="scan-label-input"
@@ -549,6 +565,23 @@ export default function CabinetAdd() {
           {submitting ? t('adding') : t('addButton')}
         </button>
       </form>
+
+      {batch && (
+        <BatchScanModal
+          files={batch.files}
+          truncated={batch.truncated}
+          existingNames={batch.existingNames}
+          onSaved={() => {
+            batchSavedRef.current = true
+            try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
+          }}
+          onClose={() => {
+            const saved = batchSavedRef.current
+            setBatch(null)
+            if (saved) navigate('/cabinet')
+          }}
+        />
+      )}
     </div>
   )
 }
