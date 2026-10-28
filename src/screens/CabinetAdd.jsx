@@ -8,7 +8,8 @@ import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import { limitFiles, hasMissing, mergeMissing } from '../utils/batchScan'
-import { lookupMissingDetails } from '../utils/dosageLookup'
+import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
+import PasteLinkFill from '../components/PasteLinkFill'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 const FREQUENCY_OPTIONS = [
@@ -227,6 +228,16 @@ export default function CabinetAdd() {
           } catch {
       setFillStatus('failed')
     }
+  }
+
+  // Fallback: fill empty fields from a product page the user pasted. Throws on failure.
+  async function handleFillFromLink(url) {
+    const found = await lookupFromUrl(url, showUsage, form.name)
+    const { filled } = mergeMissing(form, found)
+    setForm((prev) => mergeMissing(prev, found).form)
+    setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])) }))
+    if (filled.length) setFillStatus('idle')
+    return filled.length ? 'filled' : 'nothing'
   }
 
   function handleAiConfirm() {
@@ -476,6 +487,12 @@ export default function CabinetAdd() {
               >
                 {fillStatus === 'looking' ? t('batchScanLooking') : t('batchScanFillRow')}
               </button>
+            )}
+            {form.name.trim() && hasMissing(form) && (
+              <PasteLinkFill
+                forceOpen={fillStatus === 'none' || fillStatus === 'failed'}
+                onSubmit={handleFillFromLink}
+              />
             )}
             {fillStatus === 'none' && <span className="text-[12px] text-ink3" data-testid="single-no-match">{t('batchScanNoMatch')}</span>}
             {fillStatus === 'failed' && <span className="text-[12px] text-[#C05A28]">{t('batchScanLookupFailed')}</span>}
