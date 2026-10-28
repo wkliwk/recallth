@@ -222,3 +222,73 @@ export function buildUpdatePayload(form, photoThumb = '', existing = {}) {
     ...(image ? { imageUrl: image } : {}),
   }
 }
+
+// ─── Duplicate / similar-product detection ───────────────────────────────────
+
+const GENERIC_WORDS = new Set([
+  'the', 'and', 'of', 'with', 'for', 'de', 'la', 'le', 'des', 'et', 'capsul', 'tablet', 'softgel', 'gummi', 'cap', 'tab', 'veg',
+  'vegetarian', 'vegetarien', 'supplement', 'extra', 'strength', 'advanced', 'super', 'concentrat', 'absorption', 'avance', 'original',
+])
+
+// Lower-case, strip accents, light stemming so "complexe"/"complex", "capsules"/"capsule" compare equal.
+function stem(word) {
+  let w = word
+  if (w.length > 3 && w.endsWith('s')) w = w.slice(0, -1)
+  if (w.length > 6 && w.endsWith('e')) w = w.slice(0, -1)
+  return w
+}
+
+export function nameTokens(name, brand = '') {
+  const clean = (s) =>
+    String(s || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .split(/[^a-z0-9一-鿿]+/)
+      .filter(Boolean)
+      .map(stem)
+  const brandWords = new Set(clean(brand))
+  return new Set(clean(name).filter((t) => !brandWords.has(t) && !GENERIC_WORDS.has(t)))
+}
+
+// 'exact' = same normalised name; 'similar' = same brand + similar name (and no conflicting strength); else null.
+// a / b: { name, brand, strength } where strength is a strengthKey like "500mg" or ''.
+export function similarity(a, b) {
+  const na = normalizeName(a?.name)
+  const nb = normalizeName(b?.name)
+  if (!na || !nb) return null
+  if (na === nb) return 'exact'
+
+  const brandA = normalizeName(a?.brand)
+  const brandB = normalizeName(b?.brand)
+  if (!brandA || !brandB || !(brandA === brandB || brandA.includes(brandB) || brandB.includes(brandA))) return null
+  if (a.strength && b.strength && a.strength !== b.strength) return null // e.g. 1300 mg fish oil vs 500 mg krill oil
+
+  const [short, long] = na.length <= nb.length ? [na, nb] : [nb, na]
+  if (short.length >= 4 && long.includes(short)) return 'similar'
+
+  const ta = nameTokens(a.name, a.brand)
+  const tb = nameTokens(b.name, b.brand)
+  if (ta.size === 0 || tb.size === 0) return null
+  const shared = [...ta].filter((t) => tb.has(t)).length
+  const smaller = Math.min(ta.size, tb.size)
+  return shared >= 2 && shared / smaller >= 0.8 ? 'similar' : null
+}
+
+// What to compare for a saved item / a scanned form.
+export function itemFingerprint(item) {
+  return { name: item?.name, brand: item?.brand, strength: strengthKey(item?.strength || item?.dosage) }
+}
+
+// Best match of `form` among saved items: an exact name match first, else a similar one.
+// Returns { item, kind: 'exact' | 'similar' } or null.
+export function findMatch(form, items) {
+  const me = itemFingerprint(form)
+  let similar = null
+  for (const item of items || []) {
+    const kind = similarity(me, itemFingerprint(item))
+    if (kind === 'exact') return { item, kind }
+    if (kind === 'similar' && !similar) similar = { item, kind }
+  }
+  return similar
+}

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload } from './batchScan.js'
+import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload, nameTokens, similarity, findMatch } from './batchScan.js'
 
 test('limitFiles keeps first 10 and flags truncation', () => {
   const r = limitFiles(Array.from({ length: 12 }, (_, i) => i))
@@ -210,4 +210,50 @@ test('buildUpdatePayload image rules: keep existing, web wins, thumbnail only fi
   const p = buildUpdatePayload(base, '', {})
   assert.equal(p.brand, 'NOW')
   assert.equal(p.ingredients, 'Zinc')
+})
+
+test('nameTokens drops brand words, accents, plurals and generic words', () => {
+  assert.deepEqual([...nameTokens('KIRKLAND SIGNATURE B100 COMPLEX', 'Kirkland Signature')].sort(), ['b100', 'complex'])
+  assert.deepEqual([...nameTokens('COMPLEXE B100 COMPLEX', 'KIRKLAND Signature')].sort(), ['b100', 'complex'])
+  assert.deepEqual([...nameTokens('Kirkland Signature Super Concentrate Omega-3 Fish Oil', 'Kirkland Signature')].sort(), ['3', 'fish', 'oil', 'omega'])
+  assert.deepEqual([...nameTokens('Curcuma Absorption avancée', 'webber naturals')], ['curcuma'])
+})
+
+test('similarity: exact, similar, and not-a-duplicate cases from the real cabinet', () => {
+  const b100old = { name: 'KIRKLAND SIGNATURE B100 COMPLEX', brand: 'Kirkland Signature', strength: '' }
+  const b100new = { name: 'COMPLEXE B100 COMPLEX', brand: 'KIRKLAND Signature', strength: '500mcg' }
+  assert.equal(similarity(b100new, b100old), 'similar')
+
+  const omegaOld = { name: 'Kirkland Signature Super Concentrate Omega-3 Fish Oil', brand: 'Kirkland Signature', strength: '' }
+  const omegaNew = { name: 'Omega-3 Fish Oil', brand: 'KIRKLAND Signature', strength: '1300mg' }
+  assert.equal(similarity(omegaNew, omegaOld), 'similar')
+  assert.equal(similarity(omegaNew, { ...omegaNew }), 'exact')
+  assert.equal(similarity({ name: 'Curcuma', brand: 'webber naturals' }, { name: 'curcuma ', brand: 'Webber Naturals' }), 'exact')
+
+  // guards against false positives
+  assert.equal(similarity({ name: 'Omega-3 Krill Oil', brand: 'Kirkland Signature', strength: '500mg' }, { name: 'Omega-3 Fish Oil', brand: 'Kirkland Signature', strength: '1300mg' }), null) // strengths differ
+  assert.equal(similarity({ name: 'Omega-3 Krill Oil', brand: 'Kirkland Signature', strength: '' }, { name: 'Omega-3 Fish Oil', brand: 'Kirkland Signature', strength: '' }), null) // 3/4 tokens < 80%
+  assert.equal(similarity({ name: 'Magnesium Citrate', brand: 'Webber' }, { name: 'Magnesium Glycinate', brand: 'Webber' }), null)
+  assert.equal(similarity({ name: 'Vitamin C', brand: 'Jamieson' }, { name: 'Vitamin D3', brand: 'Jamieson' }), null)
+  assert.equal(similarity({ name: 'Zinc', brand: 'NOW' }, { name: 'Zinc', brand: 'Thorne' }), 'exact') // same name stays exact regardless of brand (existing behaviour)
+  assert.equal(similarity({ name: 'Zinc Picolinate', brand: 'NOW' }, { name: 'Zinc Picolinate 50 mg', brand: 'Thorne' }), null) // different brand
+  assert.equal(similarity({ name: 'Zinc Picolinate', brand: '' }, { name: 'Zinc Picolinate 50 mg', brand: '' }), null) // no brand to anchor
+  assert.equal(similarity({ name: '', brand: 'x' }, { name: 'y', brand: 'x' }), null)
+})
+
+test('similarity: containment needs a name of at least 4 characters', () => {
+  assert.equal(similarity({ name: 'D3', brand: 'Jamieson' }, { name: 'Vitamin D3', brand: 'Jamieson' }), null)
+  assert.equal(similarity({ name: 'Curcuma', brand: 'Webber' }, { name: 'Curcuma Advanced', brand: 'Webber' }), 'similar')
+})
+
+test('findMatch prefers an exact match and reports the kind', () => {
+  const items = [
+    { _id: 'k', name: 'KIRKLAND SIGNATURE B100 COMPLEX', brand: 'Kirkland Signature', dosage: '1 tablet' },
+    { _id: 'e', name: 'COMPLEXE B100 COMPLEX', brand: 'KIRKLAND Signature', dosage: '1 tablet (500 mcg each)' },
+  ]
+  const form = { name: 'COMPLEXE B100 COMPLEX', brand: 'KIRKLAND Signature', strength: '500 mcg' }
+  assert.deepEqual([findMatch(form, items).item._id, findMatch(form, items).kind], ['e', 'exact'])
+  assert.deepEqual([findMatch(form, items.slice(0, 1)).item._id, findMatch(form, items.slice(0, 1)).kind], ['k', 'similar'])
+  assert.equal(findMatch({ name: 'Zinc', brand: 'NOW' }, items), null)
+  assert.equal(findMatch(form, []), null)
 })

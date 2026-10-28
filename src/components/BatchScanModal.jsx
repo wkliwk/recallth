@@ -5,7 +5,9 @@ import { useAiUsage } from '../context/AiUsageContext'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import {
   MAX_BATCH,
-  findDuplicate,
+  findMatch,
+  similarity,
+  itemFingerprint,
   buildUpdatePayload,
   rowErrors,
   buildCreatePayload,
@@ -68,7 +70,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
       const form = { ingredients: '', imageUrl: '', ...scanResultToForm(res.data) }
-      const dup = Boolean(findDuplicate(form.name, existingItems))
+      const dup = Boolean(findMatch(form, existingItems))
       patchRow(row.id, {
         scanStatus: 'done',
         photoThumb: thumbnail || '',
@@ -141,7 +143,6 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
         return {
           ...r,
           form,
-          dup: field === 'name' ? Boolean(findDuplicate(value, existingItems)) : r.dup,
           webFields: { ...r.webFields, [field]: false },
         }
       })
@@ -176,9 +177,38 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
   const allSettled = !scanning && pending.length === 0
   const canSave = !scanning && !looking && !saving && pending.length > 0 && !hasInvalid
 
+  // Duplicate info for a row, derived live (so name edits re-evaluate it):
+  //  - 'existing': exact/similar match with a saved item
+  //  - 'batch': repeat of an earlier row in this same batch
+  function matchInfo(row, index) {
+    if (row.scanStatus !== 'done' || !row.form.name.trim()) return null
+    const found = findMatch(row.form, existingItems)
+    if (found) return { source: 'existing', kind: found.kind, item: found.item }
+    for (let j = 0; j < index; j++) {
+      const other = rows[j]
+      if (other.scanStatus !== 'done' || !other.form.name.trim()) continue
+      const kind = similarity(itemFingerprint(row.form), itemFingerprint(other.form))
+      if (kind) return { source: 'batch', kind, other: j + 1 }
+    }
+    return null
+  }
+
+  // A repeat within the batch is unchecked the first time it is detected (never again, so a later tick sticks).
+  const flaggedRef = useRef(new Set())
+  useEffect(() => {
+    rows.forEach((r, i) => {
+      if (flaggedRef.current.has(r.id)) return
+      const info = matchInfo(r, i)
+      if (!info) return
+      flaggedRef.current.add(r.id)
+      if (info.source === 'batch') patchRow(r.id, { include: false })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows])
+
   // Pressing "Add N": if an included row matches an item already in the cabinet, ask first.
   function handleSaveAll() {
-    const dups = pending.filter((r) => findDuplicate(r.form.name, existingItems))
+    const dups = pending.filter((r) => matchInfo(r, rows.indexOf(r))?.source === 'existing')
     if (dups.length > 0) {
       setConfirming({ choices: Object.fromEntries(dups.map((r) => [r.id, 'new'])) }) // default: non-destructive
       return
@@ -192,7 +222,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
     for (const row of pending) {
       patchRow(row.id, { saveStatus: 'saving', saveError: '' })
       try {
-        const existing = choices[row.id] === 'overwrite' ? findDuplicate(row.form.name, existingItems) : null
+        const existing = choices[row.id] === 'overwrite' ? findMatch(row.form, existingItems)?.item : null
         if (existing) {
           await api.cabinet.update(existing._id, buildUpdatePayload(row.form, row.photoThumb, existing))
           patchRow(row.id, { saveStatus: 'saved', savedAs: 'updated' })
@@ -298,11 +328,24 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                         aria-label={t('batchScanInclude')}
                       />
                       <span className="text-[12px] text-ink2">{t('batchScanInclude')}</span>
-                      {row.dup && (
-                        <span className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-sand text-ink2">
-                          {t('batchScanDuplicate')}
-                        </span>
-                      )}
+                      {(() => {
+                        const info = matchInfo(row, i)
+                        if (!info) return null
+                        const label = info.source === 'batch'
+                          ? t('batchScanSameBatch').replace('{n}', info.other)
+                          : info.kind === 'exact'
+                            ? t('batchScanDuplicate')
+                            : `${t('batchScanSimilar')}: ${info.item.name}`
+                        return (
+                          <span
+                            className="rounded-pill px-[8px] py-[2px] text-[10px] font-medium bg-sand text-ink2"
+                            data-testid="batch-dup-badge"
+                            data-kind={`${info.source}-${info.kind}`}
+                          >
+                            {label}
+                          </span>
+                        )
+                      })()}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -429,12 +472,16 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
               {pending
                 .filter((r) => r.id in confirming.choices)
                 .map((r) => {
-                  const existing = findDuplicate(r.form.name, existingItems)
+                  const found = findMatch(r.form, existingItems)
+                  const existing = found?.item
                   const choice = confirming.choices[r.id]
                   const setChoice = (v) => setConfirming((c) => ({ ...c, choices: { ...c.choices, [r.id]: v } }))
                   return (
                     <div key={r.id} className="rounded-card border border-border p-3 flex flex-col gap-2" data-testid="dup-item">
                       <p className="text-[14px] font-medium text-ink1">{existing?.name || r.form.name}</p>
+                      {found?.kind === 'similar' && (
+                        <p className="text-[11px] text-ink3" data-testid="dup-similar-note">{t('batchScanDupSimilarNote').replace('{name}', r.form.name)}</p>
+                      )}
                       <p className="text-[12px] text-ink3">
                         {t('batchScanDupCurrent')}: <span className="text-ink1">{existing?.dosage || '—'}</span>
                         {' → '}
