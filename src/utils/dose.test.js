@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { composeDosage, unitLabel, isStructured, applyDose, parseServingUnits } from './dose.js'
-import { scanResultToForm } from './labelScan.js'
+import { scanResultToForm, heicMimeType, MAX_RAW_BYTES } from './labelScan.js'
 
 test('composeDosage: count x strength, singular for 1, empty when unknown', () => {
   assert.equal(composeDosage({ servingUnits: '2', unitForm: 'capsule', strength: '500 mg' }), '2 capsules (500 mg each)')
@@ -50,4 +50,18 @@ test('scanResultToForm: older backend (no strength) keeps free-text dosage', () 
   const f = scanResultToForm({ name: 'Zinc', dosage: '25 mg', brand: 'NOW' })
   assert.equal(f.dosage, '25 mg')
   assert.equal(isStructured(f), false)
+})
+
+test('heicMimeType detects HEIC/HEIF by type or extension, else empty', () => {
+  assert.equal(heicMimeType({ type: 'image/heic', name: 'a' }), 'image/heic')
+  assert.equal(heicMimeType({ type: '', name: 'IMG_5356.HEIC' }), 'image/heic')
+  assert.equal(heicMimeType({ type: '', name: 'photo.heif' }), 'image/heif')
+  assert.equal(heicMimeType({ type: 'image/heif', name: 'x' }), 'image/heif')
+  assert.equal(heicMimeType({ type: 'image/jpeg', name: 'a.jpg' }), '')
+  assert.equal(heicMimeType({ type: 'image/png', name: 'a.png' }), '')
+  assert.equal(heicMimeType(null), '')
+})
+
+test('raw HEIC size cap leaves headroom under the 10 MB JSON limit', () => {
+  assert.ok(MAX_RAW_BYTES * 1.34 < 10 * 1024 * 1024)
 })

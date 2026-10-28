@@ -2,8 +2,19 @@ import { UNIT_FORMS, applyDose, parseServingUnits } from './dose.js'
 
 const MAX_EDGE = 1280
 
-// Downscale a photo to a JPEG base64 payload (phone photos are several MB).
-export function imageFileToBase64(file) {
+// HEIC/HEIF photos (iPhone originals): many browsers (desktop Chrome) cannot decode them in a canvas.
+export function heicMimeType(file) {
+  const type = String(file?.type || '').toLowerCase()
+  const name = String(file?.name || '').toLowerCase()
+  if (type === 'image/heic' || /\.heic$/.test(name)) return 'image/heic'
+  if (type === 'image/heif' || /\.heif$/.test(name)) return 'image/heif'
+  return ''
+}
+
+// Raw files are sent base64 inside JSON (backend limit 10 MB; base64 adds ~33%).
+export const MAX_RAW_BYTES = 7 * 1024 * 1024
+
+function decodeAndDownscale(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
@@ -22,6 +33,31 @@ export function imageFileToBase64(file) {
     }
     img.src = url
   })
+}
+
+function readRawBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '')
+    reader.onerror = () => reject(new Error('Could not read image'))
+    reader.readAsDataURL(file)
+  })
+}
+
+// Photo -> { imageBase64, mimeType } for /cabinet/scan.
+// Normal photos are downscaled to JPEG (phone photos are several MB). If the browser can't decode a
+// HEIC/HEIF file, send the original — the backend/Gemini read HEIC directly.
+export async function imageFileToBase64(file) {
+  try {
+    return await decodeAndDownscale(file)
+  } catch (err) {
+    const mimeType = heicMimeType(file)
+    if (!mimeType) throw err
+    if (file.size > MAX_RAW_BYTES) throw new Error('Photo too large to read in this browser — export it as JPEG')
+    const imageBase64 = await readRawBase64(file)
+    if (!imageBase64) throw err
+    return { imageBase64, mimeType }
+  }
 }
 
 // Map the /cabinet/scan result onto the CabinetAdd form fields.

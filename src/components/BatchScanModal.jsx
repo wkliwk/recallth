@@ -335,7 +335,7 @@ export default function BatchScanModal({ files, truncated, existingNames, onClos
                     {Object.values(row.webFields).some(Boolean) && (
                       <p className="text-[11px] text-[#1A3A6A]" data-testid="batch-web-note">{t('batchScanWebSuggested')}</p>
                     )}
-                    {row.include && row.lookupStatus !== 'looking' && Object.keys(errs).length > 0 && (
+                    {row.include && row.lookupStatus !== 'looking' && Object.keys(errs).length > 0 && !(isStructured(row.form) && !errs.name) && (
                       <p className="text-[11px] text-[#C05A28]">{t('batchScanNeedFields')}</p>
                     )}
                     {row.saveStatus === 'error' && (
