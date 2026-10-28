@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
+import PurchaseFields from '../components/PurchaseFields'
+import { parsePriceInput, toDateInputValue, formatPurchase, intlLocale } from '../utils/purchase'
 import { useLanguage } from '../context/LanguageContext'
 
 /* ------------------------------------------------------------------ */
@@ -89,7 +91,7 @@ function Skeleton() {
 export default function CabinetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const [supp, setSupp] = useState(null)
   const [interactions, setInteractions] = useState([])
@@ -135,6 +137,9 @@ export default function CabinetDetail() {
               timing: found.timing || 'Morning',
               brand: found.brand || '',
               notes: found.notes || '',
+              purchasePrice: found.purchasePrice ?? '',
+              purchaseCurrency: found.currency || 'HKD',
+              purchaseDate: toDateInputValue(found.purchaseDate),
             })
           }
         } else {
@@ -170,6 +175,7 @@ export default function CabinetDetail() {
     const errs = {}
     if (!form.name?.trim()) errs.name = t('nameRequired')
     if (!form.dosage?.trim()) errs.dosage = t('dosageRequired')
+    if (!parsePriceInput(form.purchasePrice).ok) errs.purchasePrice = t('purchasePriceInvalid')
     return errs
   }
 
@@ -180,6 +186,7 @@ export default function CabinetDetail() {
       return
     }
 
+    const price = parsePriceInput(form.purchasePrice)
     setSaving(true)
     try {
       const payload = {
@@ -190,6 +197,10 @@ export default function CabinetDetail() {
         timing: form.timing,
         ...(form.brand?.trim() ? { brand: form.brand.trim() } : {}),
         ...(form.notes?.trim() ? { notes: form.notes.trim() } : {}),
+        // null clears a previously saved value
+        purchasePrice: price.value,
+        purchaseDate: form.purchaseDate || null,
+        ...(price.value !== null ? { currency: form.purchaseCurrency } : {}),
       }
       const res = await api.cabinet.update(id, payload)
       setSupp(res.data || { ...supp, ...payload })
@@ -443,6 +454,8 @@ export default function CabinetDetail() {
                 onChange={(e) => handleChange('brand', e.target.value)}
               />
             </EditField>
+
+            <PurchaseFields form={form} onChange={handleChange} error={formErrors.purchasePrice} />
 
             <EditField label={t('fieldNotes')}>
               <textarea
@@ -788,6 +801,7 @@ export default function CabinetDetail() {
           <div className="bg-white rounded-card border border-border p-5">
             <InfoRow label={t('fieldFrequency')} value={t(FREQUENCY_OPTIONS.find(o => o.value === supp.frequency)?.key ?? '') || supp.frequency} />
             <InfoRow label={t('fieldTiming')} value={t(TIMING_OPTIONS.find(o => o.value === supp.timing)?.key ?? '') || supp.timing} />
+            <InfoRow label={t('purchaseRowLabel')} value={formatPurchase(supp.purchasePrice, supp.currency, supp.purchaseDate, intlLocale(language))} />
             <InfoRow label={t('fieldNotes')} value={supp.notes} />
           </div>
 

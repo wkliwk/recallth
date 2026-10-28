@@ -10,6 +10,8 @@ import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import { limitFiles, hasMissing, mergeMissing } from '../utils/batchScan'
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
 import PasteLinkFill from '../components/PasteLinkFill'
+import PurchaseFields from '../components/PurchaseFields'
+import { parsePriceInput } from '../utils/purchase'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 const FREQUENCY_OPTIONS = [
@@ -88,6 +90,9 @@ export default function CabinetAdd() {
         description: prefilled.description || '',
         ingredients: prefilled.ingredients || '',
         imageUrl: prefilled.imageUrl || '',
+        purchasePrice: '',
+        purchaseCurrency: 'HKD',
+        purchaseDate: '',
       }
     }
     return {
@@ -101,6 +106,9 @@ export default function CabinetAdd() {
       description: '',
       ingredients: '',
       imageUrl: '',
+      purchasePrice: '',
+      purchaseCurrency: 'HKD',
+      purchaseDate: '',
     }
   })
 
@@ -116,6 +124,7 @@ export default function CabinetAdd() {
     const newErrors = {}
     if (!form.name.trim()) newErrors.name = t('nameRequired')
     if (!form.dosage.trim()) newErrors.dosage = t('dosageRequired')
+    if (!parsePriceInput(form.purchasePrice).ok) newErrors.purchasePrice = t('purchasePriceInvalid')
     return newErrors
   }
 
@@ -127,6 +136,7 @@ export default function CabinetAdd() {
       return
     }
 
+    const price = parsePriceInput(form.purchasePrice)
     setSubmitting(true)
     try {
       const payload = {
@@ -140,6 +150,8 @@ export default function CabinetAdd() {
         ...(form.description?.trim() ? { description: form.description.trim() } : {}),
         ...(form.ingredients?.trim() ? { ingredients: form.ingredients.trim() } : {}),
         ...(form.imageUrl ? { imageUrl: form.imageUrl } : {}),
+        ...(price.value !== null ? { purchasePrice: price.value, currency: form.purchaseCurrency } : {}),
+        ...(form.purchaseDate ? { purchaseDate: form.purchaseDate } : {}),
       }
       await api.cabinet.create(payload)
       try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
@@ -243,7 +255,8 @@ export default function CabinetAdd() {
   function handleAiConfirm() {
     const p = aiResults[aiSelected]
     if (!p) return
-    setForm({
+    setForm((prev) => ({
+      ...prev,
       name: p.name || '',
       type: p.type || 'supplement',
       dosage: p.dosage || '',
@@ -254,7 +267,7 @@ export default function CabinetAdd() {
       description: p.description || '',
       ingredients: p.ingredients || '',
       imageUrl: p.imageUrl || '',
-    })
+    }))
     setAiResults([])
     setAiQuery('')
     setShowAiLookup(false)
@@ -597,6 +610,8 @@ export default function CabinetAdd() {
               placeholder="e.g. Optimum Nutrition"
             />
           </Field>
+
+          <PurchaseFields form={form} onChange={handleChange} error={errors.purchasePrice} />
 
           <Field label={t('fieldNotes')}>
             <textarea
