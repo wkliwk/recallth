@@ -6,6 +6,7 @@ import SuppCard from '../components/SuppCard'
 import FAB from '../components/FAB'
 import BatchScanModal from '../components/BatchScanModal'
 import { limitFiles } from '../utils/batchScan'
+import { toggleId, selectAllIds, pruneSelection, allSelected, summarizeNames } from '../utils/selection'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -66,6 +67,14 @@ export default function Cabinet() {
   const [aiSuggestion, setAiSuggestion] = useState(null)
   const [aiSuggesting, setAiSuggesting] = useState(false)
   const aiDebounceRef = useRef(null)
+
+  // Select mode: tick items, delete several at once (soft delete, same as the detail page), then offer Undo.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState([])
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [toast, setToast] = useState(null) // { ids, count, message?, undoing? } | null
+  const toastTimerRef = useRef(null)
   const batchInputRef = useRef(null)
   const [batch, setBatch] = useState(null) // { files, truncated } | null
 
@@ -186,6 +195,67 @@ export default function Cabinet() {
     return null
   }
 
+  function clearToastTimer() {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = null
+  }
+
+  function showToast(next, ms = 8000) {
+    clearToastTimer()
+    setToast(next)
+    toastTimerRef.current = setTimeout(() => setToast(null), ms)
+  }
+
+  function exitSelect() {
+    setSelecting(false)
+    setSelected([])
+    setConfirmDelete(false)
+  }
+
+  async function handleConfirmDelete(ids) {
+    setDeleting(true)
+    const byId = new Map(supplements.map((x) => [x._id, x]))
+    const deleted = []
+    const failed = []
+    for (const id of ids) {
+      try {
+        await api.cabinet.remove(id)
+        deleted.push(id)
+      } catch {
+        failed.push(byId.get(id)?.name || id)
+      }
+    }
+    try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
+    if (deleted.length > 0) setSupplements((prev) => prev.filter((x) => !deleted.includes(x._id)))
+    setDeleting(false)
+    setConfirmDelete(false)
+    if (failed.length === 0) exitSelect()
+    else setSelected((prev) => prev.filter((id) => !deleted.includes(id))) // failed ones stay selected
+    if (deleted.length > 0 || failed.length > 0) {
+      showToast({ ids: deleted, count: deleted.length, failed }, 8000)
+    }
+  }
+
+  async function handleUndo() {
+    if (!toast || toast.ids.length === 0) return
+    clearToastTimer()
+    setToast((t0) => ({ ...t0, undoing: true }))
+    let failedCount = 0
+    for (const id of toast.ids) {
+      try {
+        await api.cabinet.update(id, { active: true, endDate: null })
+      } catch {
+        failedCount += 1
+      }
+    }
+    try {
+      const res = await api.cabinet.list()
+      setSupplements(res.data || [])
+    } catch { /* list refresh is best-effort */ }
+    try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
+    showToast({ ids: [], count: 0, restored: toast.ids.length - failedCount, undoFailed: failedCount }, 4000)
+  }
+
   const filtered = supplements
     .filter(matchesSearch)
     .filter((s) => stockFilter === 'out' ? s.outOfStock : true)
@@ -198,6 +268,11 @@ export default function Cabinet() {
       if (!a.outOfStock && b.outOfStock) return -1
       return a.name.localeCompare(b.name)
     })
+
+  // Selection is limited to what is visible (a search/filter change drops hidden ids, so Delete never acts on them).
+  const visibleIds = filtered.map((x) => x._id)
+  const selectedVisible = pruneSelection(selected, visibleIds)
+  const nameOf = (id) => supplements.find((x) => x._id === id)?.name || ''
 
   const SORT_OPTIONS = [
     { key: 'name', label: 'A-Z' },
@@ -352,8 +427,41 @@ export default function Cabinet() {
         </div>
       )}
 
+      {/* Select mode controls */}
+      {!loading && supplements.length > 0 && (
+        <div className="px-5 md:px-8 pt-3 flex items-center justify-between gap-3 max-w-[960px] md:mx-auto w-full" data-testid="select-bar">
+          {selecting ? (
+            <>
+              <span className="text-[13px] text-ink2" data-testid="selected-count">{t('cabinetSelectedCount').replace('{n}', selectedVisible.length)}</span>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSelected(allSelected(selectedVisible, visibleIds) ? [] : selectAllIds(visibleIds))}
+                  className="text-[13px] font-medium text-orange cursor-pointer"
+                  data-testid="select-all"
+                >
+                  {t('cabinetSelectAll')}
+                </button>
+                <button type="button" onClick={exitSelect} className="text-[13px] text-ink3 hover:text-ink1 cursor-pointer" data-testid="select-cancel">
+                  {t('cabinetSelectCancel')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSelecting(true)}
+              className="text-[13px] font-medium text-ink2 hover:text-orange cursor-pointer"
+              data-testid="select-start"
+            >
+              {t('cabinetSelect')}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Batch scan */}
-      <div className="px-5 md:px-8 pt-3 flex justify-end">
+      <div className={`px-5 md:px-8 pt-3 flex justify-end ${selecting ? 'hidden' : ''}`}>
         <input
           ref={batchInputRef}
           type="file"
@@ -566,9 +674,22 @@ export default function Cabinet() {
             return (
               <div
                 key={supp._id}
-                className="cursor-pointer"
-                onClick={() => navigate(`/cabinet/${supp._id}`)}
+                className={`cursor-pointer relative ${selecting && selectedVisible.includes(supp._id) ? 'ring-2 ring-orange rounded-card' : ''}`}
+                data-testid="cabinet-card"
+                data-selected={selecting && selectedVisible.includes(supp._id) ? 'true' : 'false'}
+                onClick={() => (selecting ? setSelected((prev) => toggleId(prev, supp._id)) : navigate(`/cabinet/${supp._id}`))}
               >
+                {selecting && (
+                  <span
+                    className="absolute top-2 left-2 z-10 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center bg-white"
+                    style={{ borderColor: selectedVisible.includes(supp._id) ? '#E07B4A' : '#C9C2B8' }}
+                    aria-hidden="true"
+                  >
+                    {selectedVisible.includes(supp._id) && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E07B4A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    )}
+                  </span>
+                )}
                 <SuppCard
                   letter={letter}
                   name={supp.name}
@@ -593,7 +714,88 @@ export default function Cabinet() {
       </div>
 
       {/* FAB — navigates to add */}
-      <FAB onClick={() => navigate('/cabinet/add')} />
+      {!selecting && <FAB onClick={() => navigate('/cabinet/add')} />}
+
+      {selecting && (
+        <div className="fixed left-0 right-0 bottom-[64px] md:bottom-4 z-30 pl-5 pr-[84px] md:px-5 flex justify-center pointer-events-none">
+          <button
+            type="button"
+            disabled={selectedVisible.length === 0}
+            onClick={() => setConfirmDelete(true)}
+            data-testid="delete-selected"
+            className="pointer-events-auto w-full md:w-auto md:px-10 rounded-full bg-[#C05A28] text-white text-[15px] font-semibold py-[13px] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {t('cabinetDeleteN').replace('{n}', selectedVisible.length)}
+          </button>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center" data-testid="delete-confirm">
+          <div className="bg-white w-full md:max-w-[440px] rounded-t-[20px] md:rounded-[20px] p-5 flex flex-col gap-3">
+            <h3 className="font-display text-[18px] text-ink1">{t('cabinetDeleteConfirmTitle').replace('{n}', selectedVisible.length)}</h3>
+            <p className="text-[12px] text-ink3">{t('cabinetDeleteConfirmBody')}</p>
+            {(() => {
+              const { shown, more } = summarizeNames(selectedVisible.map(nameOf), 5)
+              return (
+                <ul className="text-[13px] text-ink1 list-disc pl-5" data-testid="delete-confirm-names">
+                  {shown.map((n, i) => <li key={`${n}-${i}`}>{n}</li>)}
+                  {more > 0 && <li className="text-ink3 list-none -ml-5">{t('cabinetDeleteAndMore').replace('{n}', more)}</li>}
+                </ul>
+              )
+            })()}
+            <div className="flex gap-3 mt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                data-testid="delete-cancel"
+                className="flex-1 rounded-full border-[1.5px] border-border text-ink2 text-[14px] font-medium py-[11px] cursor-pointer"
+              >
+                {t('cabinetSelectCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDelete(selectedVisible)}
+                disabled={deleting}
+                data-testid="delete-confirm-button"
+                className="flex-1 rounded-full bg-[#C05A28] text-white text-[14px] font-semibold py-[11px] cursor-pointer disabled:opacity-60"
+              >
+                {deleting ? t('cabinetDeleting') : t('cabinetDeleteN').replace('{n}', selectedVisible.length)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div
+          className="fixed left-0 right-0 bottom-[84px] md:bottom-6 z-[60] px-5 flex justify-center pointer-events-none"
+          data-testid="toast"
+        >
+          <div className="pointer-events-auto bg-[#2B2520] text-white text-[13px] rounded-full pl-5 pr-3 py-[10px] flex items-center gap-3 shadow-lg max-w-[560px]">
+            <span>
+              {toast.restored !== undefined
+                ? `${t('cabinetRestored').replace('{n}', toast.restored)}${toast.undoFailed ? ` · ${t('cabinetUndoFailed')}` : ''}`
+                : [
+                    toast.count > 0 ? t('cabinetDeleted').replace('{n}', toast.count) : '',
+                    toast.failed?.length ? t('cabinetDeleteFailed').replace('{names}', toast.failed.join(', ')) : '',
+                  ].filter(Boolean).join(' · ')}
+            </span>
+            {toast.restored === undefined && toast.count > 0 && (
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={toast.undoing}
+                data-testid="toast-undo"
+                className="text-[#F5B58F] font-semibold px-2 py-1 cursor-pointer disabled:opacity-60"
+              >
+                {toast.undoing ? '…' : t('cabinetUndo')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {batch && (
         <BatchScanModal
