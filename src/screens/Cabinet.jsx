@@ -4,6 +4,8 @@ import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import SuppCard from '../components/SuppCard'
 import FAB from '../components/FAB'
+import BatchScanModal from '../components/BatchScanModal'
+import { limitFiles } from '../utils/batchScan'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -64,6 +66,22 @@ export default function Cabinet() {
   const [aiSuggestion, setAiSuggestion] = useState(null)
   const [aiSuggesting, setAiSuggesting] = useState(false)
   const aiDebounceRef = useRef(null)
+  const batchInputRef = useRef(null)
+  const [batch, setBatch] = useState(null) // { files, truncated } | null
+
+  function handleBatchFiles(e) {
+    const picked = limitFiles(e.target.files)
+    e.target.value = ''
+    if (picked.files.length > 0) setBatch(picked)
+  }
+
+  async function handleBatchSaved() {
+    try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
+    try {
+      const res = await api.cabinet.list()
+      setSupplements(res.data || [])
+    } catch { /* list refresh is best-effort */ }
+  }
 
   useEffect(() => {
     // Step 1: load the list immediately
@@ -334,6 +352,30 @@ export default function Cabinet() {
         </div>
       )}
 
+      {/* Batch scan */}
+      <div className="px-5 md:px-8 pt-3 flex justify-end">
+        <input
+          ref={batchInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleBatchFiles}
+          className="hidden"
+          data-testid="batch-scan-input"
+        />
+        <button
+          type="button"
+          onClick={() => batchInputRef.current?.click()}
+          className="flex items-center gap-2 text-[13px] font-medium text-orange hover:text-orange-dk cursor-pointer transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          {t('batchScanButton')}
+        </button>
+      </div>
+
       {/* Mobile search input */}
       <div className="md:hidden px-5 py-4">
         <div className="relative">
@@ -552,6 +594,16 @@ export default function Cabinet() {
 
       {/* FAB — navigates to add */}
       <FAB onClick={() => navigate('/cabinet/add')} />
+
+      {batch && (
+        <BatchScanModal
+          files={batch.files}
+          truncated={batch.truncated}
+          existingNames={supplements.map((x) => x.name)}
+          onClose={() => setBatch(null)}
+          onSaved={handleBatchSaved}
+        />
+      )}
     </div>
   )
 }
