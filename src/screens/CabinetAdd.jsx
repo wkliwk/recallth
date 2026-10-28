@@ -402,7 +402,6 @@ export default function CabinetAdd() {
             ref={scanInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handleScanFile}
             className="hidden"
             data-testid="scan-label-input"
