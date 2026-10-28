@@ -50,3 +50,63 @@ export async function runPool(items, worker, limit = SCAN_CONCURRENCY) {
   })
   await Promise.all(runners)
 }
+
+// Choose the ai-lookup result that is actually the scanned product.
+// Returns null when nothing matches, so we never guess a dosage for a different product.
+export function pickLookupMatch(results, scannedName) {
+  const target = normalizeName(scannedName)
+  if (!target) return null
+  const list = Array.isArray(results) ? results : results ? [results] : []
+  return (
+    list.find((r) => {
+      const n = normalizeName(r?.name)
+      return n && (n.includes(target) || target.includes(n))
+    }) || null
+  )
+}
+
+export function lookupQuery(form) {
+  return [form.brand, form.name].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
+}
+
+// Returns run(fn) that executes fn with at most `limit` running concurrently.
+export function createLimiter(limit) {
+  let active = 0
+  const queue = []
+  const next = () => {
+    if (active >= limit || queue.length === 0) return
+    active++
+    const { fn, resolve, reject } = queue.shift()
+    fn().then(resolve, reject).finally(() => {
+      active--
+      next()
+    })
+  }
+  return (fn) =>
+    new Promise((resolve, reject) => {
+      queue.push({ fn, resolve, reject })
+      next()
+    })
+}
+
+export const FILLABLE_FIELDS = ['dosage', 'brand', 'ingredients', 'description']
+// Fields a user sees and expects to be complete; the button shows when one of these is empty.
+export const VISIBLE_FIELDS = ['dosage', 'brand']
+
+export function hasMissing(form, fields = VISIBLE_FIELDS) {
+  return fields.some((f) => !String(form?.[f] || '').trim())
+}
+
+// Fill ONLY empty fields from `found`. Never overwrites an existing value.
+export function mergeMissing(form, found, fields = FILLABLE_FIELDS) {
+  const next = { ...form }
+  const filled = []
+  for (const f of fields) {
+    const incoming = String(found?.[f] || '').trim()
+    if (!String(next[f] || '').trim() && incoming) {
+      next[f] = incoming
+      filled.push(f)
+    }
+  }
+  return { form: next, filled }
+}

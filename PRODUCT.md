@@ -212,6 +212,7 @@ Navigate to `/cabinet` → see all supplements with name, dose, timing → tap F
 - [ ] Photo scan (Cabinet Add): "Scan label with photo" accepts camera or library photos; 1 photo prefills name/type/dosage/brand/ingredients for review, 2+ photos open the batch review modal and land on /cabinet after saving
 - [ ] Batch scan (Cabinet list): "Batch scan photos" accepts up to 10 photos (extras dropped with a message), scans max 3 at a time, shows per-photo status with single-photo retry
 - [ ] Batch review: editable name/dosage/brand/type per row; rows missing name or dosage are highlighted and block "Add to cabinet"; rows already in the cabinet (same name) are marked and unchecked by default
+- [ ] Fill missing fields online: after a scan (batch row, "fill all", or single scan) a button searches the web (ai-lookup) and fills ONLY empty fields (dosage, brand, ingredients, description); label/user values are never overwritten; only a same-name product is used, otherwise "No matching product found online"; filled fields are highlighted with a "Suggested from web — please verify" note; max 2 lookups at once; saving is blocked while a lookup runs
 - [ ] Batch save creates checked rows with frequency Daily / timing Morning; per-row failures are shown and can be retried; list refreshes afterwards
 
 ---
