@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
 import Wave from '../components/Wave'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
+import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
 const FREQUENCY_OPTIONS = [
@@ -57,6 +58,9 @@ export default function CabinetAdd() {
   const [aiLooking, setAiLooking] = useState(false)
   const [aiResults, setAiResults] = useState([])
   const [aiSelected, setAiSelected] = useState(0)
+  const [scanning, setScanning] = useState(false)
+  const [scanned, setScanned] = useState(false)
+  const scanInputRef = useRef(null)
 
   const prefilled = location.state?.aiResult
   const [aiFilled, setAiFilled] = useState(!!prefilled)
@@ -160,6 +164,30 @@ export default function CabinetAdd() {
       setErrors({ submit: err.message || 'AI lookup failed' })
     } finally {
       setAiLooking(false)
+    }
+  }
+
+  async function handleScanFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || scanning) return
+    setScanning(true)
+    setErrors({})
+    try {
+      const { imageBase64, mimeType } = await imageFileToBase64(file)
+      const res = await api.cabinet.scan(imageBase64, mimeType)
+      if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
+      setForm((prev) => ({ ...prev, ...scanResultToForm(res.data) }))
+      setScanned(true)
+      setAiFilled(false)
+      if (res.aiUsage) showUsage(res.aiUsage, 'label-scan', {
+        input: file.name,
+        output: res.data.name ?? '',
+      })
+    } catch (err) {
+      setErrors({ submit: err.message || t('scanLabelError') })
+    } finally {
+      setScanning(false)
     }
   }
 
@@ -370,7 +398,38 @@ export default function CabinetAdd() {
               {t('aiLookupButton')}
             </button>
           )}
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleScanFile}
+            className="hidden"
+            data-testid="scan-label-input"
+          />
+          <button
+            type="button"
+            onClick={() => scanInputRef.current?.click()}
+            disabled={scanning}
+            className="w-full flex items-center justify-center gap-2 text-[13px] font-medium text-orange cursor-pointer hover:text-orange-dk transition-colors py-1 disabled:opacity-60"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            {scanning ? t('scanLabelScanning') : t('scanLabelButton')}
+          </button>
         </div>
+
+        {/* Scan-filled banner */}
+        {scanned && (
+          <div
+            className="rounded-card px-4 py-3 flex items-center gap-2"
+            style={{ background: '#DAE8F8', border: '1px solid #B0C8E8' }}
+          >
+            <span className="text-[12px] text-[#1A3A6A]">{t('scanLabelDone')}</span>
+          </div>
+        )}
 
         {/* AI-filled banner */}
         {aiFilled && (
