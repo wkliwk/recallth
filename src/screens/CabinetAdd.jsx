@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
-import { limitFiles, hasMissing, mergeFound, chooseImage } from '../utils/batchScan'
+import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload } from '../utils/batchScan'
 import DoseInput from '../components/DoseInput'
 import { isStructured, applyDose } from '../utils/dose'
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
@@ -65,6 +65,7 @@ export default function CabinetAdd() {
   const { t } = useLanguage()
   const { showUsage } = useAiUsage()
   const [submitting, setSubmitting] = useState(false)
+  const [dupPrompt, setDupPrompt] = useState(null) // { item, kind } when the form matches a saved item
   const [errors, setErrors] = useState({})
   const [showAiLookup, setShowAiLookup] = useState(false)
   const [aiQuery, setAiQuery] = useState('')
@@ -137,6 +138,52 @@ export default function CabinetAdd() {
     return newErrors
   }
 
+  function buildPayload() {
+    const price = parsePriceInput(form.purchasePrice)
+    return {
+      name: form.name.trim(),
+      type: form.type,
+      dosage: form.dosage.trim(),
+      frequency: form.frequency,
+      timing: form.timing,
+      ...(form.brand.trim() ? { brand: form.brand.trim() } : {}),
+      ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
+      ...(form.description?.trim() ? { description: form.description.trim() } : {}),
+      ...(form.ingredients?.trim() ? { ingredients: form.ingredients.trim() } : {}),
+      ...(chooseImage(form, photoThumb) ? { imageUrl: chooseImage(form, photoThumb) } : {}),
+      ...(price.value !== null ? { purchasePrice: price.value, currency: form.purchaseCurrency } : {}),
+      ...(form.purchaseDate ? { purchaseDate: form.purchaseDate } : {}),
+    }
+  }
+
+  // Save as a new item, or overwrite `existing`. Overwrite never renames the item and keeps its saved
+  // schedule (frequency/timing, which the form only holds as defaults); empty values never blank saved ones.
+  async function persist(existing) {
+    setSubmitting(true)
+    setErrors({})
+    try {
+      if (existing) {
+        const payload = buildPayload()
+        const narrow = {
+          ...buildUpdatePayload(form, photoThumb, existing),
+          ...(payload.description ? { description: payload.description } : {}),
+          ...(payload.notes ? { notes: payload.notes } : {}),
+          ...(payload.purchasePrice !== undefined ? { purchasePrice: payload.purchasePrice, currency: payload.currency } : {}),
+          ...(payload.purchaseDate ? { purchaseDate: payload.purchaseDate } : {}),
+        }
+        await api.cabinet.update(existing._id, narrow)
+      } else {
+        await api.cabinet.create(buildPayload())
+      }
+      try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
+      navigate('/cabinet')
+    } catch (err) {
+      setErrors({ submit: err.message || t('failedToAdd') })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     const validationErrors = validate()
@@ -145,31 +192,19 @@ export default function CabinetAdd() {
       return
     }
 
-    const price = parsePriceInput(form.purchasePrice)
+    // Duplicate check against the saved list (best effort: a failed lookup never blocks saving).
     setSubmitting(true)
+    let match = null
     try {
-      const payload = {
-        name: form.name.trim(),
-        type: form.type,
-        dosage: form.dosage.trim(),
-        frequency: form.frequency,
-        timing: form.timing,
-        ...(form.brand.trim() ? { brand: form.brand.trim() } : {}),
-        ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
-        ...(form.description?.trim() ? { description: form.description.trim() } : {}),
-        ...(form.ingredients?.trim() ? { ingredients: form.ingredients.trim() } : {}),
-        ...(chooseImage(form, photoThumb) ? { imageUrl: chooseImage(form, photoThumb) } : {}),
-        ...(price.value !== null ? { purchasePrice: price.value, currency: form.purchaseCurrency } : {}),
-        ...(form.purchaseDate ? { purchaseDate: form.purchaseDate } : {}),
-      }
-      await api.cabinet.create(payload)
-      try { sessionStorage.removeItem('recallth_evidence_scores') } catch { /* ignore */ }
-      navigate('/cabinet')
-    } catch (err) {
-      setErrors({ submit: err.message || t('failedToAdd') })
-    } finally {
-      setSubmitting(false)
+      const res = await api.cabinet.list()
+      match = findMatch(form, res.data || [])
+    } catch { /* ignore */ }
+    setSubmitting(false)
+    if (match) {
+      setDupPrompt(match)
+      return
     }
+    await persist(null)
   }
 
   const isUrl = (s) => /^https?:\/\/.+/.test(s.trim())
@@ -696,6 +731,50 @@ export default function CabinetAdd() {
           {submitting ? t('adding') : t('addButton')}
         </button>
       </form>
+
+      {dupPrompt && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center" data-testid="add-dup-prompt">
+          <div className="bg-white w-full md:max-w-[480px] rounded-t-[20px] md:rounded-[20px] p-5 flex flex-col gap-3">
+            <h3 className="font-display text-[18px] text-ink1">{t('dupAddTitle')}</h3>
+            <p className="text-[12px] text-ink3">{t('dupAddBody')}</p>
+            <div className="rounded-card border border-border p-3 flex flex-col gap-1">
+              <p className="text-[14px] font-medium text-ink1">{dupPrompt.item.name}</p>
+              {dupPrompt.kind === 'similar' && (
+                <p className="text-[11px] text-ink3">{t('batchScanDupSimilarNote').replace('{name}', form.name)}</p>
+              )}
+              <p className="text-[12px] text-ink3">
+                {t('batchScanDupCurrent')}: <span className="text-ink1">{dupPrompt.item.dosage || '—'}</span>
+                {' → '}
+                {t('batchScanDupNew')}: <span className="text-ink1">{form.dosage || '—'}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setDupPrompt(null); persist(null) }}
+              data-testid="add-dup-keep-both"
+              className="w-full rounded-full bg-orange text-white text-[14px] font-semibold py-[11px] cursor-pointer hover:opacity-90"
+            >
+              {t('batchScanDupKeepBoth')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { const item = dupPrompt.item; setDupPrompt(null); persist(item) }}
+              data-testid="add-dup-overwrite"
+              className="w-full rounded-full border-[1.5px] border-border text-ink1 text-[14px] font-medium py-[11px] cursor-pointer"
+            >
+              {t('batchScanDupOverwrite')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDupPrompt(null)}
+              data-testid="add-dup-cancel"
+              className="text-[13px] text-ink3 hover:text-ink1 cursor-pointer py-1"
+            >
+              {t('dupAddCancel')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {batch && (
         <BatchScanModal
