@@ -1,4 +1,4 @@
-import { UNIT_FORMS, applyDose, isStructured, parseServingUnits } from './dose.js'
+import { UNIT_FORMS, applyDose, composeDosage, isStructured, parseServingUnits } from './dose.js'
 
 export const MAX_BATCH = 10
 export const SCAN_CONCURRENCY = 3
@@ -9,8 +9,15 @@ export function limitFiles(files, max = MAX_BATCH) {
   return { files: list.slice(0, max), truncated: list.length > max }
 }
 
+// Letters/digits plus CJK, kana and hangul (so Japanese/Korean/Chinese names are kept, not erased);
+// accents are stripped (é → e) so French/English forms compare equal.
 export function normalizeName(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9一-鿿]+/g, '')
+  return String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFC') // recompose hangul / kana that NFD split apart
+    .toLowerCase()
+    .replace(/[^a-z0-9\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]+/g, '')
 }
 
 export function isDuplicate(name, existingNames) {
@@ -62,8 +69,8 @@ export async function runPool(items, worker, limit = SCAN_CONCURRENCY) {
 
 // "500 mg Meriva® (providing …)" -> "500mg" so label strength and web strength can be compared.
 export function strengthKey(s) {
-  const m = String(s || '').match(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|g|iu|ui)\b/i)
-  return m ? `${m[1]}${m[2].toLowerCase().replace('µg', 'mcg').replace('ui', 'iu')}` : ''
+  const m = String(s || '').match(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|μg|g|iu|ui|ml|%)(?![a-z])/i)
+  return m ? `${m[1]}${m[2].toLowerCase().replace(/[µμ]g/, 'mcg').replace('ui', 'iu')}` : ''
 }
 
 // Choose the ai-lookup result that is actually the scanned product.
@@ -76,7 +83,7 @@ export function pickLookupMatch(results, scannedName, scanned = {}) {
   if (target) {
     const byName = list.find((r) => {
       const n = normalizeName(r?.name)
-      return n && (n.includes(target) || target.includes(n))
+      return n && Math.min(n.length, target.length) >= 2 && (n.includes(target) || target.includes(n)) // 1-char names ("S") match everything
     })
     if (byName) return byName
   }
@@ -96,7 +103,8 @@ export function pickLookupMatch(results, scannedName, scanned = {}) {
 // Search text for the web lookup: brand + name + strength (+ pack size when the label showed it),
 // which pins the exact product/pack (directions can differ between products).
 export function lookupQuery(form) {
-  const pack = Number(form.bottleCount) > 0 ? `${form.bottleCount} ${form.unitForm || ''}s`.trim() : ''
+  // Pack size only when we know the unit ("120 capsules"); never a dangling "10 s".
+  const pack = Number(form.bottleCount) > 0 && form.unitForm ? `${form.bottleCount} ${form.unitForm}s` : ''
   return [form.brand, form.name, form.strength, pack].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
 }
 
@@ -180,22 +188,24 @@ export function queryFromUrl(url) {
 // a value from the label or the user. Returns { form, filled, directions } (directions only when the count
 // came from the web).
 export function mergeFound(form, found) {
-  if (!found) return { form, filled: [], directions: '' }
+  if (!found) return { form, filled: [], directions: '', source: '' }
   if (!isStructured(form)) {
     const { form: next, filled } = mergeMissing(form, found)
-    return { form: next, filled, directions: '' }
+    return { form: next, filled, directions: '', source: '' }
   }
   const { form: base, filled } = mergeMissing(form, found, ['brand', 'ingredients', 'description', 'imageUrl'])
   const next = { ...base }
   let directions = ''
+  let source = ''
   const units = parseServingUnits(found.servingUnits)
   if (!String(next.servingUnits || '').trim() && units) {
     next.servingUnits = units
     filled.push('servingUnits')
     directions = String(found.directions || '').trim()
+    source = String(found.sourceUrl || '').trim()
     if (!String(next.unitForm || '').trim() && UNIT_FORMS.includes(found.unitForm)) next.unitForm = found.unitForm
   }
-  return { form: applyDose(next), filled, directions }
+  return { form: applyDose(next), filled, directions, source }
 }
 
 // The existing cabinet item with the same (normalised) name, or null.
@@ -291,4 +301,25 @@ export function findMatch(form, items) {
     if (kind === 'similar' && !similar) similar = { item, kind }
   }
   return similar
+}
+
+// Map a /cabinet/identify result (photo-based lookup) to the same "found" shape the text lookup produces.
+// Returns null unless the backend marked it usable (exact/likely match WITH a source page).
+export function foundFromIdentify(d, form = {}) {
+  if (!d || !d.usable) return null
+  const units = parseServingUnits(d.servingUnits)
+  const unit = UNIT_FORMS.includes(d.unitForm) ? d.unitForm : ''
+  const strength = String(form.strength || '').trim() || (String(d.strength || '').length <= 24 ? String(d.strength || '').trim() : '')
+  return {
+    dosage: units ? composeDosage({ servingUnits: units, unitForm: unit || form.unitForm, strength }) : '',
+    servingUnits: units || null,
+    unitForm: unit || null,
+    brand: String(d.brand || '').trim(),
+    ingredients: '',
+    description: '',
+    imageUrl: '',
+    directions: String(d.directions || '').trim(),
+    sourceUrl: /^https?:\/\//i.test(String(d.sourceUrl || '')) ? String(d.sourceUrl).trim() : '',
+    via: 'photo',
+  }
 }

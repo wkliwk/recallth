@@ -11,7 +11,7 @@ const webInput = baseInput.replace('bg-page', 'bg-[#EEF4FC]').replace('border-bo
  * The count is never assumed: it stays empty until the label states it, the web search finds it, or the user enters it.
  * `form` carries strength / unitForm / servingUnits; `onChange(patch)` receives partial updates.
  */
-export default function DoseInput({ form, onChange, invalid = false, disabled = false, webFilled = false, directions = '' }) {
+export default function DoseInput({ form, onChange, invalid = false, disabled = false, webFilled = false, directions = '', source = '' }) {
   const { t } = useLanguage()
   const units = String(form.servingUnits ?? '')
   const n = Number(units)
@@ -72,7 +72,15 @@ export default function DoseInput({ form, onChange, invalid = false, disabled = 
         ? <p className="text-[12px] text-ink2" data-testid="dose-composed">→ {composed}</p>
         : <p className={`text-[11px] ${invalid ? 'text-[#C05A28]' : 'text-ink3'}`} data-testid="dose-need">{t('doseNeedCount')}</p>}
       {webFilled && directions && (
-        <p className="text-[11px] text-[#1A3A6A]" data-testid="dose-directions">{t('doseFromDirections')}: “{directions}”</p>
+        <p className="text-[11px] text-[#1A3A6A]" data-testid="dose-directions">
+          {t('doseFromDirections')}: “{directions}”
+          {source && (
+            <>
+              {' '}
+              <a href={source} target="_blank" rel="noopener noreferrer" className="underline" data-testid="dose-source">{t('doseSource')}</a>
+            </>
+          )}
+        </p>
       )}
       <button
         type="button"
