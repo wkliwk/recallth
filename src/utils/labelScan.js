@@ -13,6 +13,30 @@ export function heicMimeType(file) {
   return ''
 }
 
+// Turn a thumbnail data URL 90 degrees clockwise (for photos taken with the package sideways). Resolves to the
+// rotated JPEG data URL, or the input unchanged if it can't be decoded.
+export function rotateThumbnail(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas')
+        c.width = img.height
+        c.height = img.width
+        const ctx = c.getContext('2d')
+        ctx.translate(c.width, 0)
+        ctx.rotate(Math.PI / 2)
+        ctx.drawImage(img, 0, 0)
+        resolve(c.toDataURL('image/jpeg', 0.7))
+      } catch {
+        resolve(dataUrl)
+      }
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
 // Raw files are sent base64 inside JSON (backend limit 10 MB; base64 adds ~33%).
 export const MAX_RAW_BYTES = 7 * 1024 * 1024
 
