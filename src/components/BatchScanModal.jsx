@@ -14,9 +14,8 @@ import {
   runPool,
   createLimiter,
   hasMissing,
-  mergeFound,
-} from '../utils/batchScan'
-import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
+  mergeFound, applyWebImage } from '../utils/batchScan'
+import { lookupMissingDetails, lookupFromUrl, findWebImage } from '../utils/dosageLookup'
 import PasteLinkFill from './PasteLinkFill'
 import DoseInput from './DoseInput'
 import FullInfoFields from './FullInfoFields'
@@ -60,6 +59,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(null) // { choices: { [rowId]: 'new' | 'overwrite' } } | null
   const startedRef = useRef(false)
+  const imageLimiter = useRef(createLimiter(2))
   const lookupLimiter = useRef(createLimiter(2))
 
   function patchRow(id, patch) {
@@ -104,6 +104,17 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
           return { ...r, form: merged, webFields, webDirections: directions || r.webDirections, webSource: directions ? source || '' : r.webSource, lookupStatus: found ? (filled.length > 0 ? 'idle' : 'nothing') : 'none' }
         })
       )
+      // Background: swap the user's thumbnail for a clear front-facing web picture when one is found.
+      if (found?.references?.length && photo) {
+        imageLimiter.current(() => findWebImage(photo, found, form)).then((url) => {
+          if (!url) return
+          setRows((prev) => prev.map((r) => {
+            if (r.id !== rowId) return r
+            const next = applyWebImage(r.form, url, r.photoPinned)
+            return next === r.form ? r : { ...r, form: next, webFields: { ...r.webFields, imageUrl: true } }
+          }))
+        })
+      }
     } catch {
       patchRow(rowId, { lookupStatus: 'failed' })
     }
@@ -309,7 +320,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                   {row.scanStatus === 'done' && row.form.imageUrl && row.photoThumb && row.saveStatus !== 'saved' && (
                     <button
                       type="button"
-                      onClick={() => updateForm(row.id, 'imageUrl', '')}
+                      onClick={() => { updateForm(row.id, 'imageUrl', ''); patchRow(row.id, { photoPinned: true }) }}
                       className="text-orange hover:underline cursor-pointer whitespace-nowrap"
                       data-testid="batch-use-my-photo"
                     >

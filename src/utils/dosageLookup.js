@@ -67,3 +67,17 @@ function pickFields(p) {
     description: String(p.description || '').trim(),
   }
 }
+
+// A clear front-facing product picture from the identified product's reference pages (official first), chosen by a
+// vision model against the user's photo. Slow (up to ~14 s), so callers run it in the background. '' when none.
+export async function findWebImage(photo, found, form = {}) {
+  const urls = (found?.references || []).map((r) => r.url).filter(Boolean).slice(0, 4)
+  if (!photo?.imageBase64 || urls.length === 0) return ''
+  try {
+    const res = await api.cabinet.productImage(photo.imageBase64, photo.mimeType, urls, form.name, form.brand || found?.brand)
+    const u = res.success ? String(res.data?.imageUrl || '') : ''
+    return /^https?:\/\//i.test(u) ? u : ''
+  } catch {
+    return ''
+  }
+}

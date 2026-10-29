@@ -359,12 +359,8 @@ test('findMatch ranks exact > similar > maybe and respects conflicts', () => {
   assert.equal(findMatch({ name: 'Zinc', brand: '', unitForm: 'gummy' }, items), null) // gummy vs tablet
 })
 
-test('foundFromIdentify carries a product image only when it is an http(s) URL', () => {
-  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'https://api.test/img/image-proxy?url=x' }, {}).imageUrl, 'https://api.test/img/image-proxy?url=x')
-  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'javascript:x' }, {}).imageUrl, '')
-  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1 }, {}).imageUrl, '')
-  const r = mergeFound({ name: 'X', brand: 'B', dosage: '', ingredients: '', imageUrl: '' }, foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'https://api.test/i' }, {}))
-  assert.equal(r.form.imageUrl, 'https://api.test/i')
+test('foundFromIdentify no longer carries an image (the web picture comes from /cabinet/product-image)', () => {
+  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'https://api.test/i' }, {}).imageUrl, undefined)
 })
 
 test('foundFromIdentify carries the full ingredients and description', () => {
@@ -412,3 +408,36 @@ test('payloads include description (and ingredients) only when non-empty', () =>
   assert.equal('description' in buildUpdatePayload({ ...form, description: ' ' }, '', {}), false)
 })
 
+
+import { cleanReferences, applyWebImage, buildCreatePayload as bcp2, buildUpdatePayload as bup2, foundFromIdentify as ffi2, mergeFound as mf2 } from './batchScan.js'
+
+test('cleanReferences keeps http(s), dedupes, defaults title/kind, caps at 5', () => {
+  const out = cleanReferences([{ url: 'https://www.santen.com/a', title: 'Santen', kind: 'official' }, { url: 'https://www.santen.com/a' }, { url: 'javascript:alert(1)' }, { url: 'https://x.com/p', kind: 'weird' }, null])
+  assert.deepEqual(out, [{ url: 'https://www.santen.com/a', title: 'Santen', kind: 'official' }, { url: 'https://x.com/p', title: 'x.com', kind: 'other' }])
+  assert.equal(cleanReferences(Array.from({ length: 9 }, (_, i) => ({ url: `https://e.com/${i}` }))).length, 5)
+  assert.deepEqual(cleanReferences(undefined), [])
+})
+
+test('applyWebImage fills only an empty image and never after the user chose their photo', () => {
+  assert.equal(applyWebImage({ imageUrl: '' }, 'https://cdn/x.jpg').imageUrl, 'https://cdn/x.jpg')
+  assert.equal(applyWebImage({ imageUrl: 'https://old/y.jpg' }, 'https://cdn/x.jpg').imageUrl, 'https://old/y.jpg')
+  assert.equal(applyWebImage({ imageUrl: '' }, 'https://cdn/x.jpg', true).imageUrl, '')
+  const f = { imageUrl: '' }
+  assert.equal(applyWebImage(f, 'data:image/png;base64,AA'), f)
+  assert.equal(applyWebImage(f, ''), f)
+})
+
+test('identify references flow into the form (fill-only-empty) and into both payloads', () => {
+  const refs = [{ url: 'https://www.santen.com/p', title: 'Santen', kind: 'official' }]
+  const found = ffi2({ usable: true, servingUnits: 1, unitForm: 'tablet', references: refs, sourceUrl: 'https://www.santen.com/p' }, {})
+  assert.deepEqual(found.references, refs)
+  const form = { name: 'X', dosage: '', brand: '', ingredients: '', description: '', imageUrl: '' }
+  const { form: merged, filled } = mf2(form, found)
+  assert.deepEqual(merged.references, refs)
+  assert.ok(filled.includes('references'))
+  const again = mf2({ ...merged, references: [{ url: 'https://mine.example/p', title: 'm', kind: 'other' }] }, found)
+  assert.equal(again.form.references[0].url, 'https://mine.example/p')
+  assert.deepEqual(bcp2({ ...merged, dosage: '1', name: 'X' }).references, refs)
+  assert.equal('references' in bcp2({ name: 'X', dosage: '1' }), false)
+  assert.deepEqual(bup2({ ...merged, dosage: '1' }).references, refs)
+})
