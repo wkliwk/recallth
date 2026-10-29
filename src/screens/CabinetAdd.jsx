@@ -746,7 +746,7 @@ export default function CabinetAdd() {
             <p className="text-[12px] text-ink3">{t('dupAddBody')}</p>
             <div className="rounded-card border border-border p-3 flex flex-col gap-1">
               <p className="text-[14px] font-medium text-ink1">{dupPrompt.item.name}</p>
-              {dupPrompt.kind === 'similar' && (
+              {dupPrompt.kind !== 'exact' && (
                 <p className="text-[11px] text-ink3">{t('batchScanDupSimilarNote').replace('{name}', form.name)}</p>
               )}
               <p className="text-[12px] text-ink3">

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload, nameTokens, similarity, findMatch, foundFromIdentify } from './batchScan.js'
+import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload, nameTokens, similarity, findMatch, foundFromIdentify, unitFormFromText } from './batchScan.js'
 
 test('limitFiles keeps first 10 and flags truncation', () => {
   const r = limitFiles(Array.from({ length: 12 }, (_, i) => i))
@@ -235,7 +235,7 @@ test('similarity: exact, similar, and not-a-duplicate cases from the real cabine
   assert.equal(similarity({ name: 'Omega-3 Krill Oil', brand: 'Kirkland Signature', strength: '' }, { name: 'Omega-3 Fish Oil', brand: 'Kirkland Signature', strength: '' }), null) // 3/4 tokens < 80%
   assert.equal(similarity({ name: 'Magnesium Citrate', brand: 'Webber' }, { name: 'Magnesium Glycinate', brand: 'Webber' }), null)
   assert.equal(similarity({ name: 'Vitamin C', brand: 'Jamieson' }, { name: 'Vitamin D3', brand: 'Jamieson' }), null)
-  assert.equal(similarity({ name: 'Zinc', brand: 'NOW' }, { name: 'Zinc', brand: 'Thorne' }), 'exact') // same name stays exact regardless of brand (existing behaviour)
+  assert.equal(similarity({ name: 'Zinc', brand: 'NOW' }, { name: 'Zinc', brand: 'Thorne' }), null) // same name, different brands = different products
   assert.equal(similarity({ name: 'Zinc Picolinate', brand: 'NOW' }, { name: 'Zinc Picolinate 50 mg', brand: 'Thorne' }), null) // different brand
   assert.equal(similarity({ name: 'Zinc Picolinate', brand: '' }, { name: 'Zinc Picolinate 50 mg', brand: '' }), null) // no brand to anchor
   assert.equal(similarity({ name: '', brand: 'x' }, { name: 'y', brand: 'x' }), null)
@@ -320,4 +320,41 @@ test('mergeFound fills a photo-found count into a structured form and returns th
   assert.equal(r.form.dosage, '2 capsules (500 mg each)')
   assert.equal(r.directions, '2 capsules daily')
   assert.equal(r.source, 'https://example.com/c')
+})
+
+test('similarity: equal names with a missing brand are only "maybe"', () => {
+  assert.equal(similarity({ name: '亜鉛 & マカ', brand: 'UHA' }, { name: '亜鉛 & マカ', brand: '' }), 'maybe')
+  assert.equal(similarity({ name: 'Zinc', brand: '' }, { name: 'Zinc', brand: '' }), 'maybe')
+  assert.equal(similarity({ name: 'Zinc', brand: 'NOW' }, { name: 'Zinc', brand: 'now foods' }), 'exact') // brands known and contain each other
+})
+
+test('similarity: conflicting strength or unit form means different products, even with equal names', () => {
+  assert.equal(similarity({ name: '亜鉛 & マカ', brand: 'UHA', unit: 'gummy' }, { name: '亜鉛 & マカ', brand: 'UHA', unit: 'tablet' }), null)
+  assert.equal(similarity({ name: '亜鉛 & マカ', brand: '', unit: 'gummy' }, { name: '亜鉛 & マカ', brand: '', unit: 'tablet' }), null)
+  assert.equal(similarity({ name: 'D3', brand: 'Jamieson', strength: '1000iu' }, { name: 'D3', brand: 'Jamieson', strength: '400iu' }), null)
+  assert.equal(similarity({ name: 'D3', brand: 'Jamieson', strength: '1000iu' }, { name: 'D3', brand: 'Jamieson', strength: '' }), 'exact') // unknown does not conflict
+  assert.equal(similarity({ name: 'Curcuma', brand: 'webber', unit: 'capsule' }, { name: 'Curcuma', brand: 'Webber', unit: 'capsule' }), 'exact')
+})
+
+test('similarity: the two real UHA products are different (different full names)', () => {
+  assert.equal(similarity({ name: 'グミサプリ 亜鉛＆マカ', brand: 'UHA', unit: 'gummy' }, { name: 'スースーとける 瞬間サプリ 亜鉛&マカ', brand: '' }), null)
+})
+
+test('unitFormFromText reads the form from dosage text', () => {
+  assert.equal(unitFormFromText('2 gummies (10 mg each)'), 'gummy')
+  assert.equal(unitFormFromText('1 capsule (500 mg each)'), 'capsule')
+  assert.equal(unitFormFromText('1 softgel'), 'softgel')
+  assert.equal(unitFormFromText('1 tablet daily'), 'tablet')
+  assert.equal(unitFormFromText('500 mg'), '')
+})
+
+test('findMatch ranks exact > similar > maybe and respects conflicts', () => {
+  const items = [
+    { _id: 'm', name: 'Zinc', brand: '', dosage: '1 tablet' },
+    { _id: 's', name: 'Zinc Picolinate 50 mg', brand: 'NOW', dosage: '1 capsule' },
+  ]
+  assert.equal(findMatch({ name: 'Zinc', brand: '' }, items).item._id, 'm') // exact needs known brands; this one is maybe
+  assert.equal(findMatch({ name: 'Zinc', brand: '' }, items).kind, 'maybe')
+  assert.equal(findMatch({ name: 'Zinc Picolinate', brand: 'NOW' }, items).kind, 'similar')
+  assert.equal(findMatch({ name: 'Zinc', brand: '', unitForm: 'gummy' }, items), null) // gummy vs tablet
 })
