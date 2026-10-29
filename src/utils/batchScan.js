@@ -261,18 +261,25 @@ export function nameTokens(name, brand = '') {
   return new Set(clean(name).filter((t) => !brandWords.has(t) && !GENERIC_WORDS.has(t)))
 }
 
-// 'exact' = same normalised name; 'similar' = same brand + similar name (and no conflicting strength); else null.
-// a / b: { name, brand, strength } where strength is a strengthKey like "500mg" or ''.
+// Verdicts: 'exact' = same normalised name AND both brands known and matching; 'maybe' = same name but a brand is
+// missing (generic names like "Zinc & Maca" are shared by many products, so we cannot tell); 'similar' = same
+// brand + similar name. Never a duplicate when both brands are known and differ, or when known strengths or unit
+// forms conflict (e.g. a gummy vs a tablet, 10 mg vs 5 mg). a / b: { name, brand, strength, unit }.
 export function similarity(a, b) {
   const na = normalizeName(a?.name)
   const nb = normalizeName(b?.name)
   if (!na || !nb) return null
-  if (na === nb) return 'exact'
 
   const brandA = normalizeName(a?.brand)
   const brandB = normalizeName(b?.brand)
-  if (!brandA || !brandB || !(brandA === brandB || brandA.includes(brandB) || brandB.includes(brandA))) return null
+  const brandsKnown = Boolean(brandA && brandB)
+  const brandsMatch = brandsKnown && (brandA === brandB || brandA.includes(brandB) || brandB.includes(brandA))
+  if (brandsKnown && !brandsMatch) return null // different brands = different products
   if (a.strength && b.strength && a.strength !== b.strength) return null // e.g. 1300 mg fish oil vs 500 mg krill oil
+  if (a.unit && b.unit && a.unit !== b.unit) return null // gummy vs tablet
+
+  if (na === nb) return brandsMatch ? 'exact' : 'maybe'
+  if (!brandsMatch) return null
 
   const [short, long] = na.length <= nb.length ? [na, nb] : [nb, na]
   if (short.length >= 4 && long.includes(short)) return 'similar'
@@ -285,22 +292,41 @@ export function similarity(a, b) {
   return shared >= 2 && shared / smaller >= 0.8 ? 'similar' : null
 }
 
-// What to compare for a saved item / a scanned form.
-export function itemFingerprint(item) {
-  return { name: item?.name, brand: item?.brand, strength: strengthKey(item?.strength || item?.dosage) }
+// Unit form from free text such as "2 gummies (10 mg each)" or "1 softgel".
+export function unitFormFromText(text) {
+  const t = String(text || '').toLowerCase()
+  if (/\bgumm(y|ies)\b/.test(t)) return 'gummy'
+  if (/\bsoftgels?\b|\bsoft gels?\b/.test(t)) return 'softgel'
+  if (/\bcapsules?\b|\bcaps?\b/.test(t)) return 'capsule'
+  if (/\btablets?\b|\btabs?\b|\bcaplets?\b/.test(t)) return 'tablet'
+  if (/\bscoops?\b/.test(t)) return 'scoop'
+  if (/\bdrops?\b/.test(t)) return 'drop'
+  return ''
 }
 
-// Best match of `form` among saved items: an exact name match first, else a similar one.
-// Returns { item, kind: 'exact' | 'similar' } or null.
+// What to compare for a saved item / a scanned form.
+export function itemFingerprint(item) {
+  return {
+    name: item?.name,
+    brand: item?.brand,
+    strength: strengthKey(item?.strength || item?.dosage),
+    unit: item?.unitForm || unitFormFromText(item?.dosage),
+  }
+}
+
+// Best match of `form` among saved items (exact > similar > maybe).
+// Returns { item, kind: 'exact' | 'similar' | 'maybe' } or null.
+const KIND_RANK = { exact: 3, similar: 2, maybe: 1 }
 export function findMatch(form, items) {
   const me = itemFingerprint(form)
-  let similar = null
+  let best = null
   for (const item of items || []) {
     const kind = similarity(me, itemFingerprint(item))
+    if (!kind) continue
     if (kind === 'exact') return { item, kind }
-    if (kind === 'similar' && !similar) similar = { item, kind }
+    if (!best || KIND_RANK[kind] > KIND_RANK[best.kind]) best = { item, kind }
   }
-  return similar
+  return best
 }
 
 // Map a /cabinet/identify result (photo-based lookup) to the same "found" shape the text lookup produces.

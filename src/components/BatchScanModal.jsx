@@ -72,7 +72,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
       const form = { ingredients: '', imageUrl: '', ...scanResultToForm(res.data) }
-      const dup = Boolean(findMatch(form, existingItems))
+      const dup = findMatch(form, existingItems)?.kind === 'exact' // only an exact match is unchecked by default
       patchRow(row.id, {
         scanStatus: 'done',
         photoThumb: thumbnail || '',
@@ -198,7 +198,8 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
     return null
   }
 
-  // A repeat within the batch is unchecked the first time it is detected (never again, so a later tick sticks).
+  // An exact repeat within the batch is unchecked the first time it is detected (never again, so a later tick sticks).
+  // "Maybe"/"similar" matches are only flagged: unchecking a possibly different product would silently skip it.
   const flaggedRef = useRef(new Set())
   useEffect(() => {
     rows.forEach((r, i) => {
@@ -206,7 +207,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
       const info = matchInfo(r, i)
       if (!info) return
       flaggedRef.current.add(r.id)
-      if (info.source === 'batch') patchRow(r.id, { include: false })
+      if (info.source === 'batch' && info.kind === 'exact') patchRow(r.id, { include: false })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows])
@@ -337,7 +338,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                         const info = matchInfo(row, i)
                         if (!info) return null
                         const label = info.source === 'batch'
-                          ? t('batchScanSameBatch').replace('{n}', info.other)
+                          ? (info.kind === 'exact' ? t('batchScanSameBatch') : t('batchScanMaybeBatch')).replace('{n}', info.other)
                           : info.kind === 'exact'
                             ? t('batchScanDuplicate')
                             : `${t('batchScanSimilar')}: ${info.item.name}`
@@ -488,7 +489,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                   return (
                     <div key={r.id} className="rounded-card border border-border p-3 flex flex-col gap-2" data-testid="dup-item">
                       <p className="text-[14px] font-medium text-ink1">{existing?.name || r.form.name}</p>
-                      {found?.kind === 'similar' && (
+                      {found && found.kind !== 'exact' && (
                         <p className="text-[11px] text-ink3" data-testid="dup-similar-note">{t('batchScanDupSimilarNote').replace('{name}', r.form.name)}</p>
                       )}
                       <p className="text-[12px] text-ink3">
