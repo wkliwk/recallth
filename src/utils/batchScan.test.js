@@ -366,3 +366,49 @@ test('foundFromIdentify carries a product image only when it is an http(s) URL',
   const r = mergeFound({ name: 'X', brand: 'B', dosage: '', ingredients: '', imageUrl: '' }, foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'https://api.test/i' }, {}))
   assert.equal(r.form.imageUrl, 'https://api.test/i')
 })
+
+test('foundFromIdentify carries the full ingredients and description', () => {
+  const f = foundFromIdentify({ usable: true, servingUnits: 1, ingredients: ' Per serving: A 10 mg. Other ingredients: B. ', description: ' Helps joints. ' }, {})
+  assert.equal(f.ingredients, 'Per serving: A 10 mg. Other ingredients: B.')
+  assert.equal(f.description, 'Helps joints.')
+  assert.equal(foundFromIdentify({ usable: true }, {}).ingredients, '')
+})
+
+test('mergeFound: a clearly fuller web ingredient list replaces the short scan line, user edits are never replaced', () => {
+  const web = 'Per serving: Curcuminoids-Phosphatidylcholine Complex 300 mg (500 mg Meriva). Other ingredients: Vegetarian capsule, silica, magnesium stearate.'
+  const found = { ingredients: web, description: 'Helps joints.' }
+  const scan = { name: 'Curcuma', brand: 'W', dosage: '', ingredients: 'Curcuma', ingredientsFromScan: true, description: '' }
+  const r = mergeFound(scan, found)
+  assert.equal(r.form.ingredients, web)
+  assert.equal(r.form.ingredientsFromScan, false)
+  assert.equal(r.form.description, 'Helps joints.')
+  assert.ok(r.filled.includes('ingredients') && r.filled.includes('description'))
+
+  const edited = mergeFound({ ...scan, ingredientsFromScan: false }, found)
+  assert.equal(edited.form.ingredients, 'Curcuma') // the user's (or already-upgraded) value stays
+  const shortWeb = mergeFound(scan, { ingredients: 'Curcuma extract' }) // not clearly fuller
+  assert.equal(shortWeb.form.ingredients, 'Curcuma')
+  const hasDesc = mergeFound({ ...scan, description: 'mine' }, found)
+  assert.equal(hasDesc.form.description, 'mine') // description is fill-only-empty
+  const empty = mergeFound({ ...scan, ingredients: '', ingredientsFromScan: false }, found)
+  assert.equal(empty.form.ingredients, web)
+})
+
+test('mergeFound upgrades ingredients in structured forms too', () => {
+  const form = { name: 'Curcuma', brand: 'W', strength: '500 mg', unitForm: 'capsule', servingUnits: '', dosage: '', ingredients: 'Curcuma', ingredientsFromScan: true, description: '', imageUrl: '' }
+  const r = mergeFound(form, { ingredients: 'Per serving: Curcumin complex 300 mg. Other ingredients: capsule, silica, cellulose.', description: 'd' })
+  assert.match(r.form.ingredients, /^Per serving/)
+  assert.equal(r.form.description, 'd')
+})
+
+test('payloads include description (and ingredients) only when non-empty', () => {
+  const form = { name: 'Zinc', dosage: '1 capsule', brand: '', ingredients: 'Zinc picolinate', description: ' Supports immunity. ', type: 'vitamin' }
+  const c = buildPayload(form, '')
+  assert.equal(c.description, 'Supports immunity.')
+  assert.equal(c.ingredients, 'Zinc picolinate')
+  assert.equal('description' in buildPayload({ ...form, description: '' }, ''), false)
+  const u = buildUpdatePayload(form, '', {})
+  assert.equal(u.description, 'Supports immunity.')
+  assert.equal('description' in buildUpdatePayload({ ...form, description: ' ' }, '', {}), false)
+})
+

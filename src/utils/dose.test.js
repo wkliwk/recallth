@@ -65,3 +65,11 @@ test('heicMimeType detects HEIC/HEIF by type or extension, else empty', () => {
 test('raw HEIC size cap leaves headroom under the 10 MB JSON limit', () => {
   assert.ok(MAX_RAW_BYTES * 1.34 < 10 * 1024 * 1024)
 })
+
+test('scanResultToForm flags scan-read ingredients so a fuller web list may replace them', () => {
+  const a = scanResultToForm({ name: 'Curcuma', ingredients: 'Curcuma', strength: '500 mg', unitForm: 'capsule' })
+  assert.equal(a.ingredientsFromScan, true)
+  assert.equal(a.description, '')
+  assert.equal(scanResultToForm({ name: 'X', dosage: '1 g' }).ingredientsFromScan, false)
+})
+

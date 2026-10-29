@@ -99,6 +99,9 @@ export function scanResultToForm(data = {}) {
     type,
     brand: data.brand || '',
     ingredients: data.ingredients || '',
+    // The scan only reads a short "key actives" line; flag it so a fuller web list may replace it (never a user edit).
+    ingredientsFromScan: Boolean(data.ingredients),
+    description: '',
   }
   const strength = String(data.strength || '').trim()
   const unitForm = UNIT_FORMS.includes(data.unitForm) ? data.unitForm : ''
