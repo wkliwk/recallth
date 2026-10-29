@@ -34,6 +34,28 @@ export function rowErrors(form) {
   return errors
 }
 
+// Reference links kept with an item (from the identify lookup): http(s) only, at most 5.
+const REF_KINDS = ['official', 'database', 'retailer', 'other']
+export function cleanReferences(list) {
+  const seen = new Set()
+  const out = []
+  for (const r of Array.isArray(list) ? list : []) {
+    const url = String(r?.url || '').trim()
+    if (!/^https?:\/\//i.test(url) || seen.has(url)) continue
+    seen.add(url)
+    out.push({ url, title: String(r?.title || '').trim().slice(0, 200) || url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0], kind: REF_KINDS.includes(r?.kind) ? r.kind : 'other' })
+    if (out.length >= 5) break
+  }
+  return out
+}
+
+// A web product picture arriving late may only fill an EMPTY image, and never once the user chose their own photo.
+export function applyWebImage(form, url, photoPinned = false) {
+  const clean = /^https?:\/\//i.test(String(url || '')) ? String(url).trim() : ''
+  if (!clean || photoPinned || String(form?.imageUrl || '').trim()) return form
+  return { ...form, imageUrl: clean }
+}
+
 // The image to save: a web product image already on the form wins, otherwise the user's own photo thumbnail.
 export function chooseImage(form, photoThumb = '') {
   return String(form?.imageUrl || '').trim() || String(photoThumb || '').trim()
@@ -44,6 +66,7 @@ export function buildCreatePayload(form, photoThumb = '') {
   const ingredients = String(form.ingredients || '').trim()
   const description = String(form.description || '').trim()
   const imageUrl = chooseImage(form, photoThumb)
+  const references = cleanReferences(form.references)
   return {
     name: form.name.trim(),
     type: form.type || 'supplement',
@@ -54,6 +77,7 @@ export function buildCreatePayload(form, photoThumb = '') {
     ...(ingredients ? { ingredients } : {}),
     ...(description ? { description } : {}),
     ...(imageUrl ? { imageUrl } : {}),
+    ...(references.length ? { references } : {}),
   }
 }
 
@@ -201,16 +225,27 @@ function upgradeIngredients(next, found, filled) {
   }
 }
 
+// Reference links fill only an empty list (a list the user trimmed is never refilled mid-edit by a re-run of the same row).
+function fillReferences(next, found, filled) {
+  const refs = cleanReferences(found?.references)
+  if (!cleanReferences(next.references).length && refs.length) {
+    next.references = refs
+    filled.push('references')
+  }
+}
+
 export function mergeFound(form, found) {
   if (!found) return { form, filled: [], directions: '', source: '' }
   if (!isStructured(form)) {
     const { form: next, filled } = mergeMissing(form, found)
     upgradeIngredients(next, found, filled)
+    fillReferences(next, found, filled)
     return { form: next, filled, directions: '', source: '' }
   }
   const { form: base, filled } = mergeMissing(form, found, ['brand', 'ingredients', 'description', 'imageUrl'])
   const next = { ...base }
   upgradeIngredients(next, found, filled)
+  fillReferences(next, found, filled)
   let directions = ''
   let source = ''
   const units = parseServingUnits(found.servingUnits)
@@ -241,6 +276,7 @@ export function buildUpdatePayload(form, photoThumb = '', existing = {}) {
   const description = String(form.description || '').trim()
   const webImage = String(form.imageUrl || '').trim()
   const image = webImage || (existing.imageUrl ? '' : String(photoThumb || '').trim())
+  const references = cleanReferences(form.references)
   return {
     type: form.type || existing.type || 'supplement',
     dosage: form.dosage.trim(),
@@ -248,6 +284,7 @@ export function buildUpdatePayload(form, photoThumb = '', existing = {}) {
     ...(ingredients ? { ingredients } : {}),
     ...(description ? { description } : {}),
     ...(image ? { imageUrl: image } : {}),
+    ...(references.length ? { references } : {}),
   }
 }
 
@@ -361,7 +398,7 @@ export function foundFromIdentify(d, form = {}) {
     brand: String(d.brand || '').trim(),
     ingredients: String(d.ingredients || '').trim(),
     description: String(d.description || '').trim(),
-    imageUrl: /^https?:\/\//i.test(String(d.imageUrl || '')) ? String(d.imageUrl).trim() : '', // product image from the source page (when the backend found one)
+    references: cleanReferences(d.references), // official / reliable pages used to identify it
     directions: String(d.directions || '').trim(),
     sourceUrl: /^https?:\/\//i.test(String(d.sourceUrl || '')) ? String(d.sourceUrl).trim() : '',
     via: 'photo',

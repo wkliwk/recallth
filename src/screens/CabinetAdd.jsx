@@ -7,11 +7,11 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
-import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload } from '../utils/batchScan'
+import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload, applyWebImage, cleanReferences } from '../utils/batchScan'
 import DoseInput from '../components/DoseInput'
 import FullInfoFields from '../components/FullInfoFields'
 import { isStructured, applyDose } from '../utils/dose'
-import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
+import { lookupMissingDetails, lookupFromUrl, findWebImage } from '../utils/dosageLookup'
 import PasteLinkFill from '../components/PasteLinkFill'
 import PurchaseFields from '../components/PurchaseFields'
 import { parsePriceInput } from '../utils/purchase'
@@ -80,6 +80,7 @@ export default function CabinetAdd() {
   const batchSavedRef = useRef(false)
   const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
   const [webFields, setWebFields] = useState({})
+  const photoPinned = useRef(false) // the user chose their own photo: a late web picture must not replace it
   const [webDirections, setWebDirections] = useState('')
   const [webSource, setWebSource] = useState('')
   const [photo, setPhoto] = useState(null) // { imageBase64, mimeType } of the scanned label, for the photo-based lookup
@@ -154,6 +155,7 @@ export default function CabinetAdd() {
       ...(form.description?.trim() ? { description: form.description.trim() } : {}),
       ...(form.ingredients?.trim() ? { ingredients: form.ingredients.trim() } : {}),
       ...(chooseImage(form, photoThumb) ? { imageUrl: chooseImage(form, photoThumb) } : {}),
+      ...(cleanReferences(form.references).length ? { references: cleanReferences(form.references) } : {}),
       ...(price.value !== null ? { purchasePrice: price.value, currency: form.purchaseCurrency } : {}),
       ...(form.purchaseDate ? { purchaseDate: form.purchaseDate } : {}),
     }
@@ -258,7 +260,8 @@ export default function CabinetAdd() {
       const { imageBase64, mimeType, thumbnail } = await imageFileToBase64(file)
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
-      setForm((prev) => ({ ...prev, ...EMPTY_DOSE, imageUrl: '', ...scanResultToForm(res.data) }))
+      photoPinned.current = false
+      setForm((prev) => ({ ...prev, ...EMPTY_DOSE, imageUrl: '', references: [], ...scanResultToForm(res.data) }))
       setPhotoThumb(thumbnail || '')
       setPhoto({ imageBase64, mimeType })
       setWebSource('')
@@ -289,6 +292,14 @@ export default function CabinetAdd() {
       setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])), ...(filled.includes('servingUnits') ? { dosage: true } : {}) }))
       if (directions) { setWebDirections(directions); setWebSource(source || '') }
       setFillStatus(found ? (filled.length > 0 ? 'idle' : 'nothing') : 'none')
+      // Background: swap the user's thumbnail for a clear front-facing web picture when one is found.
+      if (found?.references?.length && photo) {
+        findWebImage(photo, found, form).then((url) => {
+          if (!url || photoPinned.current) return
+          setForm((prev) => applyWebImage(prev, url, false))
+          setWebFields((prev) => ({ ...prev, imageUrl: true }))
+        })
+      }
     } catch {
       setFillStatus('failed')
     }
@@ -573,7 +584,7 @@ export default function CabinetAdd() {
               {form.imageUrl && photoThumb && (
                 <button
                   type="button"
-                  onClick={() => handleChange('imageUrl', '')}
+                  onClick={() => { photoPinned.current = true; handleChange('imageUrl', '') }}
                   className="text-[12px] text-orange hover:underline cursor-pointer whitespace-nowrap"
                   data-testid="single-use-my-photo"
                 >

@@ -831,7 +831,7 @@ export default function CabinetDetail() {
           </div>
 
           {/* Description & Ingredients */}
-          {(supp.description || supp.ingredients) && (
+          {(supp.description || supp.ingredients || supp.references?.length > 0) && (
             <div className="bg-white rounded-card border border-border p-5 flex flex-col gap-4">
               {supp.description && (
                 <div>
@@ -843,6 +843,19 @@ export default function CabinetDetail() {
                 <div>
                   <span className="text-[11px] uppercase text-ink3 tracking-wide font-medium">{t('fieldIngredients') || 'Ingredients'}</span>
                   <p className="text-[13px] text-ink2 mt-1.5 leading-relaxed whitespace-pre-line" data-testid="detail-ingredients">{supp.ingredients}</p>
+                </div>
+              )}
+              {supp.references?.length > 0 && (
+                <div data-testid="detail-references">
+                  <span className="text-[11px] uppercase text-ink3 tracking-wide font-medium">{t('fullInfoReferences')}</span>
+                  <ul className="mt-1.5 flex flex-col gap-1">
+                    {supp.references.map((r) => (
+                      <li key={r.url} className="flex items-center gap-2 text-[12px]">
+                        <span className="shrink-0 rounded-full bg-[#EEF4FC] px-2 py-[1px] text-[10px] text-[#1A3A6A]">{t(`refKind_${r.kind || 'other'}`)}</span>
+                        <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline truncate" title={r.url}>{r.title || r.url}</a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
