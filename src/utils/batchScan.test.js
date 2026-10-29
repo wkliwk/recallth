@@ -358,3 +358,11 @@ test('findMatch ranks exact > similar > maybe and respects conflicts', () => {
   assert.equal(findMatch({ name: 'Zinc Picolinate', brand: 'NOW' }, items).kind, 'similar')
   assert.equal(findMatch({ name: 'Zinc', brand: '', unitForm: 'gummy' }, items), null) // gummy vs tablet
 })
+
+test('foundFromIdentify carries a product image only when it is an http(s) URL', () => {
+  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'https://api.test/img/image-proxy?url=x' }, {}).imageUrl, 'https://api.test/img/image-proxy?url=x')
+  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'javascript:x' }, {}).imageUrl, '')
+  assert.equal(foundFromIdentify({ usable: true, servingUnits: 1 }, {}).imageUrl, '')
+  const r = mergeFound({ name: 'X', brand: 'B', dosage: '', ingredients: '', imageUrl: '' }, foundFromIdentify({ usable: true, servingUnits: 1, imageUrl: 'https://api.test/i' }, {}))
+  assert.equal(r.form.imageUrl, 'https://api.test/i')
+})

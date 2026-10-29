@@ -55,15 +55,33 @@ function readRawBase64(file) {
   })
 }
 
+// HEIC → JPEG in the browser with a lazily loaded WASM decoder (its own chunk, fetched only when a HEIC can't be
+// decoded natively, e.g. desktop Chrome). Conversions run one at a time: decoding is CPU-heavy and runs on the
+// main thread, so serialising keeps the page responsive.
+let heicQueue = Promise.resolve()
+function heicToJpegFile(file) {
+  const job = heicQueue.then(async () => {
+    const { heicTo } = await import('heic-to')
+    const blob = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.85 })
+    return new File([blob], String(file.name || 'photo').replace(/\.hei[cf]$/i, '.jpg'), { type: 'image/jpeg' })
+  })
+  heicQueue = job.catch(() => {}) // a failed conversion must not block the next one
+  return job
+}
+
 // Photo -> { imageBase64, mimeType, thumbnail } for /cabinet/scan (thumbnail = small data-URL JPEG or '').
 // Normal photos are downscaled to JPEG (phone photos are several MB). If the browser can't decode a
-// HEIC/HEIF file, send the original — the backend/Gemini read HEIC directly.
+// HEIC/HEIF file, convert it in the browser (lazy decoder); if that fails send the original — the backend/Gemini read HEIC directly.
 export async function imageFileToBase64(file) {
   try {
     return await decodeAndDownscale(file)
   } catch (err) {
     const mimeType = heicMimeType(file)
     if (!mimeType) throw err
+    // Preferred: convert in the browser → normal downscale + thumbnail path (and a much smaller upload).
+    try {
+      return await decodeAndDownscale(await heicToJpegFile(file))
+    } catch { /* decoder missing/failed: fall back to sending the original file */ }
     if (file.size > MAX_RAW_BYTES) throw new Error('Photo too large to read in this browser — export it as JPEG')
     const imageBase64 = await readRawBase64(file)
     if (!imageBase64) throw err

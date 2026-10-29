@@ -343,7 +343,7 @@ export function foundFromIdentify(d, form = {}) {
     brand: String(d.brand || '').trim(),
     ingredients: '',
     description: '',
-    imageUrl: '',
+    imageUrl: /^https?:\/\//i.test(String(d.imageUrl || '')) ? String(d.imageUrl).trim() : '', // product image from the source page (when the backend found one)
     directions: String(d.directions || '').trim(),
     sourceUrl: /^https?:\/\//i.test(String(d.sourceUrl || '')) ? String(d.sourceUrl).trim() : '',
     via: 'photo',
