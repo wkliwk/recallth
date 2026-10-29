@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
-import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
+import { rotateThumbnail, imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import {
   MAX_BATCH,
   findMatch,
@@ -299,11 +299,22 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                       alt=""
                       width="36"
                       height="36"
-                      className="w-[36px] h-[36px] rounded-[8px] object-cover border border-border shrink-0"
+                      className="w-[36px] h-[36px] rounded-[8px] object-contain bg-white border border-border shrink-0"
                       data-testid="batch-preview"
                       data-source={row.form.imageUrl ? 'web' : 'photo'}
                       onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
                     />
+                  )}
+                  {row.scanStatus === 'done' && !row.form.imageUrl && row.photoThumb && row.saveStatus !== 'saved' && (
+                    <button
+                      type="button"
+                      onClick={async () => { const rotated = await rotateThumbnail(row.photoThumb); patchRow(row.id, { photoThumb: rotated }) }}
+                      className="text-orange hover:underline cursor-pointer whitespace-nowrap"
+                      aria-label={t('rotatePhoto')}
+                      data-testid="batch-rotate"
+                    >
+                      ↻
+                    </button>
                   )}
                   <span className="font-medium text-ink2">#{i + 1}</span>
                   <span className="truncate flex-1">{row.file.name}</span>

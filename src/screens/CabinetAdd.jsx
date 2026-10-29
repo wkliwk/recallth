@@ -6,7 +6,7 @@ import { api } from '../services/api'
 import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
-import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
+import { rotateThumbnail, imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload, applyWebImage, cleanReferences } from '../utils/batchScan'
 import DoseInput from '../components/DoseInput'
 import FullInfoFields from '../components/FullInfoFields'
@@ -574,11 +574,22 @@ export default function CabinetAdd() {
                   alt=""
                   width="44"
                   height="44"
-                  className="w-[44px] h-[44px] rounded-[8px] object-cover border border-[#B0C8E8] shrink-0"
+                  className="w-[44px] h-[44px] rounded-[8px] object-contain bg-white border border-[#B0C8E8] shrink-0"
                   data-testid="single-preview"
                   data-source={form.imageUrl ? 'web' : 'photo'}
                   onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
                 />
+              )}
+              {!form.imageUrl && photoThumb && (
+                <button
+                  type="button"
+                  onClick={async () => setPhotoThumb(await rotateThumbnail(photoThumb))}
+                  className="text-[14px] text-orange hover:underline cursor-pointer"
+                  aria-label={t('rotatePhoto')}
+                  data-testid="single-rotate"
+                >
+                  ↻
+                </button>
               )}
               <span className="text-[12px] text-[#1A3A6A]">{t('scanLabelDone')}</span>
               {form.imageUrl && photoThumb && (
