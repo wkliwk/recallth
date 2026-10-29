@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload, nameTokens, similarity, findMatch } from './batchScan.js'
+import { limitFiles, isDuplicate, normalizeName, rowErrors, buildCreatePayload, runPool, pickLookupMatch, lookupQuery, createLimiter, hasMissing, mergeMissing, isHttpUrl, queryFromUrl, strengthKey, mergeFound, chooseImage, buildCreatePayload as buildPayload, findDuplicate, buildUpdatePayload, nameTokens, similarity, findMatch, foundFromIdentify } from './batchScan.js'
 
 test('limitFiles keeps first 10 and flags truncation', () => {
   const r = limitFiles(Array.from({ length: 12 }, (_, i) => i))
@@ -256,4 +256,68 @@ test('findMatch prefers an exact match and reports the kind', () => {
   assert.deepEqual([findMatch(form, items.slice(0, 1)).item._id, findMatch(form, items.slice(0, 1)).kind], ['k', 'similar'])
   assert.equal(findMatch({ name: 'Zinc', brand: 'NOW' }, items), null)
   assert.equal(findMatch(form, []), null)
+})
+
+test('normalizeName keeps Japanese/Korean/Chinese and strips accents', () => {
+  assert.equal(normalizeName('ヒアレインS'), 'ヒアレインs')
+  assert.equal(normalizeName('한국 비타민'), '한국비타민')
+  assert.equal(normalizeName('綜合維他命 (Multivitamin)'), '綜合維他命multivitamin')
+  assert.equal(normalizeName('Absorption avancée'), 'absorptionavancee')
+  assert.equal(normalizeName('L-Arginine '), 'larginine')
+})
+
+test('pickLookupMatch: a one-character normalised name never matches by containment', () => {
+  const cands = [{ name: 'Santen Hyalein S Mini Eye Drops', brand: 'Santen' }]
+  assert.equal(pickLookupMatch(cands, 'S', {}), null)
+  assert.equal(pickLookupMatch(cands, 'ヒアレインS', { brand: 'Santen' }), null) // no Latin overlap and no strength: not guessed
+  assert.equal(pickLookupMatch([{ name: 'Vitamin D3 1000 IU', brand: 'Jamieson' }], 'D3', {}).name, 'Vitamin D3 1000 IU')
+})
+
+test('strengthKey understands mL and %', () => {
+  assert.equal(strengthKey('0.3mL'), '0.3ml')
+  assert.equal(strengthKey('0.1% purified sodium hyaluronate'), '0.1%')
+  assert.equal(strengthKey('5 μg'), '5mcg')
+  assert.equal(strengthKey('120 capsules'), '')
+})
+
+test('lookupQuery has no dangling pack text when the unit is unknown', () => {
+  assert.equal(lookupQuery({ brand: 'Santen', name: 'ヒアレインS', strength: '0.3mL', unitForm: '', bottleCount: '10' }), 'Santen ヒアレインS 0.3mL')
+  assert.equal(lookupQuery({ brand: 'NOW', name: 'Zinc', strength: '50 mg', unitForm: 'capsule', bottleCount: '120' }), 'NOW Zinc 50 mg 120 capsules')
+})
+
+test('foundFromIdentify: unusable results are ignored', () => {
+  assert.equal(foundFromIdentify(null, {}), null)
+  assert.equal(foundFromIdentify({ usable: false, servingUnits: 2 }, {}), null)
+})
+
+test('foundFromIdentify maps a photo-based match, keeping per-dose semantics', () => {
+  const f = foundFromIdentify(
+    { usable: true, servingUnits: 1, timesPerDay: 3, unitForm: 'capsule', brand: 'Progressive', directions: 'Take 1 capsule with breakfast, lunch and dinner', sourceUrl: 'https://example.com/x', strength: '' },
+    { strength: '', unitForm: '' },
+  )
+  assert.equal(f.servingUnits, '1')
+  assert.equal(f.unitForm, 'capsule')
+  assert.equal(f.dosage, '1 capsule')
+  assert.equal(f.sourceUrl, 'https://example.com/x')
+  assert.equal(f.via, 'photo')
+})
+
+test('foundFromIdentify: range/unknown count stays empty; long web strength is not used in the dosage text', () => {
+  const f = foundFromIdentify({ usable: true, servingUnits: null, unitForm: 'tablet', strength: 'Zinc 10mg, Black Maca Extract Powder 30mg per tablet', sourceUrl: 'javascript:x' }, {})
+  assert.equal(f.servingUnits, null)
+  assert.equal(f.dosage, '')
+  assert.equal(f.sourceUrl, '')
+  const g = foundFromIdentify({ usable: true, servingUnits: 2, unitForm: 'tablet', strength: 'Zinc 10mg, Black Maca Extract Powder 30mg per tablet' }, {})
+  assert.equal(g.dosage, '2 tablets')
+  assert.equal(foundFromIdentify({ usable: true, servingUnits: 2, unitForm: 'capsule', strength: '500 mg' }, {}).dosage, '2 capsules (500 mg each)')
+})
+
+test('mergeFound fills a photo-found count into a structured form and returns the source', () => {
+  const form = { name: 'Curcuma', brand: 'webber', strength: '500 mg', unitForm: 'capsule', servingUnits: '', dosage: '', ingredients: '', imageUrl: '' }
+  const found = foundFromIdentify({ usable: true, servingUnits: 2, unitForm: 'capsule', directions: '2 capsules daily', sourceUrl: 'https://example.com/c' }, form)
+  const r = mergeFound(form, found)
+  assert.equal(r.form.servingUnits, '2')
+  assert.equal(r.form.dosage, '2 capsules (500 mg each)')
+  assert.equal(r.directions, '2 capsules daily')
+  assert.equal(r.source, 'https://example.com/c')
 })

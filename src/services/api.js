@@ -55,6 +55,7 @@ export const api = {
     evidenceScores: () => request('/cabinet/evidence-scores'),
     aiLookup: (query) => request('/cabinet/ai-lookup', { method: 'POST', body: JSON.stringify({ query }) }),
     urlLookup: (url) => request('/cabinet/url-lookup', { method: 'POST', body: JSON.stringify({ url }) }),
+    identify: (imageBase64, mimeType, hint) => request('/cabinet/identify', { method: 'POST', body: JSON.stringify({ imageBase64, mimeType, hint }) }),
     scan: (imageBase64, mimeType) => request('/cabinet/scan', { method: 'POST', body: JSON.stringify({ imageBase64, mimeType }) }),
   },
   chat: {

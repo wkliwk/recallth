@@ -80,6 +80,8 @@ export default function CabinetAdd() {
   const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
   const [webFields, setWebFields] = useState({})
   const [webDirections, setWebDirections] = useState('')
+  const [webSource, setWebSource] = useState('')
+  const [photo, setPhoto] = useState(null) // { imageBase64, mimeType } of the scanned label, for the photo-based lookup
   const [photoThumb, setPhotoThumb] = useState('') // small data-URL thumbnail of the scanned photo
 
   const prefilled = location.state?.aiResult
@@ -257,6 +259,8 @@ export default function CabinetAdd() {
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
       setForm((prev) => ({ ...prev, ...EMPTY_DOSE, imageUrl: '', ...scanResultToForm(res.data) }))
       setPhotoThumb(thumbnail || '')
+      setPhoto({ imageBase64, mimeType })
+      setWebSource('')
       setWebDirections('')
       setScanned(true)
       setAiFilled(false)
@@ -278,12 +282,12 @@ export default function CabinetAdd() {
     if (fillStatus === 'looking') return
     setFillStatus('looking')
     try {
-      const found = await lookupMissingDetails(form, showUsage)
-      const { filled, directions } = mergeFound(form, found)
+      const found = await lookupMissingDetails(form, showUsage, photo)
+      const { filled, directions, source } = mergeFound(form, found)
       setForm((prev) => mergeFound(prev, found).form)
       setWebFields((prev) => ({ ...prev, ...Object.fromEntries(filled.map((f) => [f, true])), ...(filled.includes('servingUnits') ? { dosage: true } : {}) }))
-      if (directions) setWebDirections(directions)
-      setFillStatus(found ? 'idle' : 'none')
+      if (directions) { setWebDirections(directions); setWebSource(source || '') }
+      setFillStatus(found ? (filled.length > 0 ? 'idle' : 'nothing') : 'none')
     } catch {
       setFillStatus('failed')
     }
@@ -309,6 +313,7 @@ export default function CabinetAdd() {
     setForm((prev) => applyDose({ ...prev, ...patch }))
     setWebFields((prev) => ({ ...prev, servingUnits: false, dosage: false }))
     setWebDirections('')
+    setWebSource('')
     if (errors.dosage) setErrors((prev) => ({ ...prev, dosage: undefined }))
   }
 
@@ -588,11 +593,12 @@ export default function CabinetAdd() {
             )}
             {form.name.trim() && hasMissing(form) && (
               <PasteLinkFill
-                forceOpen={fillStatus === 'none' || fillStatus === 'failed'}
+                forceOpen={fillStatus === 'none' || fillStatus === 'failed' || fillStatus === 'nothing'}
                 onSubmit={handleFillFromLink}
               />
             )}
             {fillStatus === 'none' && <span className="text-[12px] text-ink3" data-testid="single-no-match">{t('batchScanNoMatch')}</span>}
+            {fillStatus === 'nothing' && <span className="text-[12px] text-ink3" data-testid="single-nothing-new">{t('batchScanFoundNothing')}</span>}
             {fillStatus === 'failed' && <span className="text-[12px] text-[#C05A28]">{t('batchScanLookupFailed')}</span>}
             {Object.values(webFields).some(Boolean) && (
               <span className="text-[12px] text-[#1A3A6A]" data-testid="single-web-note">{t('batchScanWebSuggested')}</span>
@@ -650,6 +656,7 @@ export default function CabinetAdd() {
                 invalid={Boolean(errors.dosage)}
                 webFilled={Boolean(webFields.servingUnits)}
                 directions={webDirections}
+                source={webSource}
               />
             ) : (
               <input

@@ -1,10 +1,24 @@
 import { api } from '../services/api'
-import { lookupQuery, pickLookupMatch, queryFromUrl } from './batchScan'
+import { lookupQuery, pickLookupMatch, queryFromUrl, foundFromIdentify } from './batchScan'
 
-// Search online (ai-lookup, Google Search grounded) for details the label scan missed.
-// Resolves to { dosage, brand, ingredients, description, servingUnits, unitForm, directions } from the
-// matching product, or null.
-export async function lookupMissingDetails(form, showUsage) {
+// Look the product up online. With the label photo (`photo` = { imageBase64, mimeType }) the backend identifies the
+// exact product from the picture + Google Search and returns the manufacturer's per-dose directions (far more
+// reliable than matching OCR'd text, esp. non-English labels); if that is unsure/fails we fall back to the text
+// search (ai-lookup). Resolves to { dosage, brand, ingredients, description, servingUnits, unitForm, directions,
+// sourceUrl, imageUrl } or null.
+export async function lookupMissingDetails(form, showUsage, photo) {
+  if (photo?.imageBase64) {
+    try {
+      const res = await api.cabinet.identify(photo.imageBase64, photo.mimeType, { name: form.name, brand: form.brand, strength: form.strength })
+      if (res.aiUsage && showUsage) showUsage(res.aiUsage, 'identify-photo', { input: form.name, output: res.data?.nameEnglish ?? res.data?.nameOriginal ?? '' })
+      const found = res.success ? foundFromIdentify(res.data, form) : null
+      if (found) return found
+    } catch { /* fall back to the text search */ }
+  }
+  return lookupByText(form, showUsage)
+}
+
+async function lookupByText(form, showUsage) {
   const query = lookupQuery(form)
   if (query.length < 2) return null
   const res = await api.cabinet.aiLookup(query)

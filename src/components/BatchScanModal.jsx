@@ -49,6 +49,8 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
       lookupStatus: 'idle', // idle | looking | none | failed
       webFields: {}, // fields filled from the web, shown highlighted
       webDirections: '', // directions text a web-found per-dose count came from
+      webSource: '', // page the directions came from (photo-based lookup)
+      photo: null, // { imageBase64, mimeType } of this label, for the photo-based lookup
       linkBusy: false,
       saveStatus: 'idle', // idle | saving | saved | error
       saveError: '',
@@ -74,6 +76,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
       patchRow(row.id, {
         scanStatus: 'done',
         photoThumb: thumbnail || '',
+        photo: { imageBase64, mimeType },
         form,
         dup,
         include: !dup,
@@ -88,15 +91,16 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
   async function fillMissing(rowId, form) {
     patchRow(rowId, { lookupStatus: 'looking' })
     try {
-      const found = await lookupLimiter.current(() => lookupMissingDetails(form, showUsage))
+      const photo = rows.find((r) => r.id === rowId)?.photo
+      const found = await lookupLimiter.current(() => lookupMissingDetails(form, showUsage, photo))
       setRows((prev) =>
         prev.map((r) => {
           if (r.id !== rowId) return r
-          const { form: merged, filled, directions } = mergeFound(r.form, found)
+          const { form: merged, filled, directions, source } = mergeFound(r.form, found)
           const webFields = { ...r.webFields }
           filled.forEach((f) => { webFields[f] = true })
           if (filled.includes('servingUnits')) webFields.dosage = true
-          return { ...r, form: merged, webFields, webDirections: directions || r.webDirections, lookupStatus: found ? 'idle' : 'none' }
+          return { ...r, form: merged, webFields, webDirections: directions || r.webDirections, webSource: directions ? source || '' : r.webSource, lookupStatus: found ? (filled.length > 0 ? 'idle' : 'nothing') : 'none' }
         })
       )
     } catch {
@@ -161,6 +165,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
           form,
           webFields: edited ? { ...r.webFields, servingUnits: false, dosage: false } : r.webFields,
           webDirections: edited ? '' : r.webDirections,
+          webSource: edited ? '' : r.webSource,
         }
       })
     )
@@ -392,6 +397,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                         disabled={locked}
                         webFilled={Boolean(row.webFields.servingUnits)}
                         directions={row.webDirections}
+                        source={row.webSource}
                       />
                     )}
                     {hasMissing(row.form) && row.form.name.trim() && !locked && (
@@ -408,12 +414,15 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                     {row.lookupStatus === 'none' && (
                       <p className="text-[11px] text-ink3" data-testid="batch-no-match">{t('batchScanNoMatch')}</p>
                     )}
+                    {row.lookupStatus === 'nothing' && (
+                      <p className="text-[11px] text-ink3" data-testid="batch-nothing-new">{t('batchScanFoundNothing')}</p>
+                    )}
                     {row.lookupStatus === 'failed' && (
                       <p className="text-[11px] text-[#C05A28]">{t('batchScanLookupFailed')}</p>
                     )}
                     {hasMissing(row.form) && row.form.name.trim() && !locked && (
                       <PasteLinkFill
-                        forceOpen={row.lookupStatus === 'none' || row.lookupStatus === 'failed'}
+                        forceOpen={row.lookupStatus === 'none' || row.lookupStatus === 'failed' || row.lookupStatus === 'nothing'}
                         onSubmit={(url) => fillFromLink(row.id, url)}
                         onBusyChange={(busy) => patchRow(row.id, { linkBusy: busy })}
                       />
