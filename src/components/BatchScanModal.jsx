@@ -297,9 +297,9 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                     <img
                       src={row.form.imageUrl || row.photoThumb}
                       alt=""
-                      width="36"
-                      height="36"
-                      className="w-[36px] h-[36px] rounded-[8px] object-contain bg-white border border-border shrink-0"
+                      width="72"
+                      height="72"
+                      className="w-[72px] h-[72px] rounded-[10px] object-contain bg-white border border-border shrink-0"
                       data-testid="batch-preview"
                       data-source={row.form.imageUrl ? 'web' : 'photo'}
                       onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}

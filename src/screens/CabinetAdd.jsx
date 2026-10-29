@@ -572,9 +572,9 @@ export default function CabinetAdd() {
                 <img
                   src={chooseImage(form, photoThumb)}
                   alt=""
-                  width="44"
-                  height="44"
-                  className="w-[44px] h-[44px] rounded-[8px] object-contain bg-white border border-[#B0C8E8] shrink-0"
+                  width="96"
+                  height="96"
+                  className="w-[96px] h-[96px] rounded-[10px] object-contain bg-white border border-[#B0C8E8] shrink-0"
                   data-testid="single-preview"
                   data-source={form.imageUrl ? 'web' : 'photo'}
                   onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
