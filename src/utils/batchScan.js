@@ -42,6 +42,7 @@ export function chooseImage(form, photoThumb = '') {
 export function buildCreatePayload(form, photoThumb = '') {
   const brand = String(form.brand || '').trim()
   const ingredients = String(form.ingredients || '').trim()
+  const description = String(form.description || '').trim()
   const imageUrl = chooseImage(form, photoThumb)
   return {
     name: form.name.trim(),
@@ -51,6 +52,7 @@ export function buildCreatePayload(form, photoThumb = '') {
     timing: 'Morning',
     ...(brand ? { brand } : {}),
     ...(ingredients ? { ingredients } : {}),
+    ...(description ? { description } : {}),
     ...(imageUrl ? { imageUrl } : {}),
   }
 }
@@ -187,14 +189,28 @@ export function queryFromUrl(url) {
 // the label) Dosage is derived: the per-dose count and unit are filled, never the strength, and never over
 // a value from the label or the user. Returns { form, filled, directions } (directions only when the count
 // came from the web).
+// A fuller web ingredient list may replace the short "key actives" line the label scan read (flagged
+// ingredientsFromScan) when it is clearly longer; a value the user typed/edited (flag cleared) is never replaced.
+function upgradeIngredients(next, found, filled) {
+  const web = String(found.ingredients || '').trim()
+  const cur = String(next.ingredients || '').trim()
+  if (web && cur && next.ingredientsFromScan && web.length > cur.length + 20) {
+    next.ingredients = web
+    next.ingredientsFromScan = false
+    if (!filled.includes('ingredients')) filled.push('ingredients')
+  }
+}
+
 export function mergeFound(form, found) {
   if (!found) return { form, filled: [], directions: '', source: '' }
   if (!isStructured(form)) {
     const { form: next, filled } = mergeMissing(form, found)
+    upgradeIngredients(next, found, filled)
     return { form: next, filled, directions: '', source: '' }
   }
   const { form: base, filled } = mergeMissing(form, found, ['brand', 'ingredients', 'description', 'imageUrl'])
   const next = { ...base }
+  upgradeIngredients(next, found, filled)
   let directions = ''
   let source = ''
   const units = parseServingUnits(found.servingUnits)
@@ -222,6 +238,7 @@ export function findDuplicate(name, items) {
 export function buildUpdatePayload(form, photoThumb = '', existing = {}) {
   const brand = String(form.brand || '').trim()
   const ingredients = String(form.ingredients || '').trim()
+  const description = String(form.description || '').trim()
   const webImage = String(form.imageUrl || '').trim()
   const image = webImage || (existing.imageUrl ? '' : String(photoThumb || '').trim())
   return {
@@ -229,6 +246,7 @@ export function buildUpdatePayload(form, photoThumb = '', existing = {}) {
     dosage: form.dosage.trim(),
     ...(brand ? { brand } : {}),
     ...(ingredients ? { ingredients } : {}),
+    ...(description ? { description } : {}),
     ...(image ? { imageUrl: image } : {}),
   }
 }
@@ -341,8 +359,8 @@ export function foundFromIdentify(d, form = {}) {
     servingUnits: units || null,
     unitForm: unit || null,
     brand: String(d.brand || '').trim(),
-    ingredients: '',
-    description: '',
+    ingredients: String(d.ingredients || '').trim(),
+    description: String(d.description || '').trim(),
     imageUrl: /^https?:\/\//i.test(String(d.imageUrl || '')) ? String(d.imageUrl).trim() : '', // product image from the source page (when the backend found one)
     directions: String(d.directions || '').trim(),
     sourceUrl: /^https?:\/\//i.test(String(d.sourceUrl || '')) ? String(d.sourceUrl).trim() : '',

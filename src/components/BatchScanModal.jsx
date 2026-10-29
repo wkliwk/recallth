@@ -19,6 +19,7 @@ import {
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
 import PasteLinkFill from './PasteLinkFill'
 import DoseInput from './DoseInput'
+import FullInfoFields from './FullInfoFields'
 import { isStructured, applyDose } from '../utils/dose'
 
 const TYPE_OPTIONS = ['supplement', 'medication', 'vitamin']
@@ -143,7 +144,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
     setRows((prev) =>
       prev.map((r) => {
         if (r.id !== id) return r
-        const form = { ...r.form, [field]: value }
+        const form = { ...r.form, [field]: value, ...(field === 'ingredients' ? { ingredientsFromScan: false } : {}) } // a user edit is never replaced by a web list
         return {
           ...r,
           form,
@@ -401,6 +402,12 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                         source={row.webSource}
                       />
                     )}
+                    <FullInfoFields
+                      form={row.form}
+                      onChange={(field, value) => updateForm(row.id, field, value)}
+                      webFields={row.webFields}
+                      disabled={locked}
+                    />
                     {hasMissing(row.form) && row.form.name.trim() && !locked && (
                       <button
                         type="button"

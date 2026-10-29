@@ -137,6 +137,8 @@ export default function CabinetDetail() {
               timing: found.timing || 'Morning',
               brand: found.brand || '',
               notes: found.notes || '',
+              description: found.description || '',
+              ingredients: found.ingredients || '',
               purchasePrice: found.purchasePrice ?? '',
               purchaseCurrency: found.currency || 'HKD',
               purchaseDate: toDateInputValue(found.purchaseDate),
@@ -197,6 +199,9 @@ export default function CabinetDetail() {
         timing: form.timing,
         ...(form.brand?.trim() ? { brand: form.brand.trim() } : {}),
         ...(form.notes?.trim() ? { notes: form.notes.trim() } : {}),
+        // empty string clears a previously saved value
+        description: (form.description || '').trim(),
+        ingredients: (form.ingredients || '').trim(),
         // null clears a previously saved value
         purchasePrice: price.value,
         purchaseDate: form.purchaseDate || null,
@@ -463,6 +468,26 @@ export default function CabinetDetail() {
                 rows={3}
                 value={form.notes}
                 onChange={(e) => handleChange('notes', e.target.value)}
+              />
+            </EditField>
+
+            <EditField label={t('fieldIngredients')}>
+              <textarea
+                className={`${inputClass} resize-y`}
+                rows={6}
+                value={form.ingredients || ''}
+                onChange={(e) => handleChange('ingredients', e.target.value)}
+                data-testid="detail-edit-ingredients"
+              />
+            </EditField>
+
+            <EditField label={t('fieldDescription')}>
+              <textarea
+                className={`${inputClass} resize-y`}
+                rows={4}
+                value={form.description || ''}
+                onChange={(e) => handleChange('description', e.target.value)}
+                data-testid="detail-edit-description"
               />
             </EditField>
           </div>
@@ -811,13 +836,13 @@ export default function CabinetDetail() {
               {supp.description && (
                 <div>
                   <span className="text-[11px] uppercase text-ink3 tracking-wide font-medium">{t('fieldDescription') || 'Description'}</span>
-                  <p className="text-[13px] text-ink1 mt-1.5 leading-relaxed">{supp.description}</p>
+                  <p className="text-[13px] text-ink1 mt-1.5 leading-relaxed whitespace-pre-line" data-testid="detail-description">{supp.description}</p>
                 </div>
               )}
               {supp.ingredients && (
                 <div>
                   <span className="text-[11px] uppercase text-ink3 tracking-wide font-medium">{t('fieldIngredients') || 'Ingredients'}</span>
-                  <p className="text-[13px] text-ink2 mt-1.5 leading-relaxed">{supp.ingredients}</p>
+                  <p className="text-[13px] text-ink2 mt-1.5 leading-relaxed whitespace-pre-line" data-testid="detail-ingredients">{supp.ingredients}</p>
                 </div>
               )}
             </div>

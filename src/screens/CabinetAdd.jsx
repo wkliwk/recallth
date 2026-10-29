@@ -9,6 +9,7 @@ import BatchScanModal from '../components/BatchScanModal'
 import { imageFileToBase64, scanResultToForm } from '../utils/labelScan'
 import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload } from '../utils/batchScan'
 import DoseInput from '../components/DoseInput'
+import FullInfoFields from '../components/FullInfoFields'
 import { isStructured, applyDose } from '../utils/dose'
 import { lookupMissingDetails, lookupFromUrl } from '../utils/dosageLookup'
 import PasteLinkFill from '../components/PasteLinkFill'
@@ -125,7 +126,7 @@ export default function CabinetAdd() {
   })
 
   function handleChange(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }))
+    setForm((prev) => ({ ...prev, [field]: value, ...(field === 'ingredients' ? { ingredientsFromScan: false } : {}) }))
     setWebFields((prev) => (prev[field] ? { ...prev, [field]: false } : prev))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
@@ -714,6 +715,8 @@ export default function CabinetAdd() {
           </Field>
 
           <PurchaseFields form={form} onChange={handleChange} error={errors.purchasePrice} />
+
+          <FullInfoFields form={form} onChange={handleChange} webFields={webFields} />
 
           <Field label={t('fieldNotes')}>
             <textarea
