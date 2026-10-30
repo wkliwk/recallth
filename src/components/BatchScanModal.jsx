@@ -228,16 +228,25 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
   function handleSaveAll() {
     const dups = pending.filter((r) => matchInfo(r, rows.indexOf(r))?.source === 'existing')
     if (dups.length > 0) {
-      setConfirming({ choices: Object.fromEntries(dups.map((r) => [r.id, 'new'])) }) // default: non-destructive
+      setConfirming({ choices: Object.fromEntries(dups.map((r) => [r.id, 'new'])), list: pending }) // default: non-destructive
       return
     }
-    saveRows({})
+    saveRows({}, pending)
   }
 
-  async function saveRows(choices) {
+  // The per-row "Add this item" button: saves just that row (duplicates still ask first).
+  function handleSaveRow(row) {
+    if (matchInfo(row, rows.indexOf(row))?.source === 'existing') {
+      setConfirming({ choices: { [row.id]: 'new' }, list: [row] })
+      return
+    }
+    saveRows({}, [row])
+  }
+
+  async function saveRows(choices, list = pending) {
     setConfirming(null)
     setSaving(true)
-    for (const row of pending) {
+    for (const row of list) {
       patchRow(row.id, { saveStatus: 'saving', saveError: '' })
       try {
         const existing = choices[row.id] === 'overwrite' ? findMatch(row.form, existingItems)?.item : null
@@ -466,6 +475,17 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                     {row.saveStatus === 'error' && (
                       <p className="text-[11px] text-[#C05A28]">{row.saveError}</p>
                     )}
+                    {row.saveStatus !== 'saved' && (
+                      <button
+                        type="button"
+                        onClick={() => handleSaveRow(row)}
+                        disabled={saving || row.lookupStatus === 'looking' || row.linkBusy || Object.keys(errs).length > 0}
+                        data-testid="batch-row-add"
+                        className="self-end rounded-full border border-orange text-orange text-[12px] font-medium px-4 py-[6px] cursor-pointer hover:bg-orange-lt transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {row.saveStatus === 'saving' ? t('batchScanSaving') : t('batchScanAddRow')}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -508,7 +528,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
               <p className="text-[12px] text-ink3 mt-1">{t('batchScanDupBody')}</p>
             </div>
             <div className="px-5 py-4 overflow-y-auto flex flex-col gap-3">
-              {pending
+              {confirming.list
                 .filter((r) => r.id in confirming.choices)
                 .map((r) => {
                   const found = findMatch(r.form, existingItems)
@@ -549,7 +569,7 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
               </button>
               <button
                 type="button"
-                onClick={() => saveRows(confirming.choices)}
+                onClick={() => saveRows(confirming.choices, confirming.list)}
                 data-testid="dup-continue"
                 className="flex-1 rounded-full bg-orange text-white text-[14px] font-semibold py-[11px] cursor-pointer hover:opacity-90"
               >
