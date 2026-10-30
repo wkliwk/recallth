@@ -69,15 +69,29 @@ function pickFields(p) {
 }
 
 // A clear front-facing product picture from the identified product's reference pages (official first), chosen by a
-// vision model against the user's photo. Slow (up to ~14 s), so callers run it in the background. '' when none.
-export async function findWebImage(photo, found, form = {}) {
-  const urls = (found?.references || []).map((r) => r.url).filter(Boolean).slice(0, 4)
-  if (!photo?.imageBase64 || urls.length === 0) return ''
+// vision model against the user's photo (or, without a photo, against name + brand). Slow (up to ~25 s), so callers
+// run it in the background. `exclude` = original URLs of pictures the user already rejected. '' when none.
+export async function searchProductImage({ photo, pageUrls = [], name, brand, exclude = [] }) {
+  const pages = pageUrls.filter(Boolean).slice(0, 4)
+  if (!photo?.imageBase64 && String(name || '').trim().length < 2) return ''
   try {
-    const res = await api.cabinet.productImage(photo.imageBase64, photo.mimeType, urls, form.name, form.brand || found?.brand)
+    const res = await api.cabinet.productImage({
+      ...(photo?.imageBase64 ? { imageBase64: photo.imageBase64, mimeType: photo.mimeType } : {}),
+      pageUrls: pages,
+      name,
+      brand,
+      ...(exclude.length ? { excludeUrls: exclude.slice(-10) } : {}),
+    })
     const u = res.success ? String(res.data?.imageUrl || '') : ''
     return /^https?:\/\//i.test(u) ? u : ''
   } catch {
     return ''
   }
+}
+
+// First search after the online fill: needs the label photo and at least one reference page.
+export async function findWebImage(photo, found, form = {}) {
+  const urls = (found?.references || []).map((r) => r.url)
+  if (!photo?.imageBase64 || urls.length === 0) return ''
+  return searchProductImage({ photo, pageUrls: urls, name: form.name, brand: form.brand || found?.brand })
 }

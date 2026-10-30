@@ -14,8 +14,8 @@ import {
   runPool,
   createLimiter,
   hasMissing,
-  mergeFound, applyWebImage } from '../utils/batchScan'
-import { lookupMissingDetails, lookupFromUrl, findWebImage } from '../utils/dosageLookup'
+  mergeFound, applyWebImage, originalImageUrl } from '../utils/batchScan'
+import { lookupMissingDetails, lookupFromUrl, findWebImage, searchProductImage } from '../utils/dosageLookup'
 import PasteLinkFill from './PasteLinkFill'
 import DoseInput from './DoseInput'
 import FullInfoFields from './FullInfoFields'
@@ -118,6 +118,20 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
     } catch {
       patchRow(rowId, { lookupStatus: 'failed' })
     }
+  }
+
+  // The web search picked a wrong picture for this row: search again, skipping every picture already shown.
+  async function searchImageAgain(rowId) {
+    const row = rows.find((r) => r.id === rowId)
+    if (!row || row.imageSearch === 'searching') return
+    patchRow(rowId, { imageSearch: 'searching', photoPinned: false })
+    const tried = new Set(row.triedImages || [])
+    const current = originalImageUrl(row.form.imageUrl)
+    if (current) tried.add(current)
+    const url = await imageLimiter.current(() => searchProductImage({ photo: row.photo, pageUrls: (row.form.references || []).map((r) => r.url), name: row.form.name, brand: row.form.brand, exclude: [...tried] }))
+    if (!url) { patchRow(rowId, { imageSearch: 'none', triedImages: [...tried] }); return }
+    tried.add(originalImageUrl(url))
+    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, imageSearch: 'idle', triedImages: [...tried], form: { ...r.form, imageUrl: url }, webFields: { ...r.webFields, imageUrl: true } } : r)))
   }
 
   // Fallback: fill empty fields from a product page the user pasted. Throws on failure.
@@ -313,6 +327,17 @@ export default function BatchScanModal({ files, truncated, existingItems = [], o
                       data-source={row.form.imageUrl ? 'web' : 'photo'}
                       onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
                     />
+                  )}
+                  {row.scanStatus === 'done' && row.photo && (row.form.references?.length > 0 || row.form.imageUrl) && row.saveStatus !== 'saved' && (
+                    <button
+                      type="button"
+                      onClick={() => searchImageAgain(row.id)}
+                      disabled={row.imageSearch === 'searching'}
+                      className="text-orange hover:underline cursor-pointer whitespace-nowrap disabled:opacity-50"
+                      data-testid="batch-search-image"
+                    >
+                      {row.imageSearch === 'searching' ? t('searchingPicture') : row.imageSearch === 'none' ? t('noOtherPicture') : t('searchPictureAgain')}
+                    </button>
                   )}
                   {row.scanStatus === 'done' && !row.form.imageUrl && row.photoThumb && row.saveStatus !== 'saved' && (
                     <button

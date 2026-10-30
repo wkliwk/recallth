@@ -441,3 +441,18 @@ test('identify references flow into the form (fill-only-empty) and into both pay
   assert.equal('references' in bcp2({ name: 'X', dosage: '1' }), false)
   assert.deepEqual(bup2({ ...merged, dosage: '1' }).references, refs)
 })
+
+import { originalImageUrl, photoFromDataUrl } from './batchScan.js'
+
+test('originalImageUrl unwraps the image proxy URL and ignores data URLs', () => {
+  assert.equal(originalImageUrl('https://api.test/img/image-proxy?url=' + encodeURIComponent('https://cdn.brand.com/a.jpg?x=1')), 'https://cdn.brand.com/a.jpg?x=1')
+  assert.equal(originalImageUrl('https://cdn.brand.com/b.jpg'), 'https://cdn.brand.com/b.jpg')
+  assert.equal(originalImageUrl('data:image/jpeg;base64,AAAA'), '')
+  assert.equal(originalImageUrl(''), '')
+})
+
+test('photoFromDataUrl extracts base64 from a data: image URL only', () => {
+  assert.deepEqual(photoFromDataUrl('data:image/jpeg;base64,QUJD'), { mimeType: 'image/jpeg', imageBase64: 'QUJD' })
+  assert.equal(photoFromDataUrl('https://x.test/a.jpg'), null)
+  assert.equal(photoFromDataUrl(''), null)
+})
