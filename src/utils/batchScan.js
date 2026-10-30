@@ -56,6 +56,25 @@ export function applyWebImage(form, url, photoPinned = false) {
   return { ...form, imageUrl: clean }
 }
 
+// The picture's own URL behind our image-proxy wrapper (what the backend's exclude list expects); '' for data: URLs.
+export function originalImageUrl(imageUrl) {
+  const u = String(imageUrl || '').trim()
+  if (!/^https?:\/\//i.test(u)) return ''
+  const m = u.match(/\/img\/image-proxy\?url=([^&]+)/)
+  if (!m) return u
+  try {
+    return decodeURIComponent(m[1])
+  } catch {
+    return ''
+  }
+}
+
+// { imageBase64, mimeType } from a saved data: image URL (the user's own photo thumbnail), or null.
+export function photoFromDataUrl(imageUrl) {
+  const m = String(imageUrl || '').match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i)
+  return m ? { mimeType: m[1], imageBase64: m[2] } : null
+}
+
 // The image to save: a web product image already on the form wins, otherwise the user's own photo thumbnail.
 export function chooseImage(form, photoThumb = '') {
   return String(form?.imageUrl || '').trim() || String(photoThumb || '').trim()

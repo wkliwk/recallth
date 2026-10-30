@@ -1,3 +1,4 @@
+import ImageSearchAgain from '../components/ImageSearchAgain'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import OrangeHeader from '../components/OrangeHeader'
@@ -320,6 +321,12 @@ export default function CabinetDetail() {
     }
   }
 
+  // Accept a web picture found by "Search picture again".
+  async function handleApplySearchedImage(url) {
+    const res = await api.cabinet.update(id, { imageUrl: url })
+    setSupp(res.data || { ...supp, imageUrl: url })
+  }
+
   async function handleDelete() {
     setDeleting(true)
     try {
@@ -545,6 +552,7 @@ export default function CabinetDetail() {
                     disabled={uploadingImage}
                   />
                 </label>
+                <ImageSearchAgain supp={supp} onApply={handleApplySearchedImage} className="mt-1" />
               </div>
             </div>
 
@@ -600,6 +608,7 @@ export default function CabinetDetail() {
                   disabled={uploadingImage}
                 />
               </label>
+                <ImageSearchAgain supp={supp} onApply={handleApplySearchedImage} className="mt-1" />
             </div>
           </div>
 

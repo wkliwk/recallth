@@ -7,11 +7,11 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAiUsage } from '../context/AiUsageContext'
 import BatchScanModal from '../components/BatchScanModal'
 import { rotateThumbnail, imageFileToBase64, scanResultToForm } from '../utils/labelScan'
-import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload, applyWebImage, cleanReferences } from '../utils/batchScan'
+import { limitFiles, hasMissing, mergeFound, chooseImage, findMatch, buildUpdatePayload, applyWebImage, cleanReferences, originalImageUrl } from '../utils/batchScan'
 import DoseInput from '../components/DoseInput'
 import FullInfoFields from '../components/FullInfoFields'
 import { isStructured, applyDose } from '../utils/dose'
-import { lookupMissingDetails, lookupFromUrl, findWebImage } from '../utils/dosageLookup'
+import { lookupMissingDetails, lookupFromUrl, findWebImage, searchProductImage } from '../utils/dosageLookup'
 import PasteLinkFill from '../components/PasteLinkFill'
 import PurchaseFields from '../components/PurchaseFields'
 import { parsePriceInput } from '../utils/purchase'
@@ -80,6 +80,8 @@ export default function CabinetAdd() {
   const batchSavedRef = useRef(false)
   const [fillStatus, setFillStatus] = useState('idle') // idle | looking | none | failed
   const [webFields, setWebFields] = useState({})
+  const [imgSearch, setImgSearch] = useState('idle') // idle | searching | none
+  const triedImages = useRef(new Set()) // original URLs of web pictures already shown, never offered again
   const photoPinned = useRef(false) // the user chose their own photo: a late web picture must not replace it
   const [webDirections, setWebDirections] = useState('')
   const [webSource, setWebSource] = useState('')
@@ -261,6 +263,8 @@ export default function CabinetAdd() {
       const res = await api.cabinet.scan(imageBase64, mimeType)
       if (!res.success || !res.data) throw new Error(res.error || t('scanLabelError'))
       photoPinned.current = false
+      triedImages.current = new Set()
+      setImgSearch('idle')
       setForm((prev) => ({ ...prev, ...EMPTY_DOSE, imageUrl: '', references: [], ...scanResultToForm(res.data) }))
       setPhotoThumb(thumbnail || '')
       setPhoto({ imageBase64, mimeType })
@@ -303,6 +307,22 @@ export default function CabinetAdd() {
     } catch {
       setFillStatus('failed')
     }
+  }
+
+  // The web search picked a wrong picture: search again, skipping every picture already shown.
+  async function handleSearchImageAgain() {
+    if (imgSearch === 'searching') return
+    setImgSearch('searching')
+    photoPinned.current = false
+    const tried = triedImages.current
+    const current = originalImageUrl(form.imageUrl)
+    if (current) tried.add(current)
+    const url = await searchProductImage({ photo, pageUrls: (form.references || []).map((r) => r.url), name: form.name, brand: form.brand, exclude: [...tried] })
+    if (!url) { setImgSearch('none'); return }
+    tried.add(originalImageUrl(url))
+    setForm((prev) => ({ ...prev, imageUrl: url }))
+    setWebFields((prev) => ({ ...prev, imageUrl: true }))
+    setImgSearch('idle')
   }
 
   // Fallback: fill empty fields from a product page the user pasted. Throws on failure.
@@ -579,6 +599,17 @@ export default function CabinetAdd() {
                   data-source={form.imageUrl ? 'web' : 'photo'}
                   onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
                 />
+              )}
+              {photo && (form.references?.length > 0 || form.imageUrl) && (
+                <button
+                  type="button"
+                  onClick={handleSearchImageAgain}
+                  disabled={imgSearch === 'searching'}
+                  className="text-[12px] text-orange hover:underline cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  data-testid="single-search-image"
+                >
+                  {imgSearch === 'searching' ? t('searchingPicture') : imgSearch === 'none' ? t('noOtherPicture') : t('searchPictureAgain')}
+                </button>
               )}
               {!form.imageUrl && photoThumb && (
                 <button
